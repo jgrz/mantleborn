@@ -1,0 +1,36 @@
+/*
+ * Mantleborn - Global Styles
+ * Handles canvas scaling and viewport fitting with pixelated rendering
+ */
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+html, body {
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+    background-color: #0a0a0f;
+}
+
+#game-container {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    background-color: #0a0a0f;
+}
+
+#game-canvas {
+    /* Pixelated/nearest-neighbor rendering for crisp pixel art */
+    image-rendering: pixelated;
+    image-rendering: crisp-edges;
+    -ms-interpolation-mode: nearest-neighbor;
+
+    /* Canvas will be sized via JavaScript to maintain aspect ratio */
+    background-color: #1a1a2e;
+}
