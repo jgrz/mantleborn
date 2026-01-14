@@ -432,9 +432,16 @@
             padding: 4px;
             min-width: 60px;
             min-height: 60px;
+            max-height: 200px;
             display: flex;
             align-items: center;
             justify-content: center;
+            overflow: auto;
+        }
+
+        .preview-canvas-wrapper canvas {
+            display: block;
+            flex-shrink: 0;
         }
 
         .preview-canvas {
@@ -1187,9 +1194,14 @@
                 state.dragStart = imgCoords;
                 state.selection = { x: imgCoords.x, y: imgCoords.y, w: 1, h: 1 };
                 state.selectedSpriteIndex = -1;
+                state.editingSpriteIndex = -1;
+                // Clear name for new selection
+                elements.spriteName.value = '';
+                elements.spriteDesc.value = '';
             }
 
             updateSelectionInfo();
+            updateJsonPreview();
             showCreatePanel();
         }
 
@@ -1213,6 +1225,7 @@
 
                 updateSelectionInfo();
                 updatePreviews();
+                updateJsonPreview();
                 renderSelection();
             } else if (state.isResizing) {
                 const { x, y, w, h } = state.dragStart;
@@ -1239,6 +1252,7 @@
 
                 updateSelectionInfo();
                 updatePreviews();
+                updateJsonPreview();
                 renderSelection();
             } else {
                 // Update cursor based on hover
@@ -1259,6 +1273,7 @@
 
         function handleSelectionEnd() {
             if (state.isDragging || state.isResizing) {
+                const wasNewSelection = state.isDragging && state.editingSpriteIndex < 0;
                 state.isDragging = false;
                 state.isResizing = false;
                 state.resizeHandle = null;
@@ -1267,10 +1282,12 @@
                 if (state.selection && (state.selection.w < 1 || state.selection.h < 1)) {
                     state.selection = null;
                     hideCreatePanel();
+                    updateJsonPreview();
                 } else {
                     updatePreviews();
-                    // Auto-suggest name if empty
-                    if (!elements.spriteName.value) {
+                    updateJsonPreview();
+                    // Auto-suggest name for new selections
+                    if (wasNewSelection || !elements.spriteName.value) {
                         elements.spriteName.value = generateSpriteName();
                     }
                 }
@@ -1359,6 +1376,7 @@
             state.selection = null;
             hideCreatePanel();
             updateSelectionInfo();
+            updateJsonPreview();
             renderSelection();
         }
 
@@ -1496,8 +1514,8 @@
         // ==========================================
         // JSON Export/Import
         // ==========================================
-        function generateJson() {
-            return {
+        function generateJson(includeCurrentSelection = false) {
+            const result = {
                 spriteSheet: state.imageName,
                 exportedAt: new Date().toISOString(),
                 sprites: state.sprites.map(s => ({
@@ -1509,15 +1527,28 @@
                     height: s.height
                 }))
             };
+
+            // Add current selection as unsaved preview
+            if (includeCurrentSelection && state.selection && state.editingSpriteIndex < 0) {
+                result.currentSelection = {
+                    name: elements.spriteName.value || '(unsaved)',
+                    x: state.selection.x,
+                    y: state.selection.y,
+                    width: state.selection.w,
+                    height: state.selection.h
+                };
+            }
+
+            return result;
         }
 
         function updateJsonPreview() {
-            const json = generateJson();
+            const json = generateJson(true);
             elements.jsonContent.textContent = JSON.stringify(json, null, 2);
         }
 
         function exportJson() {
-            const json = generateJson();
+            const json = generateJson(false); // Don't include unsaved selection
             const blob = new Blob([JSON.stringify(json, null, 2)], { type: 'application/json' });
             const url = URL.createObjectURL(blob);
             const a = document.createElement('a');
@@ -1529,7 +1560,7 @@
         }
 
         function copyJson() {
-            const json = generateJson();
+            const json = generateJson(false); // Don't include unsaved selection
             navigator.clipboard.writeText(JSON.stringify(json, null, 2))
                 .then(() => showToast('JSON copied to clipboard!'))
                 .catch(() => showToast('Failed to copy', 'error'));
