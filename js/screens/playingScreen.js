@@ -33,7 +33,14 @@ const COLORS = {
     vine: '#3d6b3d',
     vineLight: '#4a8a4a',
     vineDark: '#2d4a2d',
-    vineLeaf: '#5a9a5a'
+    vineLeaf: '#5a9a5a',
+    pogo: '#7a5c3a',
+    pogoLight: '#9a7c5a',
+    pogoDark: '#5a3c2a',
+    pogoSpring: '#aaaaaa',
+    pogoTip: '#cc4444',
+    particle: '#ffaa44',
+    particleGlow: '#ffdd88'
 };
 
 // Physics constants
@@ -52,6 +59,93 @@ const WALL_JUMP_FORCE_Y = -180;
 const DOUBLE_JUMP_FORCE = -180;
 const GROUND_POUND_SPEED = 350;
 const MANTLE_DURATION = 0.2;
+
+// Pogo constants
+const POGO_BOUNCE_FORCE = -180;
+const POGO_COMBO_WINDOW = 0.15;  // Seconds to time the jump
+const POGO_COMBO_BONUS = 0.10;   // 10% boost per combo
+const POGO_MAX_COMBO = 5;        // Max combo multiplier (50% bonus)
+const POGO_IDLE_BOUNCE_INTERVAL = 0.6;  // Auto-bounce when idle
+
+/**
+ * Particle class for impact effects
+ */
+class Particle {
+    constructor(x, y, vx, vy, life, size, color) {
+        this.x = x;
+        this.y = y;
+        this.vx = vx;
+        this.vy = vy;
+        this.life = life;
+        this.maxLife = life;
+        this.size = size;
+        this.color = color;
+    }
+
+    update(dt) {
+        this.x += this.vx * dt;
+        this.y += this.vy * dt;
+        this.vy += 200 * dt; // Gravity on particles
+        this.life -= dt;
+        return this.life > 0;
+    }
+
+    render(ctx) {
+        const alpha = this.life / this.maxLife;
+        ctx.globalAlpha = alpha;
+        ctx.fillStyle = this.color;
+        ctx.fillRect(this.x - this.size / 2, this.y - this.size / 2, this.size, this.size);
+        ctx.globalAlpha = 1;
+    }
+}
+
+/**
+ * ParticleSystem - manages particle effects
+ */
+class ParticleSystem {
+    constructor() {
+        this.particles = [];
+    }
+
+    emit(x, y, count, config = {}) {
+        const {
+            speedMin = 30,
+            speedMax = 80,
+            angleMin = -Math.PI,
+            angleMax = 0,
+            lifeMin = 0.3,
+            lifeMax = 0.6,
+            sizeMin = 1,
+            sizeMax = 3,
+            colors = [COLORS.particle, COLORS.particleGlow]
+        } = config;
+
+        for (let i = 0; i < count; i++) {
+            const angle = angleMin + Math.random() * (angleMax - angleMin);
+            const speed = speedMin + Math.random() * (speedMax - speedMin);
+            const vx = Math.cos(angle) * speed;
+            const vy = Math.sin(angle) * speed;
+            const life = lifeMin + Math.random() * (lifeMax - lifeMin);
+            const size = sizeMin + Math.random() * (sizeMax - sizeMin);
+            const color = colors[Math.floor(Math.random() * colors.length)];
+
+            this.particles.push(new Particle(x, y, vx, vy, life, size, color));
+        }
+    }
+
+    update(dt) {
+        this.particles = this.particles.filter(p => p.update(dt));
+    }
+
+    render(ctx, cameraX) {
+        ctx.save();
+        ctx.translate(-cameraX, 0);
+        for (const p of this.particles) {
+            p.render(ctx);
+        }
+        ctx.restore();
+    }
+}
 
 /**
  * Player class - handles movement, physics, and rendering.
@@ -102,8 +196,36 @@ class Player {
             wallSlide: false,
             wallJump: false,
             groundPound: false,
-            mantle: false
+            mantle: false,
+            pogo: false,
+            pogoCombo: false
         };
+
+        // Pogo stick state
+        this.hasPogo = false;
+        this.onPogo = false;
+        this.pogoCombo = 0;
+        this.pogoIdleTimer = 0;
+        this.pogoJumpWindow = 0;      // Time window to press jump for combo
+        this.pogoWaitingForInput = false;
+        this.pogoSquash = 0;          // Visual squash on landing (0-1)
+
+        // Reference to particle system (set by PlayingScreen)
+        this.particles = null;
+    }
+
+    mountPogo() {
+        if (this.hasPogo && !this.onPogo) {
+            this.onPogo = true;
+            this.pogoCombo = 0;
+            this.pogoIdleTimer = 0;
+            this.usedMechanics.pogo = true;
+        }
+    }
+
+    dismountPogo() {
+        this.onPogo = false;
+        this.pogoCombo = 0;
     }
 
     update(dt, input, room) {
@@ -125,6 +247,38 @@ class Player {
         // Dash cooldown
         if (this.dashCooldown > 0) {
             this.dashCooldown -= dt;
+        }
+
+        // Pogo squash animation decay
+        if (this.pogoSquash > 0) {
+            this.pogoSquash -= dt * 8;
+            if (this.pogoSquash < 0) this.pogoSquash = 0;
+        }
+
+        // Pogo jump window countdown
+        if (this.pogoJumpWindow > 0) {
+            this.pogoJumpWindow -= dt;
+            if (this.pogoJumpWindow <= 0) {
+                // Missed the combo window - auto bounce with reset combo
+                if (this.onPogo && this.onGround && !this.isMoving) {
+                    this.pogoCombo = 0;
+                    this.doPogoBounce();
+                }
+                this.pogoWaitingForInput = false;
+            }
+        }
+
+        // Pogo idle bounce timer (when standing still on pogo)
+        if (this.onPogo && this.onGround && !this.pogoWaitingForInput) {
+            if (!this.isMoving && !input.left && !input.right) {
+                this.pogoIdleTimer += dt;
+                if (this.pogoIdleTimer >= POGO_IDLE_BOUNCE_INTERVAL) {
+                    this.pogoIdleTimer = 0;
+                    this.doPogoBounce();
+                }
+            } else {
+                this.pogoIdleTimer = 0;
+            }
         }
 
         // Handle dashing
@@ -181,7 +335,7 @@ class Player {
             return;
         }
 
-        // Jump / Double Jump / Wall Jump
+        // Jump / Double Jump / Wall Jump / Pogo Bounce
         if (input.jump) {
             if (this.isWallSliding) {
                 // Wall jump
@@ -191,6 +345,19 @@ class Player {
                 this.isWallSliding = false;
                 this.hasDoubleJumped = false; // Wall jump resets double jump
                 this.usedMechanics.wallJump = true;
+                if (this.onPogo) this.dismountPogo(); // Dismount on wall jump
+            } else if (this.onPogo && this.onGround) {
+                // Pogo bounce with combo timing
+                if (this.pogoWaitingForInput && this.pogoJumpWindow > 0) {
+                    // Perfect timing! Increase combo
+                    this.pogoCombo = Math.min(this.pogoCombo + 1, POGO_MAX_COMBO);
+                    if (this.pogoCombo >= 2) {
+                        this.usedMechanics.pogoCombo = true;
+                    }
+                }
+                this.doPogoBounce();
+                this.pogoWaitingForInput = false;
+                this.pogoJumpWindow = 0;
             } else if (this.onGround) {
                 // Normal jump
                 this.vy = JUMP_FORCE;
@@ -203,6 +370,15 @@ class Player {
                 this.vy = DOUBLE_JUMP_FORCE;
                 this.hasDoubleJumped = true;
                 this.usedMechanics.doubleJump = true;
+            }
+        }
+
+        // Toggle pogo mount/dismount with down key when on ground
+        if (input.down && this.onGround && this.hasPogo && !this.isGroundPounding) {
+            if (this.onPogo) {
+                this.dismountPogo();
+            } else {
+                this.mountPogo();
             }
         }
 
@@ -397,6 +573,41 @@ class Player {
         this.canDoubleJump = false;
         this.hasDoubleJumped = false;
         this.isWallSliding = false;
+
+        // Pogo landing - set up combo window and emit particles
+        if (this.onPogo && wasInAir) {
+            this.pogoWaitingForInput = true;
+            this.pogoJumpWindow = POGO_COMBO_WINDOW;
+            this.pogoSquash = 1;
+            this.pogoIdleTimer = 0;
+
+            // Emit impact particles
+            if (this.particles) {
+                const particleCount = 4 + this.pogoCombo * 2;
+                this.particles.emit(
+                    this.x + this.width / 2,
+                    this.y + this.height,
+                    particleCount,
+                    {
+                        speedMin: 20 + this.pogoCombo * 10,
+                        speedMax: 60 + this.pogoCombo * 15,
+                        angleMin: -Math.PI * 0.9,
+                        angleMax: -Math.PI * 0.1,
+                        colors: [COLORS.particle, COLORS.particleGlow, '#ffffff']
+                    }
+                );
+            }
+        }
+    }
+
+    doPogoBounce() {
+        // Calculate bounce force with combo bonus
+        const comboMultiplier = 1 + (this.pogoCombo * POGO_COMBO_BONUS);
+        this.vy = POGO_BOUNCE_FORCE * comboMultiplier;
+        this.onGround = false;
+        this.canDoubleJump = true;
+        this.hasDoubleJumped = false;
+        this.pogoIdleTimer = 0;
     }
 
     intersects(rect) {
@@ -417,7 +628,7 @@ class Player {
         const bob = this.isMoving && !this.isDashing ? Math.sin(this.animTime) * 1 : 0;
         let drawY = this.y + bob;
 
-        // Squash during ground pound landing
+        // Squash during ground pound landing or pogo landing
         let scaleY = 1;
         let scaleX = 1;
         if (this.groundPoundLanding) {
@@ -430,6 +641,10 @@ class Player {
             // Stretch during mantle
             scaleY = 1.1;
             scaleX = 0.9;
+        } else if (this.onPogo && this.pogoSquash > 0) {
+            // Pogo squash on landing
+            scaleY = 1 - this.pogoSquash * 0.3;
+            scaleX = 1 + this.pogoSquash * 0.2;
         }
 
         // Shadow
@@ -476,6 +691,44 @@ class Player {
         // Outline accents
         ctx.fillStyle = COLORS.playerOutline;
         ctx.fillRect(this.x + 1, drawY + this.height - 4, this.width - 2, 1);
+
+        // Pogo stick rendering
+        if (this.onPogo) {
+            const pogoX = this.x + this.width / 2;
+            const pogoTopY = drawY + this.height - 2;
+            const springCompression = this.pogoSquash * 4;
+            const pogoLength = 10 - springCompression;
+
+            // Pogo handle (player holds this)
+            ctx.fillStyle = COLORS.pogoLight;
+            ctx.fillRect(pogoX - 3, pogoTopY - 2, 6, 3);
+
+            // Pogo shaft
+            ctx.fillStyle = COLORS.pogo;
+            ctx.fillRect(pogoX - 1, pogoTopY, 2, pogoLength);
+
+            // Spring coil
+            ctx.fillStyle = COLORS.pogoSpring;
+            const springY = pogoTopY + pogoLength;
+            const springHeight = 4 - springCompression * 0.3;
+            for (let i = 0; i < 3; i++) {
+                ctx.fillRect(pogoX - 2 + (i % 2), springY + i * (springHeight / 3), 3, 1);
+            }
+
+            // Pogo tip
+            ctx.fillStyle = COLORS.pogoTip;
+            ctx.fillRect(pogoX - 2, springY + springHeight, 4, 2);
+
+            // Combo indicator (stars above player)
+            if (this.pogoCombo > 0) {
+                ctx.fillStyle = COLORS.particleGlow;
+                for (let i = 0; i < this.pogoCombo; i++) {
+                    const starX = this.x + 2 + i * 3;
+                    const starY = drawY - 4;
+                    ctx.fillRect(starX, starY, 2, 2);
+                }
+            }
+        }
 
         ctx.restore();
     }
@@ -543,6 +796,11 @@ class Room {
             { x: 406, y: 30, width: 6, height: 25, side: 'left' },    // Top right
         ];
 
+        // Collectible items
+        this.items = [
+            { x: 200, y: this.floorY - 20, width: 10, height: 14, type: 'pogo', collected: false }
+        ];
+
         // Decorative elements (background stones)
         this.bgStones = [];
         for (let x = 20; x < this.width - 20; x += 30 + Math.random() * 40) {
@@ -605,6 +863,46 @@ class Room {
 
         // Walls
         this.renderWalls(ctx, cameraX);
+
+        // Items
+        this.renderItems(ctx, cameraX);
+    }
+
+    renderItems(ctx, cameraX) {
+        for (const item of this.items) {
+            if (item.collected) continue;
+
+            const screenX = item.x - cameraX;
+            if (screenX > -item.width && screenX < this.screenWidth) {
+                if (item.type === 'pogo') {
+                    // Floating animation
+                    const floatOffset = Math.sin(Date.now() / 300) * 2;
+                    const itemY = item.y + floatOffset;
+
+                    // Glow effect
+                    ctx.fillStyle = 'rgba(255, 200, 100, 0.3)';
+                    ctx.beginPath();
+                    ctx.arc(screenX + item.width / 2, itemY + item.height / 2, 10, 0, Math.PI * 2);
+                    ctx.fill();
+
+                    // Pogo handle
+                    ctx.fillStyle = COLORS.pogoLight;
+                    ctx.fillRect(screenX + 2, itemY, 6, 3);
+
+                    // Pogo shaft
+                    ctx.fillStyle = COLORS.pogo;
+                    ctx.fillRect(screenX + 4, itemY + 3, 2, 6);
+
+                    // Spring
+                    ctx.fillStyle = COLORS.pogoSpring;
+                    ctx.fillRect(screenX + 3, itemY + 9, 4, 2);
+
+                    // Tip
+                    ctx.fillStyle = COLORS.pogoTip;
+                    ctx.fillRect(screenX + 3, itemY + 11, 4, 3);
+                }
+            }
+        }
     }
 
     renderVines(ctx, cameraX) {
@@ -750,6 +1048,8 @@ class Tutorial {
             { key: 'wallJump', text: '[SPACE] off wall to Wall Jump!', shown: false },
             { key: 'groundPound', text: '[DOWN] in air for Ground Pound', shown: false },
             { key: 'mantle', text: 'Approach ledges to auto-Mantle', shown: false },
+            { key: 'pogo', text: 'Pogo stick! Bounce automatically', shown: false },
+            { key: 'pogoCombo', text: 'Time [SPACE] on landing for +10% height!', shown: false },
         ];
 
         this.activeHints = [];
@@ -850,6 +1150,12 @@ export class PlayingScreen {
         // Create tutorial
         this.tutorial = new Tutorial(this.width, this.height);
 
+        // Create particle system
+        this.particles = new ParticleSystem();
+
+        // Link particle system to player
+        this.player.particles = this.particles;
+
         // Input state
         this.input = {
             left: false,
@@ -870,8 +1176,19 @@ export class PlayingScreen {
         this.player.y = this.room.floorY - 20;
         this.player.vx = 0;
         this.player.vy = 0;
+        this.player.hasPogo = false;
+        this.player.onPogo = false;
+        this.player.pogoCombo = 0;
         this.camera.x = 0;
         this.camera.targetX = 0;
+
+        // Reset items
+        for (const item of this.room.items) {
+            item.collected = false;
+        }
+
+        // Clear particles
+        this.particles.particles = [];
     }
 
     onExit() {
@@ -934,6 +1251,12 @@ export class PlayingScreen {
         this.input.jump = false;
         this.input.dash = false;
 
+        // Check item collection
+        this.checkItemCollection();
+
+        // Update particles
+        this.particles.update(dt);
+
         // Update camera
         this.camera.follow(this.player, dt);
 
@@ -941,9 +1264,47 @@ export class PlayingScreen {
         this.tutorial.update(dt, this.player.usedMechanics);
     }
 
+    checkItemCollection() {
+        const player = this.player;
+        for (const item of this.room.items) {
+            if (item.collected) continue;
+
+            // Simple AABB collision
+            if (player.x < item.x + item.width &&
+                player.x + player.width > item.x &&
+                player.y < item.y + item.height &&
+                player.y + player.height > item.y) {
+
+                item.collected = true;
+
+                if (item.type === 'pogo') {
+                    player.hasPogo = true;
+                    player.mountPogo(); // Auto-mount on pickup
+
+                    // Celebration particles
+                    this.particles.emit(
+                        item.x + item.width / 2,
+                        item.y + item.height / 2,
+                        12,
+                        {
+                            speedMin: 40,
+                            speedMax: 100,
+                            angleMin: 0,
+                            angleMax: Math.PI * 2,
+                            colors: [COLORS.particleGlow, '#ffffff', COLORS.pogoLight]
+                        }
+                    );
+                }
+            }
+        }
+    }
+
     render(ctx) {
         // Render room (handles its own camera offset)
         this.room.render(ctx, this.camera.x);
+
+        // Render particles
+        this.particles.render(ctx, this.camera.x);
 
         // Render player (offset by camera)
         ctx.save();
