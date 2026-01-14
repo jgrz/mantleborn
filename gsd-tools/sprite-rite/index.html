@@ -1,0 +1,1714 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sprite-Rite | Mantleborn Dev Tools</title>
+    <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+    <style>
+        /* ============================================
+           MANTLEBORN SPRITE-RITE - CSS
+           ============================================ */
+
+        :root {
+            /* Backgrounds */
+            --bg-deep: #0d0d14;
+            --bg-mid: #1a1a2e;
+            --bg-surface: #252542;
+
+            /* Accents - ember warmth */
+            --accent-ember: #e07020;
+            --accent-ember-glow: #ff9040;
+            --accent-magma: #c04020;
+
+            /* Stone/neutral tones */
+            --stone-dark: #3a3a5c;
+            --stone-mid: #6a6a8e;
+            --stone-light: #9a9abe;
+            --stone-bright: #d0d0e8;
+
+            /* Purple undertones */
+            --mystic-deep: #2a1a3e;
+            --mystic-glow: #8060c0;
+
+            /* Functional */
+            --selection-fill: rgba(128, 96, 192, 0.3);
+            --selection-border: #8060c0;
+            --grid-line: rgba(106, 106, 142, 0.25);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'JetBrains Mono', monospace;
+            background: var(--bg-deep);
+            color: var(--stone-light);
+            min-height: 100vh;
+            overflow: hidden;
+        }
+
+        /* Header */
+        .header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 12px 20px;
+            background: var(--bg-mid);
+            border-bottom: 1px solid var(--stone-dark);
+        }
+
+        .brand {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .brand-icon {
+            font-size: 20px;
+            animation: flicker 2s infinite;
+        }
+
+        @keyframes flicker {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.8; }
+            70% { opacity: 1; }
+            75% { opacity: 0.7; }
+            80% { opacity: 1; }
+        }
+
+        .brand-text {
+            font-family: 'Press Start 2P', cursive;
+            font-size: 10px;
+            color: var(--stone-mid);
+        }
+
+        .brand-text span {
+            color: var(--accent-ember);
+            text-shadow: 0 0 10px rgba(224, 112, 32, 0.5);
+        }
+
+        .header-actions {
+            display: flex;
+            gap: 10px;
+        }
+
+        /* Buttons */
+        .btn {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 12px;
+            padding: 8px 16px;
+            border: 1px solid var(--stone-dark);
+            border-radius: 4px;
+            background: var(--bg-surface);
+            color: var(--stone-light);
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .btn:hover {
+            background: var(--stone-dark);
+            border-color: var(--stone-mid);
+            box-shadow: inset 0 0 10px rgba(224, 112, 32, 0.2);
+        }
+
+        .btn:focus {
+            outline: none;
+            box-shadow: 0 0 0 2px var(--mystic-glow);
+        }
+
+        .btn-primary {
+            background: var(--accent-ember);
+            border-color: var(--accent-ember);
+            color: var(--bg-deep);
+            font-weight: 600;
+        }
+
+        .btn-primary:hover {
+            background: var(--accent-ember-glow);
+            border-color: var(--accent-ember-glow);
+            box-shadow: 0 0 15px rgba(224, 112, 32, 0.4);
+        }
+
+        .btn-danger {
+            color: var(--accent-magma);
+        }
+
+        .btn-danger:hover {
+            background: var(--accent-magma);
+            border-color: var(--accent-magma);
+            color: var(--bg-deep);
+        }
+
+        /* Main Layout */
+        .main {
+            display: grid;
+            grid-template-columns: 1fr 300px;
+            height: calc(100vh - 53px);
+        }
+
+        /* Canvas Area */
+        .canvas-area {
+            display: flex;
+            flex-direction: column;
+            background: var(--bg-deep);
+            overflow: hidden;
+        }
+
+        .canvas-toolbar {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+            padding: 10px 16px;
+            background: var(--bg-mid);
+            border-bottom: 1px solid var(--stone-dark);
+            flex-wrap: wrap;
+        }
+
+        .toolbar-group {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .toolbar-label {
+            font-size: 11px;
+            color: var(--stone-mid);
+            text-transform: uppercase;
+        }
+
+        .zoom-buttons {
+            display: flex;
+            gap: 2px;
+        }
+
+        .zoom-btn {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 11px;
+            padding: 4px 8px;
+            border: 1px solid var(--stone-dark);
+            background: var(--bg-surface);
+            color: var(--stone-light);
+            cursor: pointer;
+            transition: all 0.15s;
+        }
+
+        .zoom-btn:first-child {
+            border-radius: 4px 0 0 4px;
+        }
+
+        .zoom-btn:last-child {
+            border-radius: 0 4px 4px 0;
+        }
+
+        .zoom-btn:hover {
+            background: var(--stone-dark);
+        }
+
+        .zoom-btn.active {
+            background: var(--mystic-glow);
+            border-color: var(--mystic-glow);
+            color: var(--bg-deep);
+        }
+
+        .toggle-btn {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 11px;
+            padding: 4px 10px;
+            border: 1px solid var(--stone-dark);
+            border-radius: 4px;
+            background: var(--bg-surface);
+            color: var(--stone-light);
+            cursor: pointer;
+        }
+
+        .toggle-btn.active {
+            background: var(--mystic-deep);
+            border-color: var(--mystic-glow);
+            color: var(--mystic-glow);
+        }
+
+        .selection-info {
+            font-size: 12px;
+            color: var(--stone-bright);
+            font-family: 'JetBrains Mono', monospace;
+        }
+
+        .selection-info .coord {
+            color: var(--accent-ember);
+        }
+
+        .image-info {
+            margin-left: auto;
+            font-size: 11px;
+            color: var(--stone-mid);
+        }
+
+        .canvas-wrapper {
+            flex: 1;
+            position: relative;
+            overflow: auto;
+            background: var(--bg-deep);
+        }
+
+        .canvas-wrapper::-webkit-scrollbar {
+            width: 10px;
+            height: 10px;
+        }
+
+        .canvas-wrapper::-webkit-scrollbar-track {
+            background: var(--bg-mid);
+        }
+
+        .canvas-wrapper::-webkit-scrollbar-thumb {
+            background: var(--stone-dark);
+            border-radius: 5px;
+        }
+
+        .canvas-wrapper::-webkit-scrollbar-thumb:hover {
+            background: var(--accent-ember);
+        }
+
+        .canvas-container {
+            position: relative;
+            display: inline-block;
+            margin: 20px;
+        }
+
+        #mainCanvas {
+            display: block;
+            image-rendering: pixelated;
+            image-rendering: crisp-edges;
+            cursor: crosshair;
+        }
+
+        #gridCanvas, #selectionCanvas {
+            position: absolute;
+            top: 0;
+            left: 0;
+            pointer-events: none;
+            image-rendering: pixelated;
+        }
+
+        #selectionCanvas {
+            pointer-events: auto;
+        }
+
+        .drop-zone {
+            position: absolute;
+            inset: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            background: var(--bg-mid);
+            border: 2px dashed var(--stone-dark);
+            margin: 20px;
+            border-radius: 8px;
+            transition: all 0.2s;
+        }
+
+        .drop-zone.drag-over {
+            border-color: var(--accent-ember);
+            background: var(--mystic-deep);
+        }
+
+        .drop-zone-icon {
+            font-size: 48px;
+            margin-bottom: 16px;
+            opacity: 0.5;
+        }
+
+        .drop-zone-text {
+            font-size: 14px;
+            color: var(--stone-mid);
+            margin-bottom: 8px;
+        }
+
+        .drop-zone-hint {
+            font-size: 11px;
+            color: var(--stone-dark);
+        }
+
+        /* Sidebar */
+        .sidebar {
+            display: flex;
+            flex-direction: column;
+            background: var(--bg-mid);
+            border-left: 1px solid var(--stone-dark);
+        }
+
+        .sidebar-section {
+            border-bottom: 1px solid var(--stone-dark);
+        }
+
+        .sidebar-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 12px 16px;
+            background: var(--bg-surface);
+            font-family: 'Press Start 2P', cursive;
+            font-size: 8px;
+            color: var(--stone-bright);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .sidebar-content {
+            padding: 12px;
+        }
+
+        /* Create Sprite Panel */
+        .create-sprite-panel {
+            display: none;
+        }
+
+        .create-sprite-panel.active {
+            display: block;
+        }
+
+        .form-group {
+            margin-bottom: 12px;
+        }
+
+        .form-label {
+            display: block;
+            font-size: 10px;
+            color: var(--stone-mid);
+            text-transform: uppercase;
+            margin-bottom: 6px;
+        }
+
+        .form-input {
+            width: 100%;
+            padding: 8px 10px;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 12px;
+            background: var(--bg-deep);
+            border: 1px solid var(--stone-dark);
+            border-radius: 4px;
+            color: var(--stone-bright);
+        }
+
+        .form-input:focus {
+            outline: none;
+            border-color: var(--mystic-glow);
+            box-shadow: 0 0 0 2px rgba(128, 96, 192, 0.2);
+        }
+
+        .preview-container {
+            display: flex;
+            gap: 12px;
+            margin: 12px 0;
+        }
+
+        .preview-box {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .preview-label {
+            font-size: 9px;
+            color: var(--stone-mid);
+            margin-bottom: 6px;
+            text-transform: uppercase;
+        }
+
+        .preview-canvas-wrapper {
+            background: repeating-conic-gradient(
+                var(--bg-surface) 0% 25%,
+                var(--bg-mid) 0% 50%
+            ) 50% / 16px 16px;
+            border: 1px solid var(--stone-dark);
+            border-radius: 4px;
+            padding: 4px;
+            min-width: 60px;
+            min-height: 60px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .preview-canvas {
+            image-rendering: pixelated;
+            image-rendering: crisp-edges;
+        }
+
+        .form-actions {
+            display: flex;
+            gap: 8px;
+            margin-top: 12px;
+        }
+
+        .form-actions .btn {
+            flex: 1;
+        }
+
+        /* Sprite Directory */
+        .sprite-list {
+            max-height: 300px;
+            overflow-y: auto;
+        }
+
+        .sprite-list::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        .sprite-list::-webkit-scrollbar-track {
+            background: var(--bg-mid);
+        }
+
+        .sprite-list::-webkit-scrollbar-thumb {
+            background: var(--stone-dark);
+            border-radius: 3px;
+        }
+
+        .sprite-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 8px 10px;
+            border: 1px solid transparent;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: all 0.15s;
+        }
+
+        .sprite-item:hover {
+            background: var(--bg-surface);
+            border-color: var(--stone-dark);
+        }
+
+        .sprite-item.selected {
+            background: var(--mystic-deep);
+            border-color: var(--mystic-glow);
+        }
+
+        .sprite-item.highlighted {
+            animation: pulse-highlight 1s ease-out;
+        }
+
+        @keyframes pulse-highlight {
+            0% { box-shadow: 0 0 0 0 var(--accent-ember); }
+            50% { box-shadow: 0 0 10px 2px var(--accent-ember); }
+            100% { box-shadow: 0 0 0 0 transparent; }
+        }
+
+        .sprite-thumb {
+            width: 32px;
+            height: 32px;
+            background: repeating-conic-gradient(
+                var(--bg-surface) 0% 25%,
+                var(--bg-mid) 0% 50%
+            ) 50% / 8px 8px;
+            border: 1px solid var(--stone-dark);
+            border-radius: 2px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+        }
+
+        .sprite-thumb canvas {
+            image-rendering: pixelated;
+        }
+
+        .sprite-info {
+            flex: 1;
+            min-width: 0;
+        }
+
+        .sprite-name {
+            font-size: 11px;
+            color: var(--stone-bright);
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .sprite-coords {
+            font-size: 10px;
+            color: var(--stone-mid);
+        }
+
+        .sprite-delete {
+            opacity: 0;
+            padding: 4px 6px;
+            font-size: 10px;
+            background: transparent;
+            border: none;
+            color: var(--accent-magma);
+            cursor: pointer;
+            transition: opacity 0.15s;
+        }
+
+        .sprite-item:hover .sprite-delete {
+            opacity: 1;
+        }
+
+        .sprite-delete:hover {
+            color: var(--stone-bright);
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 20px;
+            color: var(--stone-mid);
+            font-size: 11px;
+        }
+
+        /* Export Section */
+        .export-section {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            min-height: 0;
+        }
+
+        .export-actions {
+            display: flex;
+            gap: 8px;
+            padding: 12px;
+        }
+
+        .export-actions .btn {
+            flex: 1;
+            font-size: 11px;
+            padding: 6px 10px;
+        }
+
+        .json-preview {
+            flex: 1;
+            min-height: 0;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .json-preview-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 8px 12px;
+            background: var(--bg-surface);
+            font-size: 10px;
+            color: var(--stone-mid);
+            text-transform: uppercase;
+            cursor: pointer;
+        }
+
+        .json-preview-header:hover {
+            background: var(--stone-dark);
+        }
+
+        .json-preview-toggle {
+            font-size: 8px;
+        }
+
+        .json-preview-content {
+            flex: 1;
+            overflow: auto;
+            padding: 8px 12px;
+            background: var(--bg-deep);
+            font-size: 10px;
+            line-height: 1.5;
+            white-space: pre;
+        }
+
+        .json-preview-content::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        .json-preview-content::-webkit-scrollbar-thumb {
+            background: var(--stone-dark);
+            border-radius: 3px;
+        }
+
+        .json-preview.collapsed .json-preview-content {
+            display: none;
+        }
+
+        /* Hidden file input */
+        .hidden-input {
+            display: none;
+        }
+
+        /* Toast notifications */
+        .toast {
+            position: fixed;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%) translateY(100px);
+            padding: 12px 20px;
+            background: var(--bg-surface);
+            border: 1px solid var(--stone-dark);
+            border-radius: 4px;
+            font-size: 12px;
+            color: var(--stone-bright);
+            opacity: 0;
+            transition: all 0.3s;
+            z-index: 1000;
+        }
+
+        .toast.show {
+            transform: translateX(-50%) translateY(0);
+            opacity: 1;
+        }
+
+        .toast.success {
+            border-color: var(--accent-ember);
+        }
+
+        .toast.error {
+            border-color: var(--accent-magma);
+            color: var(--accent-magma);
+        }
+
+        /* Confirm dialog */
+        .dialog-overlay {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(13, 13, 20, 0.9);
+            z-index: 100;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .dialog-overlay.show {
+            display: flex;
+        }
+
+        .dialog {
+            background: var(--bg-mid);
+            border: 1px solid var(--stone-dark);
+            border-radius: 8px;
+            padding: 20px;
+            max-width: 400px;
+            text-align: center;
+        }
+
+        .dialog-title {
+            font-family: 'Press Start 2P', cursive;
+            font-size: 10px;
+            color: var(--stone-bright);
+            margin-bottom: 12px;
+        }
+
+        .dialog-message {
+            font-size: 12px;
+            color: var(--stone-light);
+            margin-bottom: 20px;
+        }
+
+        .dialog-actions {
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+        }
+    </style>
+</head>
+<body>
+    <!-- Header -->
+    <header class="header">
+        <div class="brand">
+            <span class="brand-icon">&#128293;</span>
+            <span class="brand-text">MANTLEBORN / <span>SPRITE-RITE</span></span>
+        </div>
+        <div class="header-actions">
+            <input type="file" id="fileInput" class="hidden-input" accept=".png,.jpg,.jpeg,.gif,.webp">
+            <button class="btn" id="loadImageBtn">Load Image</button>
+            <input type="file" id="importInput" class="hidden-input" accept=".json">
+            <button class="btn" id="importJsonBtn">Import JSON</button>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="main">
+        <!-- Canvas Area -->
+        <div class="canvas-area">
+            <div class="canvas-toolbar">
+                <div class="toolbar-group">
+                    <span class="toolbar-label">Zoom</span>
+                    <div class="zoom-buttons">
+                        <button class="zoom-btn" data-zoom="1">1x</button>
+                        <button class="zoom-btn" data-zoom="2">2x</button>
+                        <button class="zoom-btn active" data-zoom="4">4x</button>
+                        <button class="zoom-btn" data-zoom="8">8x</button>
+                        <button class="zoom-btn" data-zoom="16">16x</button>
+                    </div>
+                </div>
+
+                <div class="toolbar-group">
+                    <button class="toggle-btn active" id="gridToggle">
+                        <span>Grid</span>
+                    </button>
+                </div>
+
+                <div class="toolbar-group">
+                    <span class="selection-info" id="selectionInfo">
+                        Selection: <span class="coord">none</span>
+                    </span>
+                </div>
+
+                <span class="image-info" id="imageInfo">No image loaded</span>
+            </div>
+
+            <div class="canvas-wrapper" id="canvasWrapper">
+                <div class="drop-zone" id="dropZone">
+                    <div class="drop-zone-icon">&#128444;</div>
+                    <div class="drop-zone-text">Drop a sprite sheet here</div>
+                    <div class="drop-zone-hint">or click "Load Image" above</div>
+                </div>
+
+                <div class="canvas-container" id="canvasContainer" style="display: none;">
+                    <canvas id="mainCanvas"></canvas>
+                    <canvas id="gridCanvas"></canvas>
+                    <canvas id="selectionCanvas"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <!-- Sidebar -->
+        <aside class="sidebar">
+            <!-- Create Sprite Panel -->
+            <div class="sidebar-section create-sprite-panel" id="createPanel">
+                <div class="sidebar-header">
+                    Create Sprite
+                </div>
+                <div class="sidebar-content">
+                    <div class="form-group">
+                        <label class="form-label">Sprite Name *</label>
+                        <input type="text" class="form-input" id="spriteName" placeholder="hero_idle_01">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Description</label>
+                        <input type="text" class="form-input" id="spriteDesc" placeholder="Optional description">
+                    </div>
+
+                    <div class="preview-container">
+                        <div class="preview-box">
+                            <span class="preview-label">1x</span>
+                            <div class="preview-canvas-wrapper">
+                                <canvas class="preview-canvas" id="preview1x"></canvas>
+                            </div>
+                        </div>
+                        <div class="preview-box">
+                            <span class="preview-label">4x</span>
+                            <div class="preview-canvas-wrapper">
+                                <canvas class="preview-canvas" id="preview4x"></canvas>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="form-actions">
+                        <button class="btn btn-primary" id="saveSprite">Save Sprite</button>
+                        <button class="btn" id="cancelSprite">Cancel</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Sprite Directory -->
+            <div class="sidebar-section">
+                <div class="sidebar-header">
+                    Sprite Directory
+                    <span id="spriteCount">0</span>
+                </div>
+                <div class="sprite-list" id="spriteList">
+                    <div class="empty-state">No sprites defined yet.<br>Select an area to create one.</div>
+                </div>
+            </div>
+
+            <!-- Export Section -->
+            <div class="sidebar-section export-section">
+                <div class="export-actions">
+                    <button class="btn btn-primary" id="exportJson">Export JSON</button>
+                    <button class="btn" id="copyJson">Copy</button>
+                </div>
+                <div class="json-preview" id="jsonPreview">
+                    <div class="json-preview-header" id="jsonPreviewToggle">
+                        <span>JSON Preview</span>
+                        <span class="json-preview-toggle">&#9660;</span>
+                    </div>
+                    <div class="json-preview-content" id="jsonContent">{}</div>
+                </div>
+            </div>
+        </aside>
+    </main>
+
+    <!-- Toast notification -->
+    <div class="toast" id="toast"></div>
+
+    <!-- Confirm dialog -->
+    <div class="dialog-overlay" id="confirmDialog">
+        <div class="dialog">
+            <div class="dialog-title" id="dialogTitle">Confirm</div>
+            <div class="dialog-message" id="dialogMessage">Are you sure?</div>
+            <div class="dialog-actions">
+                <button class="btn btn-danger" id="dialogConfirm">Delete</button>
+                <button class="btn" id="dialogCancel">Cancel</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        /* ============================================
+           MANTLEBORN SPRITE-RITE - JavaScript
+           ============================================ */
+
+        // ==========================================
+        // State Management
+        // ==========================================
+        const state = {
+            image: null,
+            imageName: '',
+            imageWidth: 0,
+            imageHeight: 0,
+            zoom: 4,
+            showGrid: true,
+            selection: null,
+            sprites: [],
+            selectedSpriteIndex: -1,
+            editingSpriteIndex: -1,
+            isDragging: false,
+            dragStart: null,
+            isResizing: false,
+            resizeHandle: null
+        };
+
+        // ==========================================
+        // DOM Elements
+        // ==========================================
+        const elements = {
+            // File inputs
+            fileInput: document.getElementById('fileInput'),
+            importInput: document.getElementById('importInput'),
+            loadImageBtn: document.getElementById('loadImageBtn'),
+            importJsonBtn: document.getElementById('importJsonBtn'),
+
+            // Canvas elements
+            canvasWrapper: document.getElementById('canvasWrapper'),
+            canvasContainer: document.getElementById('canvasContainer'),
+            mainCanvas: document.getElementById('mainCanvas'),
+            gridCanvas: document.getElementById('gridCanvas'),
+            selectionCanvas: document.getElementById('selectionCanvas'),
+            dropZone: document.getElementById('dropZone'),
+
+            // Toolbar
+            zoomButtons: document.querySelectorAll('.zoom-btn'),
+            gridToggle: document.getElementById('gridToggle'),
+            selectionInfo: document.getElementById('selectionInfo'),
+            imageInfo: document.getElementById('imageInfo'),
+
+            // Create panel
+            createPanel: document.getElementById('createPanel'),
+            spriteName: document.getElementById('spriteName'),
+            spriteDesc: document.getElementById('spriteDesc'),
+            preview1x: document.getElementById('preview1x'),
+            preview4x: document.getElementById('preview4x'),
+            saveSprite: document.getElementById('saveSprite'),
+            cancelSprite: document.getElementById('cancelSprite'),
+
+            // Sprite list
+            spriteList: document.getElementById('spriteList'),
+            spriteCount: document.getElementById('spriteCount'),
+
+            // Export
+            exportJson: document.getElementById('exportJson'),
+            copyJson: document.getElementById('copyJson'),
+            jsonPreview: document.getElementById('jsonPreview'),
+            jsonPreviewToggle: document.getElementById('jsonPreviewToggle'),
+            jsonContent: document.getElementById('jsonContent'),
+
+            // Toast & Dialog
+            toast: document.getElementById('toast'),
+            confirmDialog: document.getElementById('confirmDialog'),
+            dialogTitle: document.getElementById('dialogTitle'),
+            dialogMessage: document.getElementById('dialogMessage'),
+            dialogConfirm: document.getElementById('dialogConfirm'),
+            dialogCancel: document.getElementById('dialogCancel')
+        };
+
+        // ==========================================
+        // Canvas Contexts
+        // ==========================================
+        const ctx = {
+            main: elements.mainCanvas.getContext('2d'),
+            grid: elements.gridCanvas.getContext('2d'),
+            selection: elements.selectionCanvas.getContext('2d')
+        };
+
+        // Disable image smoothing for pixel-perfect rendering
+        Object.values(ctx).forEach(c => {
+            c.imageSmoothingEnabled = false;
+        });
+
+        // ==========================================
+        // Utility Functions
+        // ==========================================
+        function showToast(message, type = 'success') {
+            elements.toast.textContent = message;
+            elements.toast.className = 'toast ' + type;
+            setTimeout(() => elements.toast.classList.add('show'), 10);
+            setTimeout(() => elements.toast.classList.remove('show'), 3000);
+        }
+
+        function screenToImage(screenX, screenY) {
+            const rect = elements.selectionCanvas.getBoundingClientRect();
+            const x = Math.floor((screenX - rect.left) / state.zoom);
+            const y = Math.floor((screenY - rect.top) / state.zoom);
+            return {
+                x: Math.max(0, Math.min(x, state.imageWidth - 1)),
+                y: Math.max(0, Math.min(y, state.imageHeight - 1))
+            };
+        }
+
+        function validateSpriteName(name) {
+            return /^[a-zA-Z][a-zA-Z0-9_]*$/.test(name);
+        }
+
+        function generateSpriteName() {
+            if (!state.selection) return 'sprite_01';
+            const { x, y, w, h } = state.selection;
+            return `sprite_${x}_${y}_${w}x${h}`;
+        }
+
+        // ==========================================
+        // Image Loading
+        // ==========================================
+        function loadImage(file) {
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                const img = new Image();
+                img.onload = () => {
+                    state.image = img;
+                    state.imageName = file.name;
+                    state.imageWidth = img.width;
+                    state.imageHeight = img.height;
+
+                    elements.dropZone.style.display = 'none';
+                    elements.canvasContainer.style.display = 'block';
+
+                    updateCanvasSize();
+                    render();
+
+                    elements.imageInfo.textContent = `${file.name} — ${img.width}×${img.height}px`;
+
+                    // Try to load saved session
+                    loadFromLocalStorage();
+                };
+                img.src = e.target.result;
+            };
+            reader.readAsDataURL(file);
+        }
+
+        // ==========================================
+        // Canvas Rendering
+        // ==========================================
+        function updateCanvasSize() {
+            const w = state.imageWidth * state.zoom;
+            const h = state.imageHeight * state.zoom;
+
+            [elements.mainCanvas, elements.gridCanvas, elements.selectionCanvas].forEach(canvas => {
+                canvas.width = w;
+                canvas.height = h;
+                canvas.style.width = w + 'px';
+                canvas.style.height = h + 'px';
+            });
+
+            // Re-disable smoothing after resize
+            Object.values(ctx).forEach(c => {
+                c.imageSmoothingEnabled = false;
+            });
+        }
+
+        function render() {
+            renderMain();
+            renderGrid();
+            renderSelection();
+        }
+
+        function renderMain() {
+            if (!state.image) return;
+
+            ctx.main.clearRect(0, 0, elements.mainCanvas.width, elements.mainCanvas.height);
+            ctx.main.drawImage(
+                state.image,
+                0, 0, state.imageWidth, state.imageHeight,
+                0, 0, state.imageWidth * state.zoom, state.imageHeight * state.zoom
+            );
+        }
+
+        function renderGrid() {
+            ctx.grid.clearRect(0, 0, elements.gridCanvas.width, elements.gridCanvas.height);
+
+            if (!state.showGrid || state.zoom < 2) return;
+
+            ctx.grid.strokeStyle = 'rgba(106, 106, 142, 0.25)';
+            ctx.grid.lineWidth = 1;
+
+            // Vertical lines
+            for (let x = 0; x <= state.imageWidth; x++) {
+                ctx.grid.beginPath();
+                ctx.grid.moveTo(x * state.zoom + 0.5, 0);
+                ctx.grid.lineTo(x * state.zoom + 0.5, elements.gridCanvas.height);
+                ctx.grid.stroke();
+            }
+
+            // Horizontal lines
+            for (let y = 0; y <= state.imageHeight; y++) {
+                ctx.grid.beginPath();
+                ctx.grid.moveTo(0, y * state.zoom + 0.5);
+                ctx.grid.lineTo(elements.gridCanvas.width, y * state.zoom + 0.5);
+                ctx.grid.stroke();
+            }
+        }
+
+        function renderSelection() {
+            ctx.selection.clearRect(0, 0, elements.selectionCanvas.width, elements.selectionCanvas.height);
+
+            // Draw saved sprites as outlines
+            state.sprites.forEach((sprite, index) => {
+                const isSelected = index === state.selectedSpriteIndex;
+                ctx.selection.strokeStyle = isSelected ? '#e07020' : 'rgba(128, 96, 192, 0.5)';
+                ctx.selection.lineWidth = isSelected ? 2 : 1;
+                ctx.selection.strokeRect(
+                    sprite.x * state.zoom + 0.5,
+                    sprite.y * state.zoom + 0.5,
+                    sprite.width * state.zoom - 1,
+                    sprite.height * state.zoom - 1
+                );
+            });
+
+            // Draw current selection
+            if (state.selection) {
+                const { x, y, w, h } = state.selection;
+
+                // Fill
+                ctx.selection.fillStyle = 'rgba(128, 96, 192, 0.3)';
+                ctx.selection.fillRect(
+                    x * state.zoom,
+                    y * state.zoom,
+                    w * state.zoom,
+                    h * state.zoom
+                );
+
+                // Border (dashed)
+                ctx.selection.strokeStyle = '#8060c0';
+                ctx.selection.lineWidth = 2;
+                ctx.selection.setLineDash([4, 4]);
+                ctx.selection.strokeRect(
+                    x * state.zoom + 0.5,
+                    y * state.zoom + 0.5,
+                    w * state.zoom - 1,
+                    h * state.zoom - 1
+                );
+                ctx.selection.setLineDash([]);
+
+                // Resize handles
+                const handleSize = 8;
+                ctx.selection.fillStyle = '#8060c0';
+
+                // Corner handles
+                const corners = [
+                    { x: x * state.zoom - handleSize/2, y: y * state.zoom - handleSize/2 },
+                    { x: (x + w) * state.zoom - handleSize/2, y: y * state.zoom - handleSize/2 },
+                    { x: x * state.zoom - handleSize/2, y: (y + h) * state.zoom - handleSize/2 },
+                    { x: (x + w) * state.zoom - handleSize/2, y: (y + h) * state.zoom - handleSize/2 }
+                ];
+
+                corners.forEach(corner => {
+                    ctx.selection.fillRect(corner.x, corner.y, handleSize, handleSize);
+                });
+            }
+        }
+
+        // ==========================================
+        // Selection Handling
+        // ==========================================
+        function updateSelectionInfo() {
+            if (state.selection) {
+                const { x, y, w, h } = state.selection;
+                elements.selectionInfo.innerHTML = `Selection: <span class="coord">x:${x} y:${y} w:${w} h:${h}</span>`;
+            } else {
+                elements.selectionInfo.innerHTML = `Selection: <span class="coord">none</span>`;
+            }
+        }
+
+        function getResizeHandle(imgX, imgY) {
+            if (!state.selection) return null;
+
+            const { x, y, w, h } = state.selection;
+            const threshold = 3 / state.zoom; // pixels tolerance
+
+            const nearLeft = Math.abs(imgX - x) < threshold;
+            const nearRight = Math.abs(imgX - (x + w)) < threshold;
+            const nearTop = Math.abs(imgY - y) < threshold;
+            const nearBottom = Math.abs(imgY - (y + h)) < threshold;
+
+            const inXRange = imgX >= x - threshold && imgX <= x + w + threshold;
+            const inYRange = imgY >= y - threshold && imgY <= y + h + threshold;
+
+            if (nearTop && nearLeft) return 'nw';
+            if (nearTop && nearRight) return 'ne';
+            if (nearBottom && nearLeft) return 'sw';
+            if (nearBottom && nearRight) return 'se';
+            if (nearTop && inXRange) return 'n';
+            if (nearBottom && inXRange) return 's';
+            if (nearLeft && inYRange) return 'w';
+            if (nearRight && inYRange) return 'e';
+
+            return null;
+        }
+
+        function handleSelectionStart(e) {
+            if (!state.image) return;
+
+            const imgCoords = screenToImage(e.clientX, e.clientY);
+            const handle = getResizeHandle(imgCoords.x, imgCoords.y);
+
+            if (handle && state.selection) {
+                // Start resizing
+                state.isResizing = true;
+                state.resizeHandle = handle;
+                state.dragStart = { ...state.selection };
+            } else {
+                // Start new selection
+                state.isDragging = true;
+                state.dragStart = imgCoords;
+                state.selection = { x: imgCoords.x, y: imgCoords.y, w: 1, h: 1 };
+                state.selectedSpriteIndex = -1;
+            }
+
+            updateSelectionInfo();
+            showCreatePanel();
+        }
+
+        function handleSelectionMove(e) {
+            if (!state.image) return;
+
+            const imgCoords = screenToImage(e.clientX, e.clientY);
+
+            if (state.isDragging) {
+                const startX = Math.min(state.dragStart.x, imgCoords.x);
+                const startY = Math.min(state.dragStart.y, imgCoords.y);
+                const endX = Math.max(state.dragStart.x, imgCoords.x) + 1;
+                const endY = Math.max(state.dragStart.y, imgCoords.y) + 1;
+
+                state.selection = {
+                    x: Math.max(0, startX),
+                    y: Math.max(0, startY),
+                    w: Math.min(endX - startX, state.imageWidth - startX),
+                    h: Math.min(endY - startY, state.imageHeight - startY)
+                };
+
+                updateSelectionInfo();
+                updatePreviews();
+                renderSelection();
+            } else if (state.isResizing) {
+                const { x, y, w, h } = state.dragStart;
+                let newX = x, newY = y, newW = w, newH = h;
+
+                const handle = state.resizeHandle;
+
+                if (handle.includes('w')) {
+                    newX = Math.max(0, Math.min(imgCoords.x, x + w - 1));
+                    newW = x + w - newX;
+                }
+                if (handle.includes('e')) {
+                    newW = Math.max(1, Math.min(imgCoords.x - x + 1, state.imageWidth - x));
+                }
+                if (handle.includes('n')) {
+                    newY = Math.max(0, Math.min(imgCoords.y, y + h - 1));
+                    newH = y + h - newY;
+                }
+                if (handle.includes('s')) {
+                    newH = Math.max(1, Math.min(imgCoords.y - y + 1, state.imageHeight - y));
+                }
+
+                state.selection = { x: newX, y: newY, w: newW, h: newH };
+
+                updateSelectionInfo();
+                updatePreviews();
+                renderSelection();
+            } else {
+                // Update cursor based on hover
+                const handle = getResizeHandle(imgCoords.x, imgCoords.y);
+                if (handle) {
+                    const cursors = {
+                        'nw': 'nwse-resize', 'se': 'nwse-resize',
+                        'ne': 'nesw-resize', 'sw': 'nesw-resize',
+                        'n': 'ns-resize', 's': 'ns-resize',
+                        'e': 'ew-resize', 'w': 'ew-resize'
+                    };
+                    elements.selectionCanvas.style.cursor = cursors[handle];
+                } else {
+                    elements.selectionCanvas.style.cursor = 'crosshair';
+                }
+            }
+        }
+
+        function handleSelectionEnd() {
+            if (state.isDragging || state.isResizing) {
+                state.isDragging = false;
+                state.isResizing = false;
+                state.resizeHandle = null;
+
+                // Validate selection
+                if (state.selection && (state.selection.w < 1 || state.selection.h < 1)) {
+                    state.selection = null;
+                    hideCreatePanel();
+                } else {
+                    updatePreviews();
+                    // Auto-suggest name if empty
+                    if (!elements.spriteName.value) {
+                        elements.spriteName.value = generateSpriteName();
+                    }
+                }
+            }
+        }
+
+        // ==========================================
+        // Create Sprite Panel
+        // ==========================================
+        function showCreatePanel() {
+            elements.createPanel.classList.add('active');
+        }
+
+        function hideCreatePanel() {
+            elements.createPanel.classList.remove('active');
+            elements.spriteName.value = '';
+            elements.spriteDesc.value = '';
+            state.editingSpriteIndex = -1;
+        }
+
+        function updatePreviews() {
+            if (!state.selection || !state.image) return;
+
+            const { x, y, w, h } = state.selection;
+
+            // 1x preview
+            elements.preview1x.width = w;
+            elements.preview1x.height = h;
+            const ctx1 = elements.preview1x.getContext('2d');
+            ctx1.imageSmoothingEnabled = false;
+            ctx1.drawImage(state.image, x, y, w, h, 0, 0, w, h);
+
+            // 4x preview
+            elements.preview4x.width = w * 4;
+            elements.preview4x.height = h * 4;
+            const ctx4 = elements.preview4x.getContext('2d');
+            ctx4.imageSmoothingEnabled = false;
+            ctx4.drawImage(state.image, x, y, w, h, 0, 0, w * 4, h * 4);
+        }
+
+        function saveSprite() {
+            const name = elements.spriteName.value.trim();
+            const desc = elements.spriteDesc.value.trim();
+
+            if (!name) {
+                showToast('Please enter a sprite name', 'error');
+                return;
+            }
+
+            if (!validateSpriteName(name)) {
+                showToast('Name must start with a letter and contain only letters, numbers, underscores', 'error');
+                return;
+            }
+
+            if (!state.selection) {
+                showToast('Please make a selection first', 'error');
+                return;
+            }
+
+            const sprite = {
+                name,
+                description: desc,
+                x: state.selection.x,
+                y: state.selection.y,
+                width: state.selection.w,
+                height: state.selection.h
+            };
+
+            if (state.editingSpriteIndex >= 0) {
+                state.sprites[state.editingSpriteIndex] = sprite;
+                showToast('Sprite updated!');
+            } else {
+                state.sprites.push(sprite);
+                showToast('Sprite saved!');
+            }
+
+            state.selection = null;
+            hideCreatePanel();
+            updateSpriteList();
+            updateJsonPreview();
+            saveToLocalStorage();
+            render();
+        }
+
+        function cancelSprite() {
+            state.selection = null;
+            hideCreatePanel();
+            updateSelectionInfo();
+            renderSelection();
+        }
+
+        // ==========================================
+        // Sprite Directory
+        // ==========================================
+        function updateSpriteList() {
+            elements.spriteCount.textContent = state.sprites.length;
+
+            if (state.sprites.length === 0) {
+                elements.spriteList.innerHTML = '<div class="empty-state">No sprites defined yet.<br>Select an area to create one.</div>';
+                return;
+            }
+
+            elements.spriteList.innerHTML = state.sprites.map((sprite, index) => {
+                const isSelected = index === state.selectedSpriteIndex;
+                return `
+                    <div class="sprite-item ${isSelected ? 'selected' : ''}" data-index="${index}">
+                        <div class="sprite-thumb">
+                            <canvas width="32" height="32" data-sprite-index="${index}"></canvas>
+                        </div>
+                        <div class="sprite-info">
+                            <div class="sprite-name">${sprite.name}</div>
+                            <div class="sprite-coords">(${sprite.x},${sprite.y}) ${sprite.width}×${sprite.height}</div>
+                        </div>
+                        <button class="sprite-delete" data-index="${index}">×</button>
+                    </div>
+                `;
+            }).join('');
+
+            // Render thumbnails
+            state.sprites.forEach((sprite, index) => {
+                const canvas = elements.spriteList.querySelector(`canvas[data-sprite-index="${index}"]`);
+                if (canvas && state.image) {
+                    const thumbCtx = canvas.getContext('2d');
+                    thumbCtx.imageSmoothingEnabled = false;
+
+                    // Scale to fit in 32x32
+                    const scale = Math.min(32 / sprite.width, 32 / sprite.height);
+                    const destW = Math.floor(sprite.width * scale);
+                    const destH = Math.floor(sprite.height * scale);
+                    const offsetX = Math.floor((32 - destW) / 2);
+                    const offsetY = Math.floor((32 - destH) / 2);
+
+                    thumbCtx.clearRect(0, 0, 32, 32);
+                    thumbCtx.drawImage(
+                        state.image,
+                        sprite.x, sprite.y, sprite.width, sprite.height,
+                        offsetX, offsetY, destW, destH
+                    );
+                }
+            });
+
+            // Add click handlers
+            elements.spriteList.querySelectorAll('.sprite-item').forEach(item => {
+                item.addEventListener('click', (e) => {
+                    if (e.target.classList.contains('sprite-delete')) return;
+                    const index = parseInt(item.dataset.index);
+                    selectSprite(index);
+                });
+            });
+
+            elements.spriteList.querySelectorAll('.sprite-delete').forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    const index = parseInt(btn.dataset.index);
+                    confirmDeleteSprite(index);
+                });
+            });
+        }
+
+        function selectSprite(index) {
+            state.selectedSpriteIndex = index;
+            const sprite = state.sprites[index];
+
+            // Set up for editing
+            state.selection = {
+                x: sprite.x,
+                y: sprite.y,
+                w: sprite.width,
+                h: sprite.height
+            };
+            state.editingSpriteIndex = index;
+
+            elements.spriteName.value = sprite.name;
+            elements.spriteDesc.value = sprite.description || '';
+
+            showCreatePanel();
+            updateSelectionInfo();
+            updatePreviews();
+            updateSpriteList();
+            renderSelection();
+
+            // Scroll to sprite in canvas
+            const centerX = (sprite.x + sprite.width / 2) * state.zoom;
+            const centerY = (sprite.y + sprite.height / 2) * state.zoom;
+            elements.canvasWrapper.scrollTo({
+                left: centerX - elements.canvasWrapper.clientWidth / 2,
+                top: centerY - elements.canvasWrapper.clientHeight / 2,
+                behavior: 'smooth'
+            });
+        }
+
+        let pendingDeleteIndex = -1;
+
+        function confirmDeleteSprite(index) {
+            pendingDeleteIndex = index;
+            const sprite = state.sprites[index];
+            elements.dialogTitle.textContent = 'Delete Sprite?';
+            elements.dialogMessage.textContent = `Are you sure you want to delete "${sprite.name}"?`;
+            elements.confirmDialog.classList.add('show');
+        }
+
+        function deleteSprite() {
+            if (pendingDeleteIndex >= 0) {
+                state.sprites.splice(pendingDeleteIndex, 1);
+                if (state.selectedSpriteIndex === pendingDeleteIndex) {
+                    state.selectedSpriteIndex = -1;
+                    state.selection = null;
+                    hideCreatePanel();
+                } else if (state.selectedSpriteIndex > pendingDeleteIndex) {
+                    state.selectedSpriteIndex--;
+                }
+                pendingDeleteIndex = -1;
+
+                updateSpriteList();
+                updateJsonPreview();
+                saveToLocalStorage();
+                render();
+                showToast('Sprite deleted');
+            }
+            elements.confirmDialog.classList.remove('show');
+        }
+
+        // ==========================================
+        // JSON Export/Import
+        // ==========================================
+        function generateJson() {
+            return {
+                spriteSheet: state.imageName,
+                exportedAt: new Date().toISOString(),
+                sprites: state.sprites.map(s => ({
+                    name: s.name,
+                    description: s.description || '',
+                    x: s.x,
+                    y: s.y,
+                    width: s.width,
+                    height: s.height
+                }))
+            };
+        }
+
+        function updateJsonPreview() {
+            const json = generateJson();
+            elements.jsonContent.textContent = JSON.stringify(json, null, 2);
+        }
+
+        function exportJson() {
+            const json = generateJson();
+            const blob = new Blob([JSON.stringify(json, null, 2)], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = state.imageName.replace(/\.[^.]+$/, '') + '-sprites.json';
+            a.click();
+            URL.revokeObjectURL(url);
+            showToast('JSON exported!');
+        }
+
+        function copyJson() {
+            const json = generateJson();
+            navigator.clipboard.writeText(JSON.stringify(json, null, 2))
+                .then(() => showToast('JSON copied to clipboard!'))
+                .catch(() => showToast('Failed to copy', 'error'));
+        }
+
+        function importJson(file) {
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                try {
+                    const data = JSON.parse(e.target.result);
+
+                    if (!data.sprites || !Array.isArray(data.sprites)) {
+                        throw new Error('Invalid JSON format');
+                    }
+
+                    state.sprites = data.sprites.map(s => ({
+                        name: s.name,
+                        description: s.description || '',
+                        x: s.x,
+                        y: s.y,
+                        width: s.width,
+                        height: s.height
+                    }));
+
+                    updateSpriteList();
+                    updateJsonPreview();
+                    saveToLocalStorage();
+                    render();
+
+                    showToast(`Imported ${state.sprites.length} sprites!`);
+                } catch (err) {
+                    showToast('Failed to parse JSON: ' + err.message, 'error');
+                }
+            };
+            reader.readAsText(file);
+        }
+
+        // ==========================================
+        // Local Storage
+        // ==========================================
+        function getStorageKey() {
+            return 'spriteRite_session_' + (state.imageName || 'default');
+        }
+
+        function saveToLocalStorage() {
+            if (!state.imageName) return;
+            const data = {
+                sprites: state.sprites,
+                savedAt: new Date().toISOString()
+            };
+            localStorage.setItem(getStorageKey(), JSON.stringify(data));
+        }
+
+        function loadFromLocalStorage() {
+            const data = localStorage.getItem(getStorageKey());
+            if (data) {
+                try {
+                    const parsed = JSON.parse(data);
+                    state.sprites = parsed.sprites || [];
+                    updateSpriteList();
+                    updateJsonPreview();
+                    render();
+                } catch (e) {
+                    console.warn('Failed to load session:', e);
+                }
+            }
+        }
+
+        // ==========================================
+        // Event Listeners
+        // ==========================================
+
+        // File loading
+        elements.loadImageBtn.addEventListener('click', () => elements.fileInput.click());
+        elements.fileInput.addEventListener('change', (e) => {
+            if (e.target.files[0]) loadImage(e.target.files[0]);
+        });
+
+        elements.importJsonBtn.addEventListener('click', () => elements.importInput.click());
+        elements.importInput.addEventListener('change', (e) => {
+            if (e.target.files[0]) importJson(e.target.files[0]);
+        });
+
+        // Drag and drop
+        elements.dropZone.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            elements.dropZone.classList.add('drag-over');
+        });
+
+        elements.dropZone.addEventListener('dragleave', () => {
+            elements.dropZone.classList.remove('drag-over');
+        });
+
+        elements.dropZone.addEventListener('drop', (e) => {
+            e.preventDefault();
+            elements.dropZone.classList.remove('drag-over');
+            const file = e.dataTransfer.files[0];
+            if (file && file.type.startsWith('image/')) {
+                loadImage(file);
+            }
+        });
+
+        // Also allow drop on canvas
+        elements.canvasWrapper.addEventListener('dragover', (e) => e.preventDefault());
+        elements.canvasWrapper.addEventListener('drop', (e) => {
+            e.preventDefault();
+            const file = e.dataTransfer.files[0];
+            if (file && file.type.startsWith('image/')) {
+                loadImage(file);
+            }
+        });
+
+        // Zoom controls
+        elements.zoomButtons.forEach(btn => {
+            btn.addEventListener('click', () => {
+                state.zoom = parseInt(btn.dataset.zoom);
+                elements.zoomButtons.forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                updateCanvasSize();
+                render();
+            });
+        });
+
+        // Grid toggle
+        elements.gridToggle.addEventListener('click', () => {
+            state.showGrid = !state.showGrid;
+            elements.gridToggle.classList.toggle('active', state.showGrid);
+            renderGrid();
+        });
+
+        // Selection canvas events
+        elements.selectionCanvas.addEventListener('mousedown', handleSelectionStart);
+        window.addEventListener('mousemove', handleSelectionMove);
+        window.addEventListener('mouseup', handleSelectionEnd);
+
+        // Create panel
+        elements.saveSprite.addEventListener('click', saveSprite);
+        elements.cancelSprite.addEventListener('click', cancelSprite);
+
+        // Export
+        elements.exportJson.addEventListener('click', exportJson);
+        elements.copyJson.addEventListener('click', copyJson);
+
+        // JSON preview toggle
+        elements.jsonPreviewToggle.addEventListener('click', () => {
+            elements.jsonPreview.classList.toggle('collapsed');
+            elements.jsonPreviewToggle.querySelector('.json-preview-toggle').textContent =
+                elements.jsonPreview.classList.contains('collapsed') ? '▶' : '▼';
+        });
+
+        // Confirm dialog
+        elements.dialogConfirm.addEventListener('click', deleteSprite);
+        elements.dialogCancel.addEventListener('click', () => {
+            pendingDeleteIndex = -1;
+            elements.confirmDialog.classList.remove('show');
+        });
+
+        // Keyboard shortcuts
+        window.addEventListener('keydown', (e) => {
+            // Escape to cancel selection
+            if (e.key === 'Escape') {
+                if (state.selection) {
+                    cancelSprite();
+                }
+            }
+            // Enter to save sprite
+            if (e.key === 'Enter' && state.selection && elements.createPanel.classList.contains('active')) {
+                if (document.activeElement === elements.spriteName || document.activeElement === elements.spriteDesc) {
+                    saveSprite();
+                }
+            }
+            // Delete selected sprite
+            if (e.key === 'Delete' && state.selectedSpriteIndex >= 0) {
+                confirmDeleteSprite(state.selectedSpriteIndex);
+            }
+        });
+
+        // Initialize
+        updateJsonPreview();
+    </script>
+</body>
+</html>
