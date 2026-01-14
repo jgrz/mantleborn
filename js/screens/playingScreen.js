@@ -29,7 +29,11 @@ const COLORS = {
     platform: '#2a2a38',
     platformHighlight: '#3a3a48',
     tutorial: '#9d8cff',
-    tutorialDim: '#6a5aaa'
+    tutorialDim: '#6a5aaa',
+    vine: '#3d6b3d',
+    vineLight: '#4a8a4a',
+    vineDark: '#2d4a2d',
+    vineLeaf: '#5a9a5a'
 };
 
 // Physics constants
@@ -240,23 +244,22 @@ class Player {
     }
 
     checkWallTouch(room) {
-        // Check left
-        const leftCheck = { x: this.x - 2, y: this.y + 4, width: 2, height: this.height - 8 };
-        for (const platform of room.platforms) {
-            if (this.rectIntersects(leftCheck, platform)) {
-                return -1;
-            }
-        }
-        if (this.x <= room.bounds.left + 2) return -1;
+        // Only allow wall slide on vines, not regular walls
+        const checkBox = {
+            x: this.x - 2,
+            y: this.y + 2,
+            width: this.width + 4,
+            height: this.height - 4
+        };
 
-        // Check right
-        const rightCheck = { x: this.x + this.width, y: this.y + 4, width: 2, height: this.height - 8 };
-        for (const platform of room.platforms) {
-            if (this.rectIntersects(rightCheck, platform)) {
-                return 1;
+        for (const vine of room.vines) {
+            if (this.rectIntersects(checkBox, vine)) {
+                // Determine which side of player the vine is on
+                const playerCenter = this.x + this.width / 2;
+                const vineCenter = vine.x + vine.width / 2;
+                return vineCenter < playerCenter ? -1 : 1;
             }
         }
-        if (this.x + this.width >= room.bounds.right - 2) return 1;
 
         return 0;
     }
@@ -514,18 +517,30 @@ class Room {
             // Gap that needs dash or double jump
             { x: 260, y: 110, width: 44, height: 8 },
 
-            // Wall jump section - two walls close together
-            { x: 340, y: 40, width: 12, height: 100 },
-            { x: 390, y: 40, width: 12, height: 100 },
-            { x: 355, y: 50, width: 32, height: 8 }, // Reward platform at top
+            // Vine climb section - two walls with vines
+            { x: 330, y: 20, width: 12, height: 144 },
+            { x: 400, y: 20, width: 12, height: 144 },
+            { x: 350, y: 30, width: 44, height: 8 }, // Reward platform at top
 
             // High platform for mantle practice
-            { x: 460, y: 90, width: 50, height: 8 },
+            { x: 480, y: 90, width: 50, height: 8 },
 
             // More platforms
-            { x: 540, y: 120, width: 40, height: 8 },
-            { x: 620, y: 95, width: 52, height: 8 },
-            { x: 700, y: 115, width: 44, height: 8 },
+            { x: 560, y: 120, width: 40, height: 8 },
+            { x: 640, y: 95, width: 52, height: 8 },
+            { x: 720, y: 115, width: 44, height: 8 },
+        ];
+
+        // Vines - climbable surfaces on walls (only these allow wall slide)
+        this.vines = [
+            // Vine climb challenge - alternating vines force wall-to-wall jumping
+            // Left wall vines
+            { x: 330, y: 110, width: 6, height: 30, side: 'right' },  // Bottom left
+            { x: 330, y: 50, width: 6, height: 25, side: 'right' },   // Top left
+
+            // Right wall vines
+            { x: 406, y: 80, width: 6, height: 30, side: 'left' },    // Middle right
+            { x: 406, y: 30, width: 6, height: 25, side: 'left' },    // Top right
         ];
 
         // Decorative elements (background stones)
@@ -582,11 +597,52 @@ class Room {
             }
         }
 
+        // Vines (rendered on top of walls)
+        this.renderVines(ctx, cameraX);
+
         // Floor
         this.renderFloor(ctx, cameraX);
 
         // Walls
         this.renderWalls(ctx, cameraX);
+    }
+
+    renderVines(ctx, cameraX) {
+        for (const vine of this.vines) {
+            const screenX = vine.x - cameraX;
+            if (screenX > -vine.width - 10 && screenX < this.screenWidth + 10) {
+                // Main vine stem
+                ctx.fillStyle = COLORS.vine;
+                ctx.fillRect(screenX + 1, vine.y, vine.width - 2, vine.height);
+
+                // Lighter edge (toward light)
+                ctx.fillStyle = COLORS.vineLight;
+                ctx.fillRect(screenX + vine.width - 2, vine.y, 1, vine.height);
+
+                // Darker edge
+                ctx.fillStyle = COLORS.vineDark;
+                ctx.fillRect(screenX + 1, vine.y, 1, vine.height);
+
+                // Leaves/fronds along the vine
+                const leafCount = Math.floor(vine.height / 10);
+                for (let i = 0; i < leafCount; i++) {
+                    const leafY = vine.y + 5 + i * 10 + (i % 2) * 3;
+                    const leafSide = (i % 2 === 0) ? -1 : 1;
+                    const leafX = screenX + (leafSide > 0 ? vine.width - 1 : 1);
+
+                    ctx.fillStyle = COLORS.vineLeaf;
+                    // Small leaf shape
+                    ctx.fillRect(leafX + leafSide * 1, leafY, 2, 1);
+                    ctx.fillRect(leafX + leafSide * 2, leafY + 1, 2, 1);
+                    ctx.fillRect(leafX + leafSide * 2, leafY + 2, 1, 1);
+                }
+
+                // Top tendril
+                ctx.fillStyle = COLORS.vineLight;
+                ctx.fillRect(screenX + 2, vine.y - 2, 1, 3);
+                ctx.fillRect(screenX + 3, vine.y - 3, 1, 2);
+            }
+        }
     }
 
     renderBackground(ctx, cameraX) {
@@ -690,7 +746,7 @@ class Tutorial {
             { key: 'jump', text: '[SPACE] to Jump', shown: false },
             { key: 'doubleJump', text: '[SPACE] again for Double Jump!', shown: false },
             { key: 'dash', text: '[SHIFT] to Dash', shown: false },
-            { key: 'wallSlide', text: 'Hold toward wall to Wall Slide', shown: false },
+            { key: 'wallSlide', text: 'Vines let you Wall Slide!', shown: false },
             { key: 'wallJump', text: '[SPACE] off wall to Wall Jump!', shown: false },
             { key: 'groundPound', text: '[DOWN] in air for Ground Pound', shown: false },
             { key: 'mantle', text: 'Approach ledges to auto-Mantle', shown: false },
