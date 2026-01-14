@@ -216,8 +216,10 @@ class Player {
 
         // Sprite animation (set by PlayingScreen after sprite loads)
         this.animator = null;
-        this.spriteOffsetX = -5;  // Offset to center sprite on collision box
-        this.spriteOffsetY = -11; // Offset to align sprite bottom with collision box bottom
+        // Offset to center 54px wide sprite on 12px collision box: (12-54)/2 = -21
+        // Offset to align 90px tall sprite bottom with 16px collision box bottom: 16-90 = -74
+        this.spriteOffsetX = -21;
+        this.spriteOffsetY = -74;
     }
 
     /**
