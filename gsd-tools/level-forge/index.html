@@ -1,0 +1,1233 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Level Forge | Mantleborn Dev Tools</title>
+    <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+    <style>
+        /* ============================================
+           MANTLEBORN LEVEL-FORGE - CSS
+           ============================================ */
+
+        :root {
+            /* Backgrounds */
+            --bg-deep: #0d0d14;
+            --bg-mid: #1a1a2e;
+            --bg-surface: #252542;
+
+            /* Accents - ember warmth */
+            --accent-ember: #e07020;
+            --accent-ember-glow: #ff9040;
+            --accent-magma: #c04020;
+
+            /* Stone/neutral tones */
+            --stone-dark: #3a3a5c;
+            --stone-mid: #6a6a8e;
+            --stone-light: #9a9abe;
+            --stone-bright: #d0d0e8;
+
+            /* Purple undertones */
+            --mystic-deep: #2a1a3e;
+            --mystic-glow: #8060c0;
+
+            /* Tile states */
+            --tile-undefined: transparent;
+            --tile-undefined-hover: rgba(255, 255, 255, 0.05);
+            --tile-open: #2a5a30;
+            --tile-open-bright: #3a7a40;
+            --tile-obstruction: #6a2a2a;
+            --tile-obstruction-bright: #8a3a3a;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'JetBrains Mono', monospace;
+            background: var(--bg-deep);
+            color: var(--stone-light);
+            min-height: 100vh;
+            overflow: hidden;
+        }
+
+        /* Header */
+        .header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 12px 20px;
+            background: var(--bg-mid);
+            border-bottom: 1px solid var(--stone-dark);
+        }
+
+        .brand {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .brand-icon {
+            font-size: 20px;
+            animation: flicker 2s infinite;
+        }
+
+        @keyframes flicker {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.8; }
+            70% { opacity: 1; }
+            75% { opacity: 0.7; }
+            80% { opacity: 1; }
+        }
+
+        .brand-text {
+            font-family: 'Press Start 2P', cursive;
+            font-size: 10px;
+            color: var(--stone-mid);
+        }
+
+        .brand-text span {
+            color: var(--accent-ember);
+            text-shadow: 0 0 10px rgba(224, 112, 32, 0.5);
+        }
+
+        .header-actions {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+
+        /* Buttons */
+        .btn {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 12px;
+            padding: 8px 16px;
+            border: 1px solid var(--stone-dark);
+            border-radius: 4px;
+            background: var(--bg-surface);
+            color: var(--stone-light);
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .btn:hover {
+            background: var(--stone-dark);
+            border-color: var(--stone-mid);
+        }
+
+        .btn:focus {
+            outline: none;
+            box-shadow: 0 0 0 2px var(--mystic-glow);
+        }
+
+        .btn-primary {
+            background: var(--accent-ember);
+            border-color: var(--accent-ember);
+            color: var(--bg-deep);
+            font-weight: 600;
+        }
+
+        .btn-primary:hover {
+            background: var(--accent-ember-glow);
+            border-color: var(--accent-ember-glow);
+        }
+
+        .btn-small {
+            padding: 4px 8px;
+            font-size: 10px;
+        }
+
+        .btn-danger {
+            background: var(--accent-magma);
+            border-color: var(--accent-magma);
+            color: white;
+        }
+
+        .btn-danger:hover {
+            background: #d04030;
+            border-color: #d04030;
+        }
+
+        /* Main Layout */
+        .main {
+            display: grid;
+            grid-template-columns: 1fr 320px;
+            height: calc(100vh - 53px);
+        }
+
+        /* Left Panel - Grid Editor */
+        .editor-panel {
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            min-height: 0;
+        }
+
+        /* Toolbar */
+        .toolbar {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            padding: 12px 16px;
+            background: var(--bg-mid);
+            border-bottom: 1px solid var(--stone-dark);
+            flex-shrink: 0;
+        }
+
+        .toolbar-group {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+        .toolbar-label {
+            font-size: 10px;
+            color: var(--stone-mid);
+            text-transform: uppercase;
+            margin-right: 8px;
+        }
+
+        .tool-btn {
+            width: 36px;
+            height: 36px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 16px;
+            padding: 0;
+            border-radius: 4px;
+            background: var(--bg-surface);
+            border: 2px solid var(--stone-dark);
+            color: var(--stone-light);
+            cursor: pointer;
+            transition: all 0.15s;
+        }
+
+        .tool-btn:hover {
+            border-color: var(--stone-mid);
+            background: var(--stone-dark);
+        }
+
+        .tool-btn.active {
+            border-color: var(--accent-ember);
+            background: var(--mystic-deep);
+            color: var(--accent-ember);
+        }
+
+        .state-btn {
+            width: 36px;
+            height: 36px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 14px;
+            padding: 0;
+            border-radius: 4px;
+            border: 2px solid var(--stone-dark);
+            cursor: pointer;
+            transition: all 0.15s;
+        }
+
+        .state-btn.active {
+            border-color: var(--accent-ember);
+            box-shadow: 0 0 8px rgba(224, 112, 32, 0.5);
+        }
+
+        .state-btn[data-state="undefined"] {
+            background: repeating-conic-gradient(
+                var(--bg-surface) 0% 25%,
+                var(--bg-mid) 0% 50%
+            ) 50% / 8px 8px;
+        }
+
+        .state-btn[data-state="open"] {
+            background: var(--tile-open);
+        }
+
+        .state-btn[data-state="obstruction"] {
+            background: var(--tile-obstruction);
+        }
+
+        .toolbar-divider {
+            width: 1px;
+            height: 28px;
+            background: var(--stone-dark);
+        }
+
+        /* Grid Container */
+        .grid-container {
+            flex: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+            overflow: auto;
+            background: var(--bg-deep);
+        }
+
+        .grid-wrapper {
+            position: relative;
+            background: var(--bg-mid);
+            border: 2px solid var(--stone-dark);
+            border-radius: 4px;
+            padding: 2px;
+        }
+
+        .grid {
+            display: grid;
+            gap: 1px;
+            background: var(--stone-dark);
+        }
+
+        .tile {
+            width: 24px;
+            height: 24px;
+            background: var(--bg-mid);
+            cursor: pointer;
+            transition: background 0.1s;
+            position: relative;
+        }
+
+        .tile:hover {
+            background: var(--tile-undefined-hover);
+        }
+
+        .tile[data-state="open"] {
+            background: var(--tile-open);
+        }
+
+        .tile[data-state="open"]:hover {
+            background: var(--tile-open-bright);
+        }
+
+        .tile[data-state="obstruction"] {
+            background: var(--tile-obstruction);
+        }
+
+        .tile[data-state="obstruction"]:hover {
+            background: var(--tile-obstruction-bright);
+        }
+
+        .tile.selected {
+            outline: 2px solid var(--accent-ember);
+            outline-offset: -2px;
+            z-index: 1;
+        }
+
+        .tile.preview {
+            opacity: 0.7;
+        }
+
+        /* Selection box */
+        .selection-box {
+            position: absolute;
+            border: 2px dashed var(--accent-ember);
+            background: rgba(224, 112, 32, 0.1);
+            pointer-events: none;
+            display: none;
+        }
+
+        /* Right Panel - Settings & Output */
+        .right-panel {
+            display: flex;
+            flex-direction: column;
+            background: var(--bg-mid);
+            border-left: 1px solid var(--stone-dark);
+            overflow: hidden;
+            min-height: 0;
+        }
+
+        .section {
+            padding: 16px;
+            border-bottom: 1px solid var(--stone-dark);
+            flex-shrink: 0;
+        }
+
+        .section-header {
+            font-family: 'Press Start 2P', cursive;
+            font-size: 8px;
+            color: var(--stone-bright);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 12px;
+        }
+
+        .form-group {
+            margin-bottom: 12px;
+        }
+
+        .form-label {
+            display: block;
+            font-size: 10px;
+            color: var(--stone-mid);
+            text-transform: uppercase;
+            margin-bottom: 6px;
+        }
+
+        .form-input {
+            width: 100%;
+            padding: 8px 10px;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 12px;
+            background: var(--bg-deep);
+            border: 1px solid var(--stone-dark);
+            border-radius: 4px;
+            color: var(--stone-bright);
+        }
+
+        .form-input:focus {
+            outline: none;
+            border-color: var(--mystic-glow);
+        }
+
+        .form-row {
+            display: flex;
+            gap: 12px;
+        }
+
+        .form-row .form-group {
+            flex: 1;
+        }
+
+        /* Stats */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 8px;
+        }
+
+        .stat-item {
+            padding: 8px;
+            background: var(--bg-surface);
+            border-radius: 4px;
+            text-align: center;
+        }
+
+        .stat-value {
+            font-size: 16px;
+            font-weight: 600;
+            color: var(--stone-bright);
+        }
+
+        .stat-label {
+            font-size: 8px;
+            color: var(--stone-mid);
+            text-transform: uppercase;
+            margin-top: 4px;
+        }
+
+        .stat-item.open .stat-value {
+            color: var(--tile-open-bright);
+        }
+
+        .stat-item.obstruction .stat-value {
+            color: var(--tile-obstruction-bright);
+        }
+
+        /* Export Section */
+        .export-section {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            padding: 16px;
+            min-height: 0;
+            overflow: hidden;
+        }
+
+        .export-actions {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 12px;
+            flex-shrink: 0;
+        }
+
+        .export-actions .btn {
+            flex: 1;
+        }
+
+        .json-preview {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            min-height: 0;
+            overflow: hidden;
+        }
+
+        .json-preview-header {
+            padding: 8px 12px;
+            background: var(--bg-surface);
+            font-size: 10px;
+            color: var(--stone-mid);
+            text-transform: uppercase;
+            flex-shrink: 0;
+        }
+
+        .json-preview-content {
+            flex: 1;
+            overflow: auto;
+            padding: 8px 12px;
+            background: var(--bg-deep);
+            font-size: 10px;
+            line-height: 1.5;
+            white-space: pre;
+            min-height: 0;
+        }
+
+        .json-preview-content::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+
+        .json-preview-content::-webkit-scrollbar-thumb {
+            background: var(--stone-dark);
+            border-radius: 3px;
+        }
+
+        /* Legend */
+        .legend {
+            display: flex;
+            gap: 16px;
+            padding: 8px 12px;
+            background: var(--bg-surface);
+            border-radius: 4px;
+            margin-bottom: 12px;
+        }
+
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 10px;
+            color: var(--stone-mid);
+        }
+
+        .legend-color {
+            width: 14px;
+            height: 14px;
+            border-radius: 2px;
+            border: 1px solid var(--stone-dark);
+        }
+
+        .legend-color.undefined {
+            background: repeating-conic-gradient(
+                var(--bg-surface) 0% 25%,
+                var(--bg-mid) 0% 50%
+            ) 50% / 6px 6px;
+        }
+
+        .legend-color.open {
+            background: var(--tile-open);
+        }
+
+        .legend-color.obstruction {
+            background: var(--tile-obstruction);
+        }
+
+        /* Toast */
+        .toast {
+            position: fixed;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%) translateY(100px);
+            padding: 12px 20px;
+            background: var(--bg-surface);
+            border: 1px solid var(--accent-ember);
+            border-radius: 4px;
+            font-size: 12px;
+            color: var(--stone-bright);
+            opacity: 0;
+            transition: all 0.3s;
+            z-index: 1000;
+        }
+
+        .toast.show {
+            transform: translateX(-50%) translateY(0);
+            opacity: 1;
+        }
+
+        /* Keyboard hints */
+        .keyboard-hints {
+            font-size: 9px;
+            color: var(--stone-dark);
+            margin-top: 8px;
+        }
+
+        .keyboard-hints kbd {
+            padding: 2px 5px;
+            background: var(--bg-surface);
+            border: 1px solid var(--stone-dark);
+            border-radius: 3px;
+            font-family: inherit;
+        }
+    </style>
+</head>
+<body>
+    <!-- Header -->
+    <header class="header">
+        <div class="brand">
+            <span class="brand-icon">&#128293;</span>
+            <span class="brand-text">MANTLEBORN / <span>LEVEL-FORGE</span></span>
+        </div>
+        <div class="header-actions">
+            <button class="btn" id="newLevelBtn">New Level</button>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="main">
+        <!-- Editor Panel -->
+        <div class="editor-panel">
+            <!-- Toolbar -->
+            <div class="toolbar">
+                <div class="toolbar-group">
+                    <span class="toolbar-label">Tool</span>
+                    <button class="tool-btn active" data-tool="paint" title="Paint (P)">&#9998;</button>
+                    <button class="tool-btn" data-tool="fill" title="Fill (F)">&#9699;</button>
+                    <button class="tool-btn" data-tool="select" title="Select (S)">&#9634;</button>
+                </div>
+
+                <div class="toolbar-divider"></div>
+
+                <div class="toolbar-group">
+                    <span class="toolbar-label">State</span>
+                    <button class="state-btn" data-state="undefined" title="Undefined (1)">?</button>
+                    <button class="state-btn active" data-state="open" title="Open (2)">&#10003;</button>
+                    <button class="state-btn" data-state="obstruction" title="Obstruction (3)">&#10005;</button>
+                </div>
+
+                <div class="toolbar-divider"></div>
+
+                <div class="toolbar-group">
+                    <button class="btn btn-small btn-danger" id="clearGridBtn">Clear All</button>
+                </div>
+            </div>
+
+            <!-- Grid -->
+            <div class="grid-container">
+                <div class="grid-wrapper">
+                    <div class="grid" id="grid"></div>
+                    <div class="selection-box" id="selectionBox"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Right Panel -->
+        <div class="right-panel">
+            <!-- Grid Settings -->
+            <div class="section">
+                <div class="section-header">Grid Settings</div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label class="form-label">Width (tiles)</label>
+                        <input type="number" class="form-input" id="gridWidth" value="32" min="4" max="100">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Height (tiles)</label>
+                        <input type="number" class="form-input" id="gridHeight" value="18" min="4" max="100">
+                    </div>
+                </div>
+                <button class="btn btn-small" id="resizeGridBtn" style="width: 100%;">Resize Grid</button>
+            </div>
+
+            <!-- Level Info -->
+            <div class="section">
+                <div class="section-header">Level Info</div>
+                <div class="form-group">
+                    <label class="form-label">Level Name</label>
+                    <input type="text" class="form-input" id="levelName" placeholder="level_01">
+                </div>
+
+                <div class="legend">
+                    <div class="legend-item">
+                        <div class="legend-color undefined"></div>
+                        <span>Undefined</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-color open"></div>
+                        <span>Open</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-color obstruction"></div>
+                        <span>Obstruction</span>
+                    </div>
+                </div>
+
+                <div class="stats-grid">
+                    <div class="stat-item">
+                        <div class="stat-value" id="totalTiles">576</div>
+                        <div class="stat-label">Total</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-value" id="undefinedTiles">576</div>
+                        <div class="stat-label">Undefined</div>
+                    </div>
+                    <div class="stat-item open">
+                        <div class="stat-value" id="openTiles">0</div>
+                        <div class="stat-label">Open</div>
+                    </div>
+                    <div class="stat-item obstruction">
+                        <div class="stat-value" id="obstructionTiles">0</div>
+                        <div class="stat-label">Obstruction</div>
+                    </div>
+                </div>
+
+                <div class="keyboard-hints">
+                    <kbd>P</kbd> Paint &nbsp;
+                    <kbd>F</kbd> Fill &nbsp;
+                    <kbd>S</kbd> Select<br>
+                    <kbd>1</kbd> Undefined &nbsp;
+                    <kbd>2</kbd> Open &nbsp;
+                    <kbd>3</kbd> Obstruction
+                </div>
+            </div>
+
+            <!-- Export -->
+            <div class="export-section">
+                <div class="export-actions">
+                    <button class="btn btn-primary" id="copyJsonBtn">Copy JSON</button>
+                    <button class="btn" id="loadJsonBtn">Load JSON</button>
+                </div>
+                <div class="json-preview">
+                    <div class="json-preview-header">JSON Output</div>
+                    <div class="json-preview-content" id="jsonOutput">{}</div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Toast -->
+    <div class="toast" id="toast"></div>
+
+    <script>
+        /* ============================================
+           MANTLEBORN LEVEL-FORGE - JavaScript
+           ============================================ */
+
+        // ==========================================
+        // State
+        // ==========================================
+        const state = {
+            gridWidth: 32,
+            gridHeight: 18,
+            tiles: [],  // 2D array of tile states: 'undefined' | 'open' | 'obstruction'
+            currentTool: 'paint',
+            currentState: 'open',
+            isMouseDown: false,
+            selectionStart: null,
+            selectionEnd: null,
+            selectedTiles: new Set()
+        };
+
+        const TILE_STATES = ['undefined', 'open', 'obstruction'];
+
+        // ==========================================
+        // DOM Elements
+        // ==========================================
+        const elements = {
+            grid: document.getElementById('grid'),
+            selectionBox: document.getElementById('selectionBox'),
+            gridWidth: document.getElementById('gridWidth'),
+            gridHeight: document.getElementById('gridHeight'),
+            resizeGridBtn: document.getElementById('resizeGridBtn'),
+            levelName: document.getElementById('levelName'),
+            totalTiles: document.getElementById('totalTiles'),
+            undefinedTiles: document.getElementById('undefinedTiles'),
+            openTiles: document.getElementById('openTiles'),
+            obstructionTiles: document.getElementById('obstructionTiles'),
+            copyJsonBtn: document.getElementById('copyJsonBtn'),
+            loadJsonBtn: document.getElementById('loadJsonBtn'),
+            clearGridBtn: document.getElementById('clearGridBtn'),
+            newLevelBtn: document.getElementById('newLevelBtn'),
+            jsonOutput: document.getElementById('jsonOutput'),
+            toast: document.getElementById('toast')
+        };
+
+        // ==========================================
+        // Utilities
+        // ==========================================
+        function showToast(message) {
+            elements.toast.textContent = message;
+            elements.toast.classList.add('show');
+            setTimeout(() => elements.toast.classList.remove('show'), 2500);
+        }
+
+        // ==========================================
+        // Grid Management
+        // ==========================================
+        function initGrid() {
+            state.tiles = [];
+            for (let y = 0; y < state.gridHeight; y++) {
+                const row = [];
+                for (let x = 0; x < state.gridWidth; x++) {
+                    row.push('undefined');
+                }
+                state.tiles.push(row);
+            }
+            renderGrid();
+            updateStats();
+            updateJsonOutput();
+        }
+
+        function renderGrid() {
+            elements.grid.innerHTML = '';
+            elements.grid.style.gridTemplateColumns = `repeat(${state.gridWidth}, 24px)`;
+            elements.grid.style.gridTemplateRows = `repeat(${state.gridHeight}, 24px)`;
+
+            for (let y = 0; y < state.gridHeight; y++) {
+                for (let x = 0; x < state.gridWidth; x++) {
+                    const tile = document.createElement('div');
+                    tile.className = 'tile';
+                    tile.dataset.x = x;
+                    tile.dataset.y = y;
+
+                    const tileState = state.tiles[y][x];
+                    if (tileState !== 'undefined') {
+                        tile.dataset.state = tileState;
+                    }
+
+                    // Mouse events
+                    tile.addEventListener('mousedown', handleTileMouseDown);
+                    tile.addEventListener('mouseenter', handleTileMouseEnter);
+                    tile.addEventListener('mouseup', handleTileMouseUp);
+
+                    elements.grid.appendChild(tile);
+                }
+            }
+        }
+
+        function resizeGrid() {
+            const newWidth = parseInt(elements.gridWidth.value) || 32;
+            const newHeight = parseInt(elements.gridHeight.value) || 18;
+
+            // Clamp values
+            state.gridWidth = Math.max(4, Math.min(100, newWidth));
+            state.gridHeight = Math.max(4, Math.min(100, newHeight));
+
+            elements.gridWidth.value = state.gridWidth;
+            elements.gridHeight.value = state.gridHeight;
+
+            // Resize tiles array, preserving existing data where possible
+            const newTiles = [];
+            for (let y = 0; y < state.gridHeight; y++) {
+                const row = [];
+                for (let x = 0; x < state.gridWidth; x++) {
+                    if (state.tiles[y] && state.tiles[y][x]) {
+                        row.push(state.tiles[y][x]);
+                    } else {
+                        row.push('undefined');
+                    }
+                }
+                newTiles.push(row);
+            }
+            state.tiles = newTiles;
+
+            renderGrid();
+            updateStats();
+            updateJsonOutput();
+            showToast(`Grid resized to ${state.gridWidth}x${state.gridHeight}`);
+        }
+
+        function clearGrid() {
+            for (let y = 0; y < state.gridHeight; y++) {
+                for (let x = 0; x < state.gridWidth; x++) {
+                    state.tiles[y][x] = 'undefined';
+                }
+            }
+            renderGrid();
+            updateStats();
+            updateJsonOutput();
+            showToast('Grid cleared');
+        }
+
+        // ==========================================
+        // Tile Operations
+        // ==========================================
+        function setTileState(x, y, newState) {
+            if (x < 0 || x >= state.gridWidth || y < 0 || y >= state.gridHeight) return;
+
+            state.tiles[y][x] = newState;
+
+            // Update DOM
+            const tile = getTileElement(x, y);
+            if (tile) {
+                if (newState === 'undefined') {
+                    delete tile.dataset.state;
+                } else {
+                    tile.dataset.state = newState;
+                }
+            }
+        }
+
+        function getTileElement(x, y) {
+            return elements.grid.querySelector(`[data-x="${x}"][data-y="${y}"]`);
+        }
+
+        function cycleTileState(x, y) {
+            const currentState = state.tiles[y][x];
+            const currentIndex = TILE_STATES.indexOf(currentState);
+            const nextIndex = (currentIndex + 1) % TILE_STATES.length;
+            setTileState(x, y, TILE_STATES[nextIndex]);
+        }
+
+        // Flood fill algorithm
+        function floodFill(startX, startY, fillState) {
+            const originalState = state.tiles[startY][startX];
+            if (originalState === fillState) return; // Already the target state
+
+            const stack = [[startX, startY]];
+            const visited = new Set();
+
+            while (stack.length > 0) {
+                const [x, y] = stack.pop();
+                const key = `${x},${y}`;
+
+                if (visited.has(key)) continue;
+                if (x < 0 || x >= state.gridWidth || y < 0 || y >= state.gridHeight) continue;
+                if (state.tiles[y][x] !== originalState) continue;
+
+                visited.add(key);
+                setTileState(x, y, fillState);
+
+                // Add adjacent tiles (4-directional)
+                stack.push([x + 1, y]);
+                stack.push([x - 1, y]);
+                stack.push([x, y + 1]);
+                stack.push([x, y - 1]);
+            }
+        }
+
+        // ==========================================
+        // Mouse Handlers
+        // ==========================================
+        function handleTileMouseDown(e) {
+            e.preventDefault();
+            state.isMouseDown = true;
+
+            const x = parseInt(e.target.dataset.x);
+            const y = parseInt(e.target.dataset.y);
+
+            if (state.currentTool === 'paint') {
+                // Cycle through states on click
+                cycleTileState(x, y);
+                updateStats();
+                updateJsonOutput();
+            } else if (state.currentTool === 'fill') {
+                floodFill(x, y, state.currentState);
+                updateStats();
+                updateJsonOutput();
+            } else if (state.currentTool === 'select') {
+                state.selectionStart = { x, y };
+                state.selectionEnd = { x, y };
+                state.selectedTiles.clear();
+                updateSelectionBox();
+            }
+        }
+
+        function handleTileMouseEnter(e) {
+            if (!state.isMouseDown) return;
+
+            const x = parseInt(e.target.dataset.x);
+            const y = parseInt(e.target.dataset.y);
+
+            if (state.currentTool === 'paint') {
+                // Paint with current state while dragging
+                setTileState(x, y, state.currentState);
+                updateStats();
+                updateJsonOutput();
+            } else if (state.currentTool === 'select') {
+                state.selectionEnd = { x, y };
+                updateSelectionBox();
+            }
+        }
+
+        function handleTileMouseUp(e) {
+            if (state.currentTool === 'select' && state.selectionStart && state.selectionEnd) {
+                applySelectionFill();
+            }
+            state.isMouseDown = false;
+        }
+
+        // Global mouse up handler
+        document.addEventListener('mouseup', () => {
+            if (state.currentTool === 'select' && state.isMouseDown && state.selectionStart && state.selectionEnd) {
+                applySelectionFill();
+            }
+            state.isMouseDown = false;
+            elements.selectionBox.style.display = 'none';
+        });
+
+        // ==========================================
+        // Selection
+        // ==========================================
+        function updateSelectionBox() {
+            if (!state.selectionStart || !state.selectionEnd) {
+                elements.selectionBox.style.display = 'none';
+                return;
+            }
+
+            const minX = Math.min(state.selectionStart.x, state.selectionEnd.x);
+            const maxX = Math.max(state.selectionStart.x, state.selectionEnd.x);
+            const minY = Math.min(state.selectionStart.y, state.selectionEnd.y);
+            const maxY = Math.max(state.selectionStart.y, state.selectionEnd.y);
+
+            const tileSize = 25; // 24px + 1px gap
+
+            elements.selectionBox.style.display = 'block';
+            elements.selectionBox.style.left = (minX * tileSize + 2) + 'px';
+            elements.selectionBox.style.top = (minY * tileSize + 2) + 'px';
+            elements.selectionBox.style.width = ((maxX - minX + 1) * tileSize - 1) + 'px';
+            elements.selectionBox.style.height = ((maxY - minY + 1) * tileSize - 1) + 'px';
+
+            // Highlight selected tiles
+            clearTileHighlights();
+            for (let y = minY; y <= maxY; y++) {
+                for (let x = minX; x <= maxX; x++) {
+                    const tile = getTileElement(x, y);
+                    if (tile) tile.classList.add('selected');
+                }
+            }
+        }
+
+        function applySelectionFill() {
+            if (!state.selectionStart || !state.selectionEnd) return;
+
+            const minX = Math.min(state.selectionStart.x, state.selectionEnd.x);
+            const maxX = Math.max(state.selectionStart.x, state.selectionEnd.x);
+            const minY = Math.min(state.selectionStart.y, state.selectionEnd.y);
+            const maxY = Math.max(state.selectionStart.y, state.selectionEnd.y);
+
+            for (let y = minY; y <= maxY; y++) {
+                for (let x = minX; x <= maxX; x++) {
+                    setTileState(x, y, state.currentState);
+                }
+            }
+
+            clearTileHighlights();
+            state.selectionStart = null;
+            state.selectionEnd = null;
+            elements.selectionBox.style.display = 'none';
+
+            updateStats();
+            updateJsonOutput();
+        }
+
+        function clearTileHighlights() {
+            document.querySelectorAll('.tile.selected').forEach(tile => {
+                tile.classList.remove('selected');
+            });
+        }
+
+        // ==========================================
+        // Tool & State Selection
+        // ==========================================
+        function setTool(tool) {
+            state.currentTool = tool;
+            document.querySelectorAll('.tool-btn').forEach(btn => {
+                btn.classList.toggle('active', btn.dataset.tool === tool);
+            });
+            clearTileHighlights();
+            elements.selectionBox.style.display = 'none';
+        }
+
+        function setState(newState) {
+            state.currentState = newState;
+            document.querySelectorAll('.state-btn').forEach(btn => {
+                btn.classList.toggle('active', btn.dataset.state === newState);
+            });
+        }
+
+        // Tool button click handlers
+        document.querySelectorAll('.tool-btn').forEach(btn => {
+            btn.addEventListener('click', () => setTool(btn.dataset.tool));
+        });
+
+        // State button click handlers
+        document.querySelectorAll('.state-btn').forEach(btn => {
+            btn.addEventListener('click', () => setState(btn.dataset.state));
+        });
+
+        // ==========================================
+        // Stats
+        // ==========================================
+        function updateStats() {
+            let undefinedCount = 0;
+            let openCount = 0;
+            let obstructionCount = 0;
+
+            for (let y = 0; y < state.gridHeight; y++) {
+                for (let x = 0; x < state.gridWidth; x++) {
+                    const tileState = state.tiles[y][x];
+                    if (tileState === 'undefined') undefinedCount++;
+                    else if (tileState === 'open') openCount++;
+                    else if (tileState === 'obstruction') obstructionCount++;
+                }
+            }
+
+            const total = state.gridWidth * state.gridHeight;
+
+            elements.totalTiles.textContent = total;
+            elements.undefinedTiles.textContent = undefinedCount;
+            elements.openTiles.textContent = openCount;
+            elements.obstructionTiles.textContent = obstructionCount;
+        }
+
+        // ==========================================
+        // JSON Export/Import
+        // ==========================================
+        function generateLevelData() {
+            const levelName = elements.levelName.value || 'untitled';
+
+            // Encode tiles - we'll use a compact format
+            // 0 = undefined, 1 = open, 2 = obstruction
+            const tileData = [];
+            for (let y = 0; y < state.gridHeight; y++) {
+                const row = [];
+                for (let x = 0; x < state.gridWidth; x++) {
+                    const tileState = state.tiles[y][x];
+                    if (tileState === 'undefined') row.push(0);
+                    else if (tileState === 'open') row.push(1);
+                    else if (tileState === 'obstruction') row.push(2);
+                }
+                tileData.push(row);
+            }
+
+            // Also generate a list of walkable coordinates for easier game use
+            const walkable = [];
+            const obstructions = [];
+
+            for (let y = 0; y < state.gridHeight; y++) {
+                for (let x = 0; x < state.gridWidth; x++) {
+                    const tileState = state.tiles[y][x];
+                    if (tileState === 'open') {
+                        walkable.push({ x, y });
+                    } else if (tileState === 'obstruction') {
+                        obstructions.push({ x, y });
+                    }
+                }
+            }
+
+            return {
+                name: levelName,
+                width: state.gridWidth,
+                height: state.gridHeight,
+                tileSize: 24,  // Can be adjusted for game
+                grid: tileData,
+                walkable: walkable,
+                obstructions: obstructions,
+                meta: {
+                    totalTiles: state.gridWidth * state.gridHeight,
+                    walkableCount: walkable.length,
+                    obstructionCount: obstructions.length
+                }
+            };
+        }
+
+        function updateJsonOutput() {
+            const levelData = generateLevelData();
+            elements.jsonOutput.textContent = JSON.stringify(levelData, null, 2);
+        }
+
+        function copyJson() {
+            navigator.clipboard.writeText(elements.jsonOutput.textContent)
+                .then(() => showToast('Level JSON copied!'))
+                .catch(() => showToast('Failed to copy'));
+        }
+
+        function loadJson() {
+            const jsonStr = prompt('Paste level JSON:');
+            if (!jsonStr) return;
+
+            try {
+                const levelData = JSON.parse(jsonStr);
+
+                if (levelData.width && levelData.height && levelData.grid) {
+                    state.gridWidth = levelData.width;
+                    state.gridHeight = levelData.height;
+                    elements.gridWidth.value = state.gridWidth;
+                    elements.gridHeight.value = state.gridHeight;
+
+                    state.tiles = [];
+                    for (let y = 0; y < state.gridHeight; y++) {
+                        const row = [];
+                        for (let x = 0; x < state.gridWidth; x++) {
+                            const value = levelData.grid[y]?.[x] ?? 0;
+                            if (value === 1) row.push('open');
+                            else if (value === 2) row.push('obstruction');
+                            else row.push('undefined');
+                        }
+                        state.tiles.push(row);
+                    }
+
+                    if (levelData.name) {
+                        elements.levelName.value = levelData.name;
+                    }
+
+                    renderGrid();
+                    updateStats();
+                    updateJsonOutput();
+                    showToast('Level loaded!');
+                } else {
+                    showToast('Invalid level data');
+                }
+            } catch (e) {
+                showToast('Invalid JSON');
+            }
+        }
+
+        // ==========================================
+        // Event Listeners
+        // ==========================================
+        elements.resizeGridBtn.addEventListener('click', resizeGrid);
+        elements.clearGridBtn.addEventListener('click', clearGrid);
+        elements.newLevelBtn.addEventListener('click', () => {
+            if (confirm('Create new level? Current progress will be lost.')) {
+                elements.levelName.value = '';
+                clearGrid();
+            }
+        });
+        elements.copyJsonBtn.addEventListener('click', copyJson);
+        elements.loadJsonBtn.addEventListener('click', loadJson);
+        elements.levelName.addEventListener('input', updateJsonOutput);
+
+        // Keyboard shortcuts
+        window.addEventListener('keydown', (e) => {
+            if (document.activeElement.tagName === 'INPUT') return;
+
+            switch (e.key.toLowerCase()) {
+                case 'p':
+                    setTool('paint');
+                    break;
+                case 'f':
+                    setTool('fill');
+                    break;
+                case 's':
+                    setTool('select');
+                    break;
+                case '1':
+                    setState('undefined');
+                    break;
+                case '2':
+                    setState('open');
+                    break;
+                case '3':
+                    setState('obstruction');
+                    break;
+                case 'escape':
+                    clearTileHighlights();
+                    elements.selectionBox.style.display = 'none';
+                    state.selectionStart = null;
+                    state.selectionEnd = null;
+                    break;
+            }
+        });
+
+        // ==========================================
+        // Initialize
+        // ==========================================
+        initGrid();
+    </script>
+</body>
+</html>
