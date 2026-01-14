@@ -655,6 +655,459 @@
             background: var(--tile-open-bright);
             border-color: var(--tile-open-bright);
         }
+
+        /* ============================================
+           TAB SYSTEM
+           ============================================ */
+
+        .tab-bar {
+            display: flex;
+            gap: 2px;
+            padding: 8px 16px;
+            background: var(--bg-mid);
+            border-bottom: 1px solid var(--stone-dark);
+            flex-shrink: 0;
+        }
+
+        .tab-btn {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 10px 16px;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 11px;
+            background: var(--bg-surface);
+            border: 1px solid var(--stone-dark);
+            border-bottom: none;
+            border-radius: 4px 4px 0 0;
+            color: var(--stone-mid);
+            cursor: pointer;
+            transition: all 0.15s;
+        }
+
+        .tab-btn:hover {
+            background: var(--stone-dark);
+            color: var(--stone-light);
+        }
+
+        .tab-btn.active {
+            background: var(--bg-deep);
+            color: var(--accent-ember);
+            border-color: var(--accent-ember);
+            border-bottom: 1px solid var(--bg-deep);
+            margin-bottom: -1px;
+        }
+
+        .tab-icon {
+            font-size: 14px;
+        }
+
+        .tab-label {
+            font-weight: 500;
+        }
+
+        .tab-content {
+            flex: 1;
+            display: flex;
+            overflow: hidden;
+            background: var(--bg-deep);
+            position: relative;
+        }
+
+        .tab-panel {
+            display: none;
+            flex: 1;
+            overflow: auto;
+            padding: 20px;
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+        }
+
+        .tab-panel.active {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        /* Grid editor toolbar - only show when grid tab active */
+        .grid-toolbar {
+            display: none;
+        }
+
+        .grid-toolbar.active {
+            display: flex;
+        }
+
+        /* ============================================
+           BACKGROUND EDITOR
+           ============================================ */
+
+        .background-editor {
+            display: flex;
+            flex-direction: column;
+            width: 100%;
+            height: 100%;
+            max-width: 100%;
+            align-items: stretch;
+        }
+
+        .background-toolbar {
+            display: flex;
+            gap: 8px;
+            padding: 12px;
+            background: var(--bg-mid);
+            border-radius: 4px;
+            margin-bottom: 12px;
+            flex-shrink: 0;
+        }
+
+        .background-preview-wrapper {
+            flex: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: var(--bg-mid);
+            border: 2px solid var(--stone-dark);
+            border-radius: 4px;
+            overflow: hidden;
+            min-height: 300px;
+        }
+
+        #backgroundCanvas {
+            image-rendering: pixelated;
+            background: repeating-conic-gradient(
+                var(--bg-surface) 0% 25%,
+                var(--bg-mid) 0% 50%
+            ) 50% / 16px 16px;
+        }
+
+        .background-layers {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+            max-height: 200px;
+            overflow-y: auto;
+            margin-top: 12px;
+            padding: 8px;
+            background: var(--bg-mid);
+            border-radius: 4px;
+        }
+
+        .bg-layer-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 12px;
+            background: var(--bg-surface);
+            border: 1px solid var(--stone-dark);
+            border-radius: 4px;
+            cursor: pointer;
+            transition: all 0.15s;
+        }
+
+        .bg-layer-item:hover {
+            border-color: var(--stone-mid);
+        }
+
+        .bg-layer-item.selected {
+            border-color: var(--accent-ember);
+            background: var(--mystic-deep);
+        }
+
+        .bg-layer-thumb {
+            width: 40px;
+            height: 30px;
+            background: var(--bg-deep);
+            border-radius: 2px;
+            overflow: hidden;
+        }
+
+        .bg-layer-thumb img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .bg-layer-info {
+            flex: 1;
+            min-width: 0;
+        }
+
+        .bg-layer-name {
+            font-size: 11px;
+            color: var(--stone-bright);
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .bg-layer-meta {
+            font-size: 9px;
+            color: var(--stone-mid);
+        }
+
+        .bg-layer-actions {
+            display: flex;
+            gap: 4px;
+        }
+
+        .bg-layer-visibility {
+            padding: 4px 6px;
+            background: transparent;
+            border: none;
+            color: var(--stone-mid);
+            cursor: pointer;
+            font-size: 12px;
+        }
+
+        .bg-layer-visibility.hidden {
+            opacity: 0.4;
+        }
+
+        .bg-layer-delete {
+            padding: 4px 6px;
+            background: transparent;
+            border: none;
+            color: var(--accent-magma);
+            cursor: pointer;
+            font-size: 10px;
+            opacity: 0;
+            transition: opacity 0.15s;
+        }
+
+        .bg-layer-item:hover .bg-layer-delete {
+            opacity: 1;
+        }
+
+        .no-layers-message {
+            text-align: center;
+            padding: 20px;
+            color: var(--stone-mid);
+            font-size: 11px;
+        }
+
+        /* ============================================
+           TILE PAINTER
+           ============================================ */
+
+        .tile-painter {
+            display: flex;
+            flex-direction: column;
+            width: 100%;
+            height: 100%;
+        }
+
+        .tile-toolbar {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            padding: 12px;
+            background: var(--bg-mid);
+            border-radius: 4px;
+            margin-bottom: 12px;
+            flex-shrink: 0;
+        }
+
+        .tile-painter-main {
+            display: flex;
+            flex: 1;
+            gap: 16px;
+            min-height: 0;
+        }
+
+        .tile-canvas-wrapper {
+            flex: 1;
+            position: relative;
+            background: var(--bg-mid);
+            border: 2px solid var(--stone-dark);
+            border-radius: 4px;
+            overflow: auto;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        #tileCanvas {
+            image-rendering: pixelated;
+        }
+
+        .sprite-palette {
+            width: 200px;
+            display: flex;
+            flex-direction: column;
+            background: var(--bg-mid);
+            border: 1px solid var(--stone-dark);
+            border-radius: 4px;
+            overflow: hidden;
+            flex-shrink: 0;
+        }
+
+        .palette-header {
+            padding: 10px 12px;
+            background: var(--bg-surface);
+            font-family: 'Press Start 2P', cursive;
+            font-size: 8px;
+            color: var(--stone-bright);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .palette-sheet-select {
+            padding: 8px;
+            border-bottom: 1px solid var(--stone-dark);
+        }
+
+        .palette-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(40px, 1fr));
+            gap: 4px;
+            padding: 8px;
+            overflow-y: auto;
+            flex: 1;
+        }
+
+        .palette-sprite {
+            aspect-ratio: 1;
+            background: repeating-conic-gradient(
+                var(--bg-surface) 0% 25%,
+                var(--bg-mid) 0% 50%
+            ) 50% / 8px 8px;
+            border: 2px solid var(--stone-dark);
+            border-radius: 2px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.15s;
+            overflow: hidden;
+        }
+
+        .palette-sprite:hover {
+            border-color: var(--stone-mid);
+        }
+
+        .palette-sprite.selected {
+            border-color: var(--accent-ember);
+            box-shadow: 0 0 8px rgba(224, 112, 32, 0.5);
+        }
+
+        .palette-sprite img {
+            image-rendering: pixelated;
+            max-width: 100%;
+            max-height: 100%;
+        }
+
+        .no-sprites-message {
+            padding: 20px;
+            text-align: center;
+            color: var(--stone-mid);
+            font-size: 10px;
+        }
+
+        /* Contextual settings visibility */
+        .tab-settings {
+            display: none;
+        }
+
+        .tab-settings.active {
+            display: block;
+        }
+
+        /* Selected sprite preview */
+        .selected-sprite-preview {
+            display: flex;
+            justify-content: center;
+            padding: 12px;
+            background: repeating-conic-gradient(
+                var(--bg-surface) 0% 25%,
+                var(--bg-mid) 0% 50%
+            ) 50% / 16px 16px;
+            border: 1px solid var(--stone-dark);
+            border-radius: 4px;
+            margin-bottom: 12px;
+            min-height: 80px;
+        }
+
+        .selected-sprite-preview img {
+            image-rendering: pixelated;
+            max-width: 64px;
+            max-height: 64px;
+        }
+
+        /* File input styling */
+        .file-input-wrapper {
+            position: relative;
+            overflow: hidden;
+            display: inline-block;
+        }
+
+        .file-input-wrapper input[type="file"] {
+            position: absolute;
+            left: 0;
+            top: 0;
+            opacity: 0;
+            cursor: pointer;
+            width: 100%;
+            height: 100%;
+        }
+
+        /* Range slider styling */
+        input[type="range"] {
+            -webkit-appearance: none;
+            width: 100%;
+            height: 6px;
+            background: var(--bg-deep);
+            border-radius: 3px;
+            outline: none;
+        }
+
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 14px;
+            height: 14px;
+            background: var(--accent-ember);
+            border-radius: 50%;
+            cursor: pointer;
+        }
+
+        .range-value {
+            display: inline-block;
+            min-width: 40px;
+            text-align: right;
+            font-size: 11px;
+            color: var(--stone-mid);
+        }
+
+        .range-row {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .range-row input[type="range"] {
+            flex: 1;
+        }
+
+        /* Checkbox styling */
+        .checkbox-group {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .checkbox-group input[type="checkbox"] {
+            width: 16px;
+            height: 16px;
+            accent-color: var(--accent-ember);
+        }
+
+        .checkbox-group label {
+            font-size: 11px;
+            color: var(--stone-light);
+        }
     </style>
 </head>
 <body>
@@ -674,8 +1127,24 @@
     <main class="main">
         <!-- Editor Panel -->
         <div class="editor-panel">
-            <!-- Toolbar -->
-            <div class="toolbar">
+            <!-- Tab Bar -->
+            <div class="tab-bar">
+                <button class="tab-btn active" data-tab="grid">
+                    <span class="tab-icon">&#9638;</span>
+                    <span class="tab-label">Grid Editor</span>
+                </button>
+                <button class="tab-btn" data-tab="background">
+                    <span class="tab-icon">&#127748;</span>
+                    <span class="tab-label">Background</span>
+                </button>
+                <button class="tab-btn" data-tab="tiles">
+                    <span class="tab-icon">&#127912;</span>
+                    <span class="tab-label">Tile Painter</span>
+                </button>
+            </div>
+
+            <!-- Grid Editor Toolbar -->
+            <div class="toolbar grid-toolbar active" id="gridToolbar">
                 <div class="toolbar-group">
                     <span class="toolbar-label">Tool</span>
                     <button class="tool-btn active" data-tool="paint" title="Paint (P)">&#9998;</button>
@@ -700,21 +1169,77 @@
                 </div>
             </div>
 
-            <!-- Grid -->
-            <div class="grid-container">
-                <div class="grid-wrapper">
-                    <div class="grid" id="grid"></div>
-                    <div class="selection-box" id="selectionBox"></div>
+            <!-- Tab Content -->
+            <div class="tab-content">
+                <!-- Grid Editor Panel -->
+                <div class="tab-panel active" id="gridPanel">
+                    <div class="grid-wrapper">
+                        <div class="grid" id="grid"></div>
+                        <div class="selection-box" id="selectionBox"></div>
+                    </div>
+
+                    <!-- Demo Mode Overlay -->
+                    <div class="demo-overlay" id="demoOverlay">
+                        <canvas class="demo-canvas" id="demoCanvas"></canvas>
+                        <div class="demo-hud" id="demoHud">
+                            <div class="demo-hud-title">DEMO MODE</div>
+                            <div class="demo-hud-controls" id="demoControls"></div>
+                        </div>
+                        <button class="btn btn-danger demo-exit-btn" id="exitDemoBtn">Exit Demo</button>
+                    </div>
                 </div>
 
-                <!-- Demo Mode Overlay -->
-                <div class="demo-overlay" id="demoOverlay">
-                    <canvas class="demo-canvas" id="demoCanvas"></canvas>
-                    <div class="demo-hud" id="demoHud">
-                        <div class="demo-hud-title">DEMO MODE</div>
-                        <div class="demo-hud-controls" id="demoControls"></div>
+                <!-- Background Editor Panel -->
+                <div class="tab-panel" id="backgroundPanel">
+                    <div class="background-editor">
+                        <div class="background-toolbar">
+                            <div class="file-input-wrapper">
+                                <button class="btn btn-small">+ Add Layer</button>
+                                <input type="file" id="bgFileInput" accept="image/*">
+                            </div>
+                            <button class="btn btn-small" id="pixelifyBtn" disabled>Pixelify</button>
+                        </div>
+                        <div class="background-preview-wrapper">
+                            <canvas id="backgroundCanvas"></canvas>
+                        </div>
+                        <div class="background-layers" id="backgroundLayers">
+                            <div class="no-layers-message">No background layers. Click "+ Add Layer" to upload an image.</div>
+                        </div>
                     </div>
-                    <button class="btn btn-danger demo-exit-btn" id="exitDemoBtn">Exit Demo</button>
+                </div>
+
+                <!-- Tile Painter Panel -->
+                <div class="tab-panel" id="tilesPanel">
+                    <div class="tile-painter">
+                        <div class="tile-toolbar">
+                            <div class="toolbar-group">
+                                <span class="toolbar-label">Tool</span>
+                                <button class="tool-btn active" data-tile-tool="paint" title="Paint (P)">&#9998;</button>
+                                <button class="tool-btn" data-tile-tool="erase" title="Erase (E)">&#9003;</button>
+                                <button class="tool-btn" data-tile-tool="fill" title="Fill (F)">&#9699;</button>
+                            </div>
+                            <div class="toolbar-divider"></div>
+                            <div class="toolbar-group">
+                                <button class="btn btn-small btn-danger" id="clearTilesBtn">Clear Tiles</button>
+                            </div>
+                        </div>
+                        <div class="tile-painter-main">
+                            <div class="tile-canvas-wrapper">
+                                <canvas id="tileCanvas"></canvas>
+                            </div>
+                            <div class="sprite-palette">
+                                <div class="palette-header">Sprite Palette</div>
+                                <div class="palette-sheet-select">
+                                    <select class="form-input" id="spriteSheetSelect">
+                                        <option value="">-- Select Sheet --</option>
+                                    </select>
+                                </div>
+                                <div class="palette-grid" id="paletteGrid">
+                                    <div class="no-sprites-message">Select a sprite sheet to load sprites</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
@@ -737,8 +1262,8 @@
                 <button class="btn btn-small" id="resizeGridBtn" style="width: 100%;">Resize Grid</button>
             </div>
 
-            <!-- Level Info -->
-            <div class="section">
+            <!-- Level Info (Grid Tab) -->
+            <div class="section tab-settings active" id="gridSettings">
                 <div class="section-header">Level Info</div>
                 <div class="form-group">
                     <label class="form-label">Level Name</label>
@@ -802,6 +1327,98 @@
                 </div>
             </div>
 
+            <!-- Background Settings -->
+            <div class="section tab-settings" id="bgSettings">
+                <div class="section-header">Layer Settings</div>
+                <div id="bgLayerSettings">
+                    <div class="no-layers-message">Select a layer to edit its settings</div>
+                </div>
+                <div id="bgLayerControls" style="display: none;">
+                    <div class="form-group">
+                        <label class="form-label">Layer Name</label>
+                        <input type="text" class="form-input" id="bgLayerName" placeholder="background_01">
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label class="form-label">Depth</label>
+                            <input type="number" class="form-input" id="bgDepth" value="0" min="-100" max="100">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Scroll Rate</label>
+                            <input type="number" class="form-input" id="bgScrollRate" value="1" min="0" max="2" step="0.1">
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label class="form-label">X Offset</label>
+                            <input type="number" class="form-input" id="bgOffsetX" value="0">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Y Offset</label>
+                            <input type="number" class="form-input" id="bgOffsetY" value="0">
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Scale</label>
+                        <div class="range-row">
+                            <input type="range" id="bgScale" value="1" min="0.25" max="4" step="0.25">
+                            <span class="range-value" id="bgScaleValue">1x</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Pixelify Settings -->
+            <div class="section tab-settings" id="pixelifySettings">
+                <div class="section-header">Pixelify Effect</div>
+                <div class="form-group">
+                    <label class="form-label">Pixel Size</label>
+                    <div class="range-row">
+                        <input type="range" id="pixelSize" value="4" min="1" max="16">
+                        <span class="range-value" id="pixelSizeValue">4px</span>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Color Depth</label>
+                    <div class="range-row">
+                        <input type="range" id="colorDepth" value="8" min="2" max="32">
+                        <span class="range-value" id="colorDepthValue">8</span>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <div class="checkbox-group">
+                        <input type="checkbox" id="enableDithering">
+                        <label for="enableDithering">Enable Dithering</label>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Dither Pattern</label>
+                    <select class="form-input" id="ditherPattern">
+                        <option value="ordered">Ordered (Bayer)</option>
+                        <option value="floyd-steinberg">Floyd-Steinberg</option>
+                    </select>
+                </div>
+                <button class="btn btn-primary" id="applyPixelify" style="width: 100%;">Apply Effect</button>
+                <button class="btn btn-small" id="resetPixelify" style="width: 100%; margin-top: 8px;">Reset to Original</button>
+            </div>
+
+            <!-- Tile Painter Settings -->
+            <div class="section tab-settings" id="tileSettings">
+                <div class="section-header">Selected Sprite</div>
+                <div class="selected-sprite-preview" id="selectedSpritePreview">
+                    <span class="no-sprites-message">No sprite selected</span>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Sprite Name</label>
+                    <input type="text" class="form-input" id="selectedSpriteName" readonly value="None">
+                </div>
+                <div class="keyboard-hints">
+                    <kbd>P</kbd> Paint &nbsp;
+                    <kbd>E</kbd> Erase &nbsp;
+                    <kbd>F</kbd> Fill
+                </div>
+            </div>
+
             <!-- Export -->
             <div class="export-section">
                 <div class="export-actions">
@@ -828,16 +1445,41 @@
         // State
         // ==========================================
         const state = {
+            // Grid settings
             gridWidth: 32,
             gridHeight: 18,
             levelType: 'platformer',  // 'platformer' | 'topdown'
-            tiles: [],  // 2D array of tile states: 'undefined' | 'open' | 'obstruction'
+            tiles: [],  // 2D array of tile states: 'undefined' | 'open' | 'obstruction' | 'spawn'
+
+            // Grid editor state
             currentTool: 'paint',
             currentState: 'open',
             isMouseDown: false,
             selectionStart: null,
             selectionEnd: null,
-            selectedTiles: new Set()
+            selectedTiles: new Set(),
+
+            // Tab state
+            activeTab: 'grid',  // 'grid' | 'background' | 'tiles'
+
+            // Background editor state
+            backgrounds: [],  // Array of background layer objects
+            selectedBgLayer: -1,
+            pixelifySettings: {
+                pixelSize: 4,
+                colorDepth: 8,
+                dithering: false,
+                ditherPattern: 'ordered'
+            },
+
+            // Tile painter state
+            visualTiles: [],  // 2D array parallel to collision grid
+            selectedSprite: null,
+            currentTileTool: 'paint',  // 'paint' | 'erase' | 'fill'
+            spriteSheets: {},  // Loaded sprite sheet data
+            spriteImages: {},  // Loaded sprite sheet images
+            selectedSpriteSheet: '',
+            tileMouseDown: false
         };
 
         const TILE_STATES = ['undefined', 'open', 'obstruction', 'spawn'];
@@ -846,6 +1488,7 @@
         // DOM Elements
         // ==========================================
         const elements = {
+            // Grid editor
             grid: document.getElementById('grid'),
             selectionBox: document.getElementById('selectionBox'),
             gridWidth: document.getElementById('gridWidth'),
@@ -863,12 +1506,55 @@
             newLevelBtn: document.getElementById('newLevelBtn'),
             jsonOutput: document.getElementById('jsonOutput'),
             toast: document.getElementById('toast'),
+            gridToolbar: document.getElementById('gridToolbar'),
+
             // Demo mode
             playDemoBtn: document.getElementById('playDemoBtn'),
             demoOverlay: document.getElementById('demoOverlay'),
             demoCanvas: document.getElementById('demoCanvas'),
             demoControls: document.getElementById('demoControls'),
-            exitDemoBtn: document.getElementById('exitDemoBtn')
+            exitDemoBtn: document.getElementById('exitDemoBtn'),
+
+            // Tab panels
+            gridPanel: document.getElementById('gridPanel'),
+            backgroundPanel: document.getElementById('backgroundPanel'),
+            tilesPanel: document.getElementById('tilesPanel'),
+
+            // Background editor
+            bgFileInput: document.getElementById('bgFileInput'),
+            pixelifyBtn: document.getElementById('pixelifyBtn'),
+            backgroundCanvas: document.getElementById('backgroundCanvas'),
+            backgroundLayers: document.getElementById('backgroundLayers'),
+            bgLayerControls: document.getElementById('bgLayerControls'),
+            bgLayerName: document.getElementById('bgLayerName'),
+            bgDepth: document.getElementById('bgDepth'),
+            bgScrollRate: document.getElementById('bgScrollRate'),
+            bgOffsetX: document.getElementById('bgOffsetX'),
+            bgOffsetY: document.getElementById('bgOffsetY'),
+            bgScale: document.getElementById('bgScale'),
+            bgScaleValue: document.getElementById('bgScaleValue'),
+            pixelSize: document.getElementById('pixelSize'),
+            pixelSizeValue: document.getElementById('pixelSizeValue'),
+            colorDepth: document.getElementById('colorDepth'),
+            colorDepthValue: document.getElementById('colorDepthValue'),
+            enableDithering: document.getElementById('enableDithering'),
+            ditherPattern: document.getElementById('ditherPattern'),
+            applyPixelify: document.getElementById('applyPixelify'),
+            resetPixelify: document.getElementById('resetPixelify'),
+
+            // Tile painter
+            tileCanvas: document.getElementById('tileCanvas'),
+            spriteSheetSelect: document.getElementById('spriteSheetSelect'),
+            paletteGrid: document.getElementById('paletteGrid'),
+            selectedSpritePreview: document.getElementById('selectedSpritePreview'),
+            selectedSpriteName: document.getElementById('selectedSpriteName'),
+            clearTilesBtn: document.getElementById('clearTilesBtn'),
+
+            // Tab settings panels
+            gridSettings: document.getElementById('gridSettings'),
+            bgSettings: document.getElementById('bgSettings'),
+            pixelifySettings: document.getElementById('pixelifySettings'),
+            tileSettings: document.getElementById('tileSettings')
         };
 
         // ==========================================
@@ -891,6 +1577,16 @@
                     row.push('undefined');
                 }
                 state.tiles.push(row);
+            }
+            // Also initialize visual tiles if not already done
+            if (state.visualTiles.length === 0) {
+                for (let y = 0; y < state.gridHeight; y++) {
+                    const row = [];
+                    for (let x = 0; x < state.gridWidth; x++) {
+                        row.push(null);
+                    }
+                    state.visualTiles.push(row);
+                }
             }
             renderGrid();
             updateStats();
@@ -950,7 +1646,24 @@
             }
             state.tiles = newTiles;
 
+            // Resize visual tiles array too
+            const newVisualTiles = [];
+            for (let y = 0; y < state.gridHeight; y++) {
+                const row = [];
+                for (let x = 0; x < state.gridWidth; x++) {
+                    if (state.visualTiles[y] && state.visualTiles[y][x]) {
+                        row.push(state.visualTiles[y][x]);
+                    } else {
+                        row.push(null);
+                    }
+                }
+                newVisualTiles.push(row);
+            }
+            state.visualTiles = newVisualTiles;
+
             renderGrid();
+            renderTileCanvas();
+            renderBackgroundPreview();
             updateStats();
             updateJsonOutput();
             showToast(`Grid resized to ${state.gridWidth}x${state.gridHeight}`);
@@ -1274,21 +1987,57 @@
                     playerCanLand: false
                 };
 
+            // Background layers (without image data for smaller JSON)
+            const backgrounds = state.backgrounds.map(layer => ({
+                id: layer.id,
+                name: layer.name,
+                imageSrc: layer.imageSrc,
+                depth: layer.depth,
+                scrollRate: layer.scrollRate,
+                offsetX: layer.offsetX,
+                offsetY: layer.offsetY,
+                scale: layer.scale,
+                visible: layer.visible
+            }));
+
+            // Visual tiles (sparse encoding - only non-null tiles)
+            const visualTiles = [];
+            for (let y = 0; y < state.gridHeight; y++) {
+                for (let x = 0; x < state.gridWidth; x++) {
+                    const tile = state.visualTiles[y]?.[x];
+                    if (tile) {
+                        visualTiles.push({
+                            x, y,
+                            spriteSheet: tile.spriteSheet,
+                            spriteName: tile.spriteName,
+                            sourceX: tile.x,
+                            sourceY: tile.y,
+                            width: tile.width,
+                            height: tile.height
+                        });
+                    }
+                }
+            }
+
             return {
                 name: levelName,
                 type: levelType,
                 width: state.gridWidth,
                 height: state.gridHeight,
-                tileSize: 24,  // Can be adjusted for game
+                tileSize: 24,
                 physics: physics,
                 spawn: spawnPoint,
                 grid: tileData,
                 walkable: walkable,
                 obstructions: obstructions,
+                backgrounds: backgrounds,
+                visualTiles: visualTiles,
                 meta: {
                     totalTiles: state.gridWidth * state.gridHeight,
                     walkableCount: walkable.length,
-                    obstructionCount: obstructions.length
+                    obstructionCount: obstructions.length,
+                    backgroundCount: backgrounds.length,
+                    visualTileCount: visualTiles.length
                 }
             };
         }
@@ -1339,7 +2088,60 @@
                         elements.levelType.value = levelData.type;
                     }
 
+                    // Load backgrounds
+                    state.backgrounds = [];
+                    if (levelData.backgrounds && levelData.backgrounds.length > 0) {
+                        let loadedCount = 0;
+                        levelData.backgrounds.forEach((bgData, index) => {
+                            const img = new Image();
+                            img.onload = () => {
+                                state.backgrounds[index] = {
+                                    id: bgData.id,
+                                    name: bgData.name,
+                                    imageSrc: bgData.imageSrc,
+                                    image: img,
+                                    depth: bgData.depth,
+                                    scrollRate: bgData.scrollRate,
+                                    offsetX: bgData.offsetX,
+                                    offsetY: bgData.offsetY,
+                                    scale: bgData.scale,
+                                    visible: bgData.visible,
+                                    pixelified: false,
+                                    originalImageData: null
+                                };
+                                loadedCount++;
+                                if (loadedCount === levelData.backgrounds.length) {
+                                    state.selectedBgLayer = state.backgrounds.length > 0 ? 0 : -1;
+                                    elements.pixelifyBtn.disabled = state.backgrounds.length === 0;
+                                    renderBackgroundLayers();
+                                    renderBackgroundPreview();
+                                    updateBgLayerControls();
+                                }
+                            };
+                            img.src = bgData.imageSrc;
+                        });
+                    }
+
+                    // Load visual tiles
+                    initVisualTiles();
+                    if (levelData.visualTiles && levelData.visualTiles.length > 0) {
+                        levelData.visualTiles.forEach(tile => {
+                            if (tile.x >= 0 && tile.x < state.gridWidth &&
+                                tile.y >= 0 && tile.y < state.gridHeight) {
+                                state.visualTiles[tile.y][tile.x] = {
+                                    spriteSheet: tile.spriteSheet,
+                                    spriteName: tile.spriteName,
+                                    x: tile.sourceX,
+                                    y: tile.sourceY,
+                                    width: tile.width,
+                                    height: tile.height
+                                };
+                            }
+                        });
+                    }
+
                     renderGrid();
+                    renderTileCanvas();
                     updateStats();
                     updateJsonOutput();
                     showToast('Level loaded!');
@@ -1703,20 +2505,67 @@
             ctx.fillStyle = '#0d0d14';
             ctx.fillRect(0, 0, elements.demoCanvas.width, elements.demoCanvas.height);
 
-            // Draw tiles
-            for (let y = 0; y < state.gridHeight; y++) {
-                for (let x = 0; x < state.gridWidth; x++) {
-                    const tile = state.tiles[y][x];
-                    if (tile === 'open') {
-                        ctx.fillStyle = '#2a5a30';
-                    } else if (tile === 'obstruction') {
-                        ctx.fillStyle = '#6a2a2a';
-                    } else if (tile === 'spawn') {
-                        ctx.fillStyle = '#2a4a6a';
-                    } else {
-                        ctx.fillStyle = '#1a1a2e';
+            // Draw backgrounds (sorted by depth, furthest back first)
+            const sortedBgs = [...state.backgrounds]
+                .filter(l => l.visible)
+                .sort((a, b) => a.depth - b.depth);
+
+            ctx.imageSmoothingEnabled = false;
+            sortedBgs.forEach(layer => {
+                ctx.save();
+                // Apply parallax offset based on player position
+                const parallaxX = layer.offsetX - (demo.player.x * (1 - layer.scrollRate) * 0.1);
+                const parallaxY = layer.offsetY - (demo.player.y * (1 - layer.scrollRate) * 0.1);
+                ctx.translate(parallaxX, parallaxY);
+                const scaledWidth = layer.image.width * layer.scale;
+                const scaledHeight = layer.image.height * layer.scale;
+                ctx.drawImage(layer.image, 0, 0, scaledWidth, scaledHeight);
+                ctx.restore();
+            });
+
+            // Draw collision tiles (as fallback/debug if no visual tiles)
+            const hasVisualTiles = state.visualTiles.some(row => row.some(t => t !== null));
+
+            if (!hasVisualTiles) {
+                // Draw collision grid colors
+                for (let y = 0; y < state.gridHeight; y++) {
+                    for (let x = 0; x < state.gridWidth; x++) {
+                        const tile = state.tiles[y][x];
+                        if (tile === 'open') {
+                            ctx.fillStyle = '#2a5a30';
+                        } else if (tile === 'obstruction') {
+                            ctx.fillStyle = '#6a2a2a';
+                        } else if (tile === 'spawn') {
+                            ctx.fillStyle = '#2a4a6a';
+                        } else {
+                            ctx.fillStyle = '#1a1a2e';
+                        }
+                        ctx.fillRect(x * tileSize, y * tileSize, tileSize - 1, tileSize - 1);
                     }
-                    ctx.fillRect(x * tileSize, y * tileSize, tileSize - 1, tileSize - 1);
+                }
+            } else {
+                // Draw visual tiles
+                for (let y = 0; y < state.gridHeight; y++) {
+                    for (let x = 0; x < state.gridWidth; x++) {
+                        const vTile = state.visualTiles[y]?.[x];
+                        if (vTile) {
+                            const sheetImage = state.spriteImages[vTile.spriteSheet];
+                            if (sheetImage) {
+                                ctx.drawImage(
+                                    sheetImage,
+                                    vTile.x, vTile.y, vTile.width, vTile.height,
+                                    x * tileSize, y * tileSize, tileSize, tileSize
+                                );
+                            }
+                        } else {
+                            // Draw collision color for empty tiles
+                            const tile = state.tiles[y][x];
+                            if (tile === 'obstruction') {
+                                ctx.fillStyle = '#6a2a2a';
+                                ctx.fillRect(x * tileSize, y * tileSize, tileSize - 1, tileSize - 1);
+                            }
+                        }
+                    }
                 }
             }
 
@@ -1773,9 +2622,770 @@
         elements.exitDemoBtn.addEventListener('click', stopDemo);
 
         // ==========================================
+        // Tab Management
+        // ==========================================
+        function switchTab(tabName) {
+            state.activeTab = tabName;
+
+            // Update tab buttons
+            document.querySelectorAll('.tab-btn').forEach(btn => {
+                btn.classList.toggle('active', btn.dataset.tab === tabName);
+            });
+
+            // Update tab panels
+            document.querySelectorAll('.tab-panel').forEach(panel => {
+                panel.classList.remove('active');
+            });
+            document.getElementById(tabName + 'Panel').classList.add('active');
+
+            // Update grid toolbar visibility
+            elements.gridToolbar.classList.toggle('active', tabName === 'grid');
+
+            // Update right panel settings
+            elements.gridSettings.classList.toggle('active', tabName === 'grid');
+            elements.bgSettings.classList.toggle('active', tabName === 'background');
+            elements.pixelifySettings.classList.toggle('active', tabName === 'background');
+            elements.tileSettings.classList.toggle('active', tabName === 'tiles');
+
+            // Render appropriate content
+            if (tabName === 'background') {
+                renderBackgroundPreview();
+            } else if (tabName === 'tiles') {
+                renderTileCanvas();
+            }
+
+            updateJsonOutput();
+        }
+
+        // Tab button click handlers
+        document.querySelectorAll('.tab-btn').forEach(btn => {
+            btn.addEventListener('click', () => switchTab(btn.dataset.tab));
+        });
+
+        // ==========================================
+        // Background Editor
+        // ==========================================
+        function addBackgroundLayer(file) {
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                const img = new Image();
+                img.onload = () => {
+                    const layer = {
+                        id: 'bg_' + Date.now(),
+                        name: file.name.replace(/\.[^.]+$/, ''),
+                        imageSrc: e.target.result,
+                        image: img,
+                        depth: state.backgrounds.length * -10,
+                        scrollRate: 1,
+                        offsetX: 0,
+                        offsetY: 0,
+                        scale: 1,
+                        visible: true,
+                        pixelified: false,
+                        originalImageData: null
+                    };
+                    state.backgrounds.push(layer);
+                    state.selectedBgLayer = state.backgrounds.length - 1;
+                    elements.pixelifyBtn.disabled = false;
+                    renderBackgroundLayers();
+                    renderBackgroundPreview();
+                    updateBgLayerControls();
+                    updateJsonOutput();
+                    showToast('Background layer added');
+                };
+                img.src = e.target.result;
+            };
+            reader.readAsDataURL(file);
+        }
+
+        function renderBackgroundLayers() {
+            if (state.backgrounds.length === 0) {
+                elements.backgroundLayers.innerHTML = '<div class="no-layers-message">No background layers. Click "+ Add Layer" to upload an image.</div>';
+                return;
+            }
+
+            elements.backgroundLayers.innerHTML = state.backgrounds.map((layer, index) => `
+                <div class="bg-layer-item ${index === state.selectedBgLayer ? 'selected' : ''}" data-index="${index}">
+                    <div class="bg-layer-thumb">
+                        <img src="${layer.imageSrc}" alt="${layer.name}">
+                    </div>
+                    <div class="bg-layer-info">
+                        <div class="bg-layer-name">${layer.name}</div>
+                        <div class="bg-layer-meta">Depth: ${layer.depth} | Scale: ${layer.scale}x</div>
+                    </div>
+                    <div class="bg-layer-actions">
+                        <button class="bg-layer-visibility ${layer.visible ? '' : 'hidden'}" data-index="${index}" title="Toggle visibility">
+                            ${layer.visible ? '&#128065;' : '&#128064;'}
+                        </button>
+                        <button class="bg-layer-delete" data-index="${index}" title="Delete layer">&#10005;</button>
+                    </div>
+                </div>
+            `).join('');
+
+            // Add event listeners
+            elements.backgroundLayers.querySelectorAll('.bg-layer-item').forEach(item => {
+                item.addEventListener('click', (e) => {
+                    if (!e.target.closest('.bg-layer-visibility') && !e.target.closest('.bg-layer-delete')) {
+                        selectBgLayer(parseInt(item.dataset.index));
+                    }
+                });
+            });
+
+            elements.backgroundLayers.querySelectorAll('.bg-layer-visibility').forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    toggleBgLayerVisibility(parseInt(btn.dataset.index));
+                });
+            });
+
+            elements.backgroundLayers.querySelectorAll('.bg-layer-delete').forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    deleteBgLayer(parseInt(btn.dataset.index));
+                });
+            });
+        }
+
+        function selectBgLayer(index) {
+            state.selectedBgLayer = index;
+            renderBackgroundLayers();
+            updateBgLayerControls();
+        }
+
+        function toggleBgLayerVisibility(index) {
+            state.backgrounds[index].visible = !state.backgrounds[index].visible;
+            renderBackgroundLayers();
+            renderBackgroundPreview();
+            updateJsonOutput();
+        }
+
+        function deleteBgLayer(index) {
+            state.backgrounds.splice(index, 1);
+            if (state.selectedBgLayer >= state.backgrounds.length) {
+                state.selectedBgLayer = state.backgrounds.length - 1;
+            }
+            elements.pixelifyBtn.disabled = state.backgrounds.length === 0;
+            renderBackgroundLayers();
+            renderBackgroundPreview();
+            updateBgLayerControls();
+            updateJsonOutput();
+            showToast('Layer deleted');
+        }
+
+        function updateBgLayerControls() {
+            if (state.selectedBgLayer < 0 || state.selectedBgLayer >= state.backgrounds.length) {
+                elements.bgLayerControls.style.display = 'none';
+                document.getElementById('bgLayerSettings').innerHTML = '<div class="no-layers-message">Select a layer to edit its settings</div>';
+                return;
+            }
+
+            elements.bgLayerControls.style.display = 'block';
+            document.getElementById('bgLayerSettings').innerHTML = '';
+
+            const layer = state.backgrounds[state.selectedBgLayer];
+            elements.bgLayerName.value = layer.name;
+            elements.bgDepth.value = layer.depth;
+            elements.bgScrollRate.value = layer.scrollRate;
+            elements.bgOffsetX.value = layer.offsetX;
+            elements.bgOffsetY.value = layer.offsetY;
+            elements.bgScale.value = layer.scale;
+            elements.bgScaleValue.textContent = layer.scale + 'x';
+        }
+
+        function updateSelectedBgLayer(property, value) {
+            if (state.selectedBgLayer < 0) return;
+            state.backgrounds[state.selectedBgLayer][property] = value;
+            renderBackgroundLayers();
+            renderBackgroundPreview();
+            updateJsonOutput();
+        }
+
+        function renderBackgroundPreview() {
+            const canvas = elements.backgroundCanvas;
+            const ctx = canvas.getContext('2d');
+
+            // Size canvas to level dimensions
+            const levelWidth = state.gridWidth * 24;
+            const levelHeight = state.gridHeight * 24;
+            canvas.width = levelWidth;
+            canvas.height = levelHeight;
+
+            ctx.imageSmoothingEnabled = false;
+            ctx.clearRect(0, 0, levelWidth, levelHeight);
+
+            // Draw checkerboard for transparency
+            const checkSize = 8;
+            for (let y = 0; y < levelHeight; y += checkSize) {
+                for (let x = 0; x < levelWidth; x += checkSize) {
+                    ctx.fillStyle = ((x / checkSize + y / checkSize) % 2 === 0) ? '#252542' : '#1a1a2e';
+                    ctx.fillRect(x, y, checkSize, checkSize);
+                }
+            }
+
+            // Sort layers by depth (furthest back first)
+            const sortedLayers = [...state.backgrounds]
+                .filter(l => l.visible)
+                .sort((a, b) => a.depth - b.depth);
+
+            sortedLayers.forEach(layer => {
+                ctx.save();
+                ctx.translate(layer.offsetX, layer.offsetY);
+                const scaledWidth = layer.image.width * layer.scale;
+                const scaledHeight = layer.image.height * layer.scale;
+                ctx.drawImage(layer.image, 0, 0, scaledWidth, scaledHeight);
+                ctx.restore();
+            });
+        }
+
+        // Background layer input handlers
+        elements.bgFileInput.addEventListener('change', (e) => {
+            if (e.target.files[0]) {
+                addBackgroundLayer(e.target.files[0]);
+                e.target.value = ''; // Reset for re-upload
+            }
+        });
+
+        elements.bgLayerName.addEventListener('input', (e) => updateSelectedBgLayer('name', e.target.value));
+        elements.bgDepth.addEventListener('input', (e) => updateSelectedBgLayer('depth', parseInt(e.target.value) || 0));
+        elements.bgScrollRate.addEventListener('input', (e) => updateSelectedBgLayer('scrollRate', parseFloat(e.target.value) || 1));
+        elements.bgOffsetX.addEventListener('input', (e) => updateSelectedBgLayer('offsetX', parseInt(e.target.value) || 0));
+        elements.bgOffsetY.addEventListener('input', (e) => updateSelectedBgLayer('offsetY', parseInt(e.target.value) || 0));
+        elements.bgScale.addEventListener('input', (e) => {
+            const val = parseFloat(e.target.value);
+            elements.bgScaleValue.textContent = val + 'x';
+            updateSelectedBgLayer('scale', val);
+        });
+
+        // Pixelify controls
+        elements.pixelSize.addEventListener('input', (e) => {
+            elements.pixelSizeValue.textContent = e.target.value + 'px';
+            state.pixelifySettings.pixelSize = parseInt(e.target.value);
+        });
+
+        elements.colorDepth.addEventListener('input', (e) => {
+            elements.colorDepthValue.textContent = e.target.value;
+            state.pixelifySettings.colorDepth = parseInt(e.target.value);
+        });
+
+        elements.enableDithering.addEventListener('change', (e) => {
+            state.pixelifySettings.dithering = e.target.checked;
+        });
+
+        elements.ditherPattern.addEventListener('change', (e) => {
+            state.pixelifySettings.ditherPattern = e.target.value;
+        });
+
+        // ==========================================
+        // Pixelify Effect
+        // ==========================================
+        function applyPixelifyEffect() {
+            if (state.selectedBgLayer < 0) {
+                showToast('Select a layer first');
+                return;
+            }
+
+            const layer = state.backgrounds[state.selectedBgLayer];
+            const { pixelSize, colorDepth, dithering, ditherPattern } = state.pixelifySettings;
+
+            // Create working canvas
+            const workCanvas = document.createElement('canvas');
+            const workCtx = workCanvas.getContext('2d');
+            workCanvas.width = layer.image.width;
+            workCanvas.height = layer.image.height;
+
+            // Draw original image
+            workCtx.drawImage(layer.image, 0, 0);
+
+            // Store original for undo if not already stored
+            if (!layer.originalImageData) {
+                layer.originalImageData = workCtx.getImageData(0, 0, workCanvas.width, workCanvas.height);
+            }
+
+            // Downscale
+            const smallWidth = Math.ceil(workCanvas.width / pixelSize);
+            const smallHeight = Math.ceil(workCanvas.height / pixelSize);
+
+            const smallCanvas = document.createElement('canvas');
+            const smallCtx = smallCanvas.getContext('2d');
+            smallCanvas.width = smallWidth;
+            smallCanvas.height = smallHeight;
+            smallCtx.imageSmoothingEnabled = false;
+            smallCtx.drawImage(workCanvas, 0, 0, smallWidth, smallHeight);
+
+            // Get pixel data for posterization
+            const imageData = smallCtx.getImageData(0, 0, smallWidth, smallHeight);
+            const data = imageData.data;
+
+            // Posterize colors
+            const levels = 256 / colorDepth;
+            for (let i = 0; i < data.length; i += 4) {
+                data[i] = Math.round(data[i] / levels) * levels;     // R
+                data[i + 1] = Math.round(data[i + 1] / levels) * levels; // G
+                data[i + 2] = Math.round(data[i + 2] / levels) * levels; // B
+            }
+
+            // Apply dithering if enabled
+            if (dithering) {
+                applyDithering(imageData, ditherPattern);
+            }
+
+            smallCtx.putImageData(imageData, 0, 0);
+
+            // Upscale back
+            workCtx.imageSmoothingEnabled = false;
+            workCtx.clearRect(0, 0, workCanvas.width, workCanvas.height);
+            workCtx.drawImage(smallCanvas, 0, 0, workCanvas.width, workCanvas.height);
+
+            // Update layer image
+            const newImg = new Image();
+            newImg.onload = () => {
+                layer.image = newImg;
+                layer.pixelified = true;
+                renderBackgroundPreview();
+                showToast('Pixelify effect applied');
+            };
+            newImg.src = workCanvas.toDataURL();
+        }
+
+        function applyDithering(imageData, pattern) {
+            const { width, height, data } = imageData;
+
+            if (pattern === 'ordered') {
+                // Bayer 4x4 matrix
+                const bayer = [
+                    [0, 8, 2, 10],
+                    [12, 4, 14, 6],
+                    [3, 11, 1, 9],
+                    [15, 7, 13, 5]
+                ];
+
+                for (let y = 0; y < height; y++) {
+                    for (let x = 0; x < width; x++) {
+                        const i = (y * width + x) * 4;
+                        const threshold = (bayer[y % 4][x % 4] / 16 - 0.5) * 32;
+
+                        data[i] = Math.max(0, Math.min(255, data[i] + threshold));
+                        data[i + 1] = Math.max(0, Math.min(255, data[i + 1] + threshold));
+                        data[i + 2] = Math.max(0, Math.min(255, data[i + 2] + threshold));
+                    }
+                }
+            } else if (pattern === 'floyd-steinberg') {
+                // Floyd-Steinberg error diffusion
+                for (let y = 0; y < height; y++) {
+                    for (let x = 0; x < width; x++) {
+                        const i = (y * width + x) * 4;
+                        for (let c = 0; c < 3; c++) {
+                            const oldVal = data[i + c];
+                            const newVal = Math.round(oldVal / 32) * 32;
+                            data[i + c] = newVal;
+                            const error = oldVal - newVal;
+
+                            // Distribute error
+                            if (x + 1 < width) data[i + 4 + c] += error * 7 / 16;
+                            if (y + 1 < height) {
+                                if (x > 0) data[i + width * 4 - 4 + c] += error * 3 / 16;
+                                data[i + width * 4 + c] += error * 5 / 16;
+                                if (x + 1 < width) data[i + width * 4 + 4 + c] += error * 1 / 16;
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        function resetPixelify() {
+            if (state.selectedBgLayer < 0) return;
+
+            const layer = state.backgrounds[state.selectedBgLayer];
+            if (!layer.originalImageData) {
+                showToast('No original to restore');
+                return;
+            }
+
+            // Restore from original
+            const canvas = document.createElement('canvas');
+            canvas.width = layer.originalImageData.width;
+            canvas.height = layer.originalImageData.height;
+            const ctx = canvas.getContext('2d');
+            ctx.putImageData(layer.originalImageData, 0, 0);
+
+            const newImg = new Image();
+            newImg.onload = () => {
+                layer.image = newImg;
+                layer.pixelified = false;
+                renderBackgroundPreview();
+                showToast('Reset to original');
+            };
+            newImg.src = canvas.toDataURL();
+        }
+
+        elements.applyPixelify.addEventListener('click', applyPixelifyEffect);
+        elements.resetPixelify.addEventListener('click', resetPixelify);
+        elements.pixelifyBtn.addEventListener('click', () => {
+            // Just focus on the pixelify settings - they're already visible
+            showToast('Adjust settings and click Apply');
+        });
+
+        // ==========================================
+        // Tile Painter
+        // ==========================================
+        function initVisualTiles() {
+            state.visualTiles = [];
+            for (let y = 0; y < state.gridHeight; y++) {
+                const row = [];
+                for (let x = 0; x < state.gridWidth; x++) {
+                    row.push(null);
+                }
+                state.visualTiles.push(row);
+            }
+        }
+
+        async function loadSpriteIndex() {
+            try {
+                const response = await fetch('/assets/sprites/sprite-index.json');
+                if (response.ok) {
+                    const data = await response.json();
+                    state.spriteSheets = data;
+                    populateSpriteSheetSelect();
+                }
+            } catch (e) {
+                console.warn('Could not load sprite index:', e);
+                elements.paletteGrid.innerHTML = '<div class="no-sprites-message">No sprite sheets found. Create some with Tilesmith!</div>';
+            }
+        }
+
+        function populateSpriteSheetSelect() {
+            const sheetNames = Object.keys(state.spriteSheets);
+            if (sheetNames.length === 0) {
+                elements.spriteSheetSelect.innerHTML = '<option value="">No sheets available</option>';
+                return;
+            }
+
+            elements.spriteSheetSelect.innerHTML = '<option value="">-- Select Sheet --</option>' +
+                sheetNames.map(name => `<option value="${name}">${name}</option>`).join('');
+        }
+
+        async function loadSpriteSheet(sheetName) {
+            if (!sheetName || !state.spriteSheets[sheetName]) {
+                elements.paletteGrid.innerHTML = '<div class="no-sprites-message">Select a sprite sheet to load sprites</div>';
+                return;
+            }
+
+            const sheetData = state.spriteSheets[sheetName];
+
+            // Load image if not already loaded
+            if (!state.spriteImages[sheetName]) {
+                const img = new Image();
+                img.src = sheetData.path || `/assets/sprites/${sheetName}.png`;
+                await new Promise((resolve, reject) => {
+                    img.onload = resolve;
+                    img.onerror = () => {
+                        console.warn('Could not load sprite sheet:', sheetName);
+                        reject();
+                    };
+                }).catch(() => {
+                    elements.paletteGrid.innerHTML = '<div class="no-sprites-message">Could not load sprite sheet image</div>';
+                    return;
+                });
+                state.spriteImages[sheetName] = img;
+            }
+
+            state.selectedSpriteSheet = sheetName;
+            renderSpritePalette();
+        }
+
+        function renderSpritePalette() {
+            const sheetName = state.selectedSpriteSheet;
+            if (!sheetName || !state.spriteSheets[sheetName]) {
+                elements.paletteGrid.innerHTML = '<div class="no-sprites-message">Select a sprite sheet</div>';
+                return;
+            }
+
+            const sheetData = state.spriteSheets[sheetName];
+            const sheetImage = state.spriteImages[sheetName];
+            const sprites = sheetData.sprites || [];
+
+            if (sprites.length === 0) {
+                elements.paletteGrid.innerHTML = '<div class="no-sprites-message">No sprites in this sheet</div>';
+                return;
+            }
+
+            elements.paletteGrid.innerHTML = sprites.map((sprite, index) => {
+                const isSelected = state.selectedSprite &&
+                    state.selectedSprite.sheetName === sheetName &&
+                    state.selectedSprite.name === sprite.name;
+                return `<div class="palette-sprite ${isSelected ? 'selected' : ''}"
+                            data-sheet="${sheetName}"
+                            data-sprite="${sprite.name}"
+                            data-index="${index}"
+                            title="${sprite.name}"></div>`;
+            }).join('');
+
+            // Draw sprite thumbnails
+            elements.paletteGrid.querySelectorAll('.palette-sprite').forEach((el, index) => {
+                const sprite = sprites[index];
+                const canvas = document.createElement('canvas');
+                const size = 36;
+                const scale = Math.min(size / sprite.width, size / sprite.height, 2);
+                canvas.width = Math.floor(sprite.width * scale);
+                canvas.height = Math.floor(sprite.height * scale);
+
+                const ctx = canvas.getContext('2d');
+                ctx.imageSmoothingEnabled = false;
+                ctx.drawImage(
+                    sheetImage,
+                    sprite.x, sprite.y, sprite.width, sprite.height,
+                    0, 0, canvas.width, canvas.height
+                );
+
+                const img = document.createElement('img');
+                img.src = canvas.toDataURL();
+                el.appendChild(img);
+
+                el.addEventListener('click', () => selectSprite(sheetName, sprite));
+            });
+        }
+
+        function selectSprite(sheetName, sprite) {
+            state.selectedSprite = { sheetName, ...sprite };
+
+            // Update palette selection
+            elements.paletteGrid.querySelectorAll('.palette-sprite').forEach(el => {
+                el.classList.toggle('selected',
+                    el.dataset.sheet === sheetName && el.dataset.sprite === sprite.name);
+            });
+
+            // Update preview
+            renderSelectedSpritePreview();
+            elements.selectedSpriteName.value = sprite.name;
+        }
+
+        function renderSelectedSpritePreview() {
+            if (!state.selectedSprite) {
+                elements.selectedSpritePreview.innerHTML = '<span class="no-sprites-message">No sprite selected</span>';
+                return;
+            }
+
+            const sprite = state.selectedSprite;
+            const sheetImage = state.spriteImages[sprite.sheetName];
+            if (!sheetImage) return;
+
+            const canvas = document.createElement('canvas');
+            const maxSize = 64;
+            const scale = Math.min(maxSize / sprite.width, maxSize / sprite.height, 4);
+            canvas.width = Math.floor(sprite.width * scale);
+            canvas.height = Math.floor(sprite.height * scale);
+
+            const ctx = canvas.getContext('2d');
+            ctx.imageSmoothingEnabled = false;
+            ctx.drawImage(
+                sheetImage,
+                sprite.x, sprite.y, sprite.width, sprite.height,
+                0, 0, canvas.width, canvas.height
+            );
+
+            const img = document.createElement('img');
+            img.src = canvas.toDataURL();
+            elements.selectedSpritePreview.innerHTML = '';
+            elements.selectedSpritePreview.appendChild(img);
+        }
+
+        function paintVisualTile(x, y) {
+            if (!state.selectedSprite) return;
+            if (x < 0 || x >= state.gridWidth || y < 0 || y >= state.gridHeight) return;
+
+            state.visualTiles[y][x] = {
+                spriteSheet: state.selectedSprite.sheetName,
+                spriteName: state.selectedSprite.name,
+                x: state.selectedSprite.x,
+                y: state.selectedSprite.y,
+                width: state.selectedSprite.width,
+                height: state.selectedSprite.height
+            };
+
+            renderTileCanvas();
+            updateJsonOutput();
+        }
+
+        function eraseVisualTile(x, y) {
+            if (x < 0 || x >= state.gridWidth || y < 0 || y >= state.gridHeight) return;
+            state.visualTiles[y][x] = null;
+            renderTileCanvas();
+            updateJsonOutput();
+        }
+
+        function fillVisualTiles(startX, startY) {
+            if (!state.selectedSprite) return;
+            const originalTile = state.visualTiles[startY]?.[startX];
+            const originalKey = originalTile ?
+                `${originalTile.spriteSheet}:${originalTile.spriteName}` : null;
+
+            const newKey = `${state.selectedSprite.sheetName}:${state.selectedSprite.name}`;
+            if (originalKey === newKey) return;
+
+            const stack = [[startX, startY]];
+            const visited = new Set();
+
+            while (stack.length > 0) {
+                const [x, y] = stack.pop();
+                const key = `${x},${y}`;
+
+                if (visited.has(key)) continue;
+                if (x < 0 || x >= state.gridWidth || y < 0 || y >= state.gridHeight) continue;
+
+                const currentTile = state.visualTiles[y][x];
+                const currentKey = currentTile ?
+                    `${currentTile.spriteSheet}:${currentTile.spriteName}` : null;
+                if (currentKey !== originalKey) continue;
+
+                visited.add(key);
+                paintVisualTile(x, y);
+
+                stack.push([x + 1, y]);
+                stack.push([x - 1, y]);
+                stack.push([x, y + 1]);
+                stack.push([x, y - 1]);
+            }
+        }
+
+        function clearVisualTiles() {
+            for (let y = 0; y < state.gridHeight; y++) {
+                for (let x = 0; x < state.gridWidth; x++) {
+                    state.visualTiles[y][x] = null;
+                }
+            }
+            renderTileCanvas();
+            updateJsonOutput();
+            showToast('Visual tiles cleared');
+        }
+
+        function renderTileCanvas() {
+            const canvas = elements.tileCanvas;
+            const ctx = canvas.getContext('2d');
+            const tileSize = 24;
+
+            canvas.width = state.gridWidth * tileSize;
+            canvas.height = state.gridHeight * tileSize;
+            ctx.imageSmoothingEnabled = false;
+
+            // Clear
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            // Draw collision grid as semi-transparent underlay
+            for (let y = 0; y < state.gridHeight; y++) {
+                for (let x = 0; x < state.gridWidth; x++) {
+                    const tile = state.tiles[y]?.[x];
+                    ctx.globalAlpha = 0.3;
+                    if (tile === 'open') {
+                        ctx.fillStyle = '#2a5a30';
+                    } else if (tile === 'obstruction') {
+                        ctx.fillStyle = '#6a2a2a';
+                    } else if (tile === 'spawn') {
+                        ctx.fillStyle = '#2a4a6a';
+                    } else {
+                        ctx.fillStyle = '#1a1a2e';
+                    }
+                    ctx.fillRect(x * tileSize, y * tileSize, tileSize, tileSize);
+                }
+            }
+
+            ctx.globalAlpha = 1;
+
+            // Draw visual tiles
+            for (let y = 0; y < state.gridHeight; y++) {
+                for (let x = 0; x < state.gridWidth; x++) {
+                    const tile = state.visualTiles[y]?.[x];
+                    if (!tile) continue;
+
+                    const sheetImage = state.spriteImages[tile.spriteSheet];
+                    if (!sheetImage) continue;
+
+                    ctx.drawImage(
+                        sheetImage,
+                        tile.x, tile.y, tile.width, tile.height,
+                        x * tileSize, y * tileSize, tileSize, tileSize
+                    );
+                }
+            }
+
+            // Draw grid lines
+            ctx.strokeStyle = 'rgba(106, 106, 142, 0.25)';
+            ctx.lineWidth = 1;
+            for (let x = 0; x <= state.gridWidth; x++) {
+                ctx.beginPath();
+                ctx.moveTo(x * tileSize + 0.5, 0);
+                ctx.lineTo(x * tileSize + 0.5, canvas.height);
+                ctx.stroke();
+            }
+            for (let y = 0; y <= state.gridHeight; y++) {
+                ctx.beginPath();
+                ctx.moveTo(0, y * tileSize + 0.5);
+                ctx.lineTo(canvas.width, y * tileSize + 0.5);
+                ctx.stroke();
+            }
+        }
+
+        // Tile canvas mouse handlers
+        function getTileFromCanvasEvent(e) {
+            const canvas = elements.tileCanvas;
+            const rect = canvas.getBoundingClientRect();
+            const scaleX = canvas.width / rect.width;
+            const scaleY = canvas.height / rect.height;
+            const x = Math.floor((e.clientX - rect.left) * scaleX / 24);
+            const y = Math.floor((e.clientY - rect.top) * scaleY / 24);
+            return { x, y };
+        }
+
+        elements.tileCanvas.addEventListener('mousedown', (e) => {
+            state.tileMouseDown = true;
+            const { x, y } = getTileFromCanvasEvent(e);
+
+            if (state.currentTileTool === 'paint') {
+                paintVisualTile(x, y);
+            } else if (state.currentTileTool === 'erase') {
+                eraseVisualTile(x, y);
+            } else if (state.currentTileTool === 'fill') {
+                fillVisualTiles(x, y);
+            }
+        });
+
+        elements.tileCanvas.addEventListener('mousemove', (e) => {
+            if (!state.tileMouseDown) return;
+            const { x, y } = getTileFromCanvasEvent(e);
+
+            if (state.currentTileTool === 'paint') {
+                paintVisualTile(x, y);
+            } else if (state.currentTileTool === 'erase') {
+                eraseVisualTile(x, y);
+            }
+        });
+
+        document.addEventListener('mouseup', () => {
+            state.tileMouseDown = false;
+        });
+
+        // Tile tool buttons
+        document.querySelectorAll('[data-tile-tool]').forEach(btn => {
+            btn.addEventListener('click', () => {
+                state.currentTileTool = btn.dataset.tileTool;
+                document.querySelectorAll('[data-tile-tool]').forEach(b => {
+                    b.classList.toggle('active', b.dataset.tileTool === state.currentTileTool);
+                });
+            });
+        });
+
+        elements.spriteSheetSelect.addEventListener('change', (e) => {
+            loadSpriteSheet(e.target.value);
+        });
+
+        elements.clearTilesBtn.addEventListener('click', clearVisualTiles);
+
+        // ==========================================
         // Initialize
         // ==========================================
         initGrid();
+        initVisualTiles();
+        loadSpriteIndex();
     </script>
 </body>
 </html>
