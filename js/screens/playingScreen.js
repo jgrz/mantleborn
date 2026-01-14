@@ -13,6 +13,7 @@
  */
 
 import { GameState } from '../game.js';
+import { SpriteSheet, Animator } from '../utils/sprite.js';
 
 // Color palette
 const COLORS = {
@@ -212,6 +213,39 @@ class Player {
 
         // Reference to particle system (set by PlayingScreen)
         this.particles = null;
+
+        // Sprite animation (set by PlayingScreen after sprite loads)
+        this.animator = null;
+        this.spriteOffsetX = -5;  // Offset to center sprite on collision box
+        this.spriteOffsetY = -11; // Offset to align sprite bottom with collision box bottom
+    }
+
+    /**
+     * Set the animator for sprite rendering
+     */
+    setAnimator(animator) {
+        this.animator = animator;
+    }
+
+    /**
+     * Determine which animation to play based on state
+     */
+    updateAnimation() {
+        if (!this.animator) return;
+
+        if (this.isGroundPounding || this.groundPoundLanding) {
+            this.animator.play('duck');
+        } else if (!this.onGround) {
+            if (this.vy < 0) {
+                this.animator.play('jump');
+            } else {
+                this.animator.play('fall');
+            }
+        } else if (this.isMoving) {
+            this.animator.play('walk');
+        } else {
+            this.animator.play('idle');
+        }
     }
 
     mountPogo() {
@@ -411,11 +445,17 @@ class Player {
             this.checkMantle(room);
         }
 
-        // Animation timer
+        // Animation timer (legacy, for non-sprite rendering)
         if (this.isMoving) {
             this.animTime += dt * 8;
         } else {
             this.animTime = 0;
+        }
+
+        // Update sprite animation
+        this.updateAnimation();
+        if (this.animator) {
+            this.animator.update(dt);
         }
     }
 
@@ -618,17 +658,7 @@ class Player {
     }
 
     render(ctx) {
-        // Determine color based on state
-        let color = COLORS.player;
-        if (this.isDashing) {
-            color = COLORS.playerDash;
-        }
-
-        // Bob animation when moving
-        const bob = this.isMoving && !this.isDashing ? Math.sin(this.animTime) * 1 : 0;
-        let drawY = this.y + bob;
-
-        // Squash during ground pound landing or pogo landing
+        // Squash/stretch values for animation
         let scaleY = 1;
         let scaleX = 1;
         if (this.groundPoundLanding) {
@@ -638,11 +668,9 @@ class Player {
             scaleY = 0.8;
             scaleX = 0.9;
         } else if (this.isMantling) {
-            // Stretch during mantle
             scaleY = 1.1;
             scaleX = 0.9;
         } else if (this.onPogo && this.pogoSquash > 0) {
-            // Pogo squash on landing
             scaleY = 1 - this.pogoSquash * 0.3;
             scaleX = 1 + this.pogoSquash * 0.2;
         }
@@ -651,46 +679,66 @@ class Player {
         ctx.fillStyle = 'rgba(0, 0, 0, 0.3)';
         ctx.fillRect(this.x + 1, this.y + this.height - 2, this.width - 2, 2);
 
-        // Draw with scaling
-        ctx.save();
-        const centerX = this.x + this.width / 2;
-        const bottomY = this.y + this.height;
-        ctx.translate(centerX, bottomY);
-        ctx.scale(scaleX, scaleY);
-        ctx.translate(-centerX, -bottomY);
+        // Use sprite if available
+        if (this.animator && this.animator.spriteSheet.loaded) {
+            const spriteX = this.x + this.spriteOffsetX;
+            const spriteY = this.y + this.spriteOffsetY;
+            const flipX = this.facing < 0;
 
-        // Body
-        ctx.fillStyle = color;
-        ctx.fillRect(this.x + 2, drawY + 4, this.width - 4, this.height - 4);
+            // Dash trail effect with sprite
+            if (this.isDashing) {
+                ctx.globalAlpha = 0.3;
+                this.animator.draw(ctx, spriteX - this.facing * 6, spriteY, flipX, scaleX, scaleY);
+                ctx.globalAlpha = 0.15;
+                this.animator.draw(ctx, spriteX - this.facing * 12, spriteY, flipX, scaleX, scaleY);
+                ctx.globalAlpha = 1;
+            }
 
-        // Head
-        ctx.fillStyle = color;
-        ctx.fillRect(this.x + 1, drawY, this.width - 2, 8);
+            this.animator.draw(ctx, spriteX, spriteY, flipX, scaleX, scaleY);
+        } else {
+            // Fallback rectangle rendering
+            let color = COLORS.player;
+            if (this.isDashing) {
+                color = COLORS.playerDash;
+            }
 
-        // Eye
-        const eyeX = this.facing > 0 ? this.x + 7 : this.x + 3;
-        ctx.fillStyle = '#1a1a24';
-        ctx.fillRect(eyeX, drawY + 3, 2, 2);
+            const bob = this.isMoving && !this.isDashing ? Math.sin(this.animTime) * 1 : 0;
+            let drawY = this.y + bob;
 
-        // Wall slide indicator (arms out)
-        if (this.isWallSliding) {
+            ctx.save();
+            const centerX = this.x + this.width / 2;
+            const bottomY = this.y + this.height;
+            ctx.translate(centerX, bottomY);
+            ctx.scale(scaleX, scaleY);
+            ctx.translate(-centerX, -bottomY);
+
             ctx.fillStyle = color;
-            const armX = this.wallDirection < 0 ? this.x - 3 : this.x + this.width;
-            ctx.fillRect(armX, drawY + 5, 3, 2);
-        }
+            ctx.fillRect(this.x + 2, drawY + 4, this.width - 4, this.height - 4);
+            ctx.fillStyle = color;
+            ctx.fillRect(this.x + 1, drawY, this.width - 2, 8);
 
-        // Dash trail effect
-        if (this.isDashing) {
-            ctx.globalAlpha = 0.3;
-            ctx.fillRect(this.x - this.facing * 6, drawY + 2, this.width - 2, this.height - 4);
-            ctx.globalAlpha = 0.15;
-            ctx.fillRect(this.x - this.facing * 12, drawY + 4, this.width - 4, this.height - 8);
-            ctx.globalAlpha = 1;
-        }
+            const eyeX = this.facing > 0 ? this.x + 7 : this.x + 3;
+            ctx.fillStyle = '#1a1a24';
+            ctx.fillRect(eyeX, drawY + 3, 2, 2);
 
-        // Outline accents
-        ctx.fillStyle = COLORS.playerOutline;
-        ctx.fillRect(this.x + 1, drawY + this.height - 4, this.width - 2, 1);
+            if (this.isWallSliding) {
+                ctx.fillStyle = color;
+                const armX = this.wallDirection < 0 ? this.x - 3 : this.x + this.width;
+                ctx.fillRect(armX, drawY + 5, 3, 2);
+            }
+
+            if (this.isDashing) {
+                ctx.globalAlpha = 0.3;
+                ctx.fillRect(this.x - this.facing * 6, drawY + 2, this.width - 2, this.height - 4);
+                ctx.globalAlpha = 0.15;
+                ctx.fillRect(this.x - this.facing * 12, drawY + 4, this.width - 4, this.height - 8);
+                ctx.globalAlpha = 1;
+            }
+
+            ctx.fillStyle = COLORS.playerOutline;
+            ctx.fillRect(this.x + 1, drawY + this.height - 4, this.width - 2, 1);
+            ctx.restore();
+        }
 
         // Pogo stick rendering
         if (this.onPogo) {
@@ -1156,6 +1204,10 @@ export class PlayingScreen {
         // Link particle system to player
         this.player.particles = this.particles;
 
+        // Load player sprite sheet
+        this.playerSpriteSheet = new SpriteSheet();
+        this.loadSprites();
+
         // Input state
         this.input = {
             left: false,
@@ -1168,6 +1220,21 @@ export class PlayingScreen {
         // Track held keys
         this.jumpHeld = false;
         this.dashHeld = false;
+    }
+
+    /**
+     * Load sprite sheets asynchronously
+     */
+    async loadSprites() {
+        try {
+            await this.playerSpriteSheet.load('assets/sprites/player.json');
+            const animator = new Animator(this.playerSpriteSheet);
+            animator.play('idle');
+            this.player.setAnimator(animator);
+            console.log('Player sprites loaded');
+        } catch (e) {
+            console.warn('Could not load player sprites, using fallback:', e);
+        }
     }
 
     onEnter() {
