@@ -353,6 +353,40 @@
             margin-bottom: 2px;
         }
 
+        .timeline-frame-tween {
+            font-size: 7px;
+            color: var(--mystic-glow);
+            margin-top: 2px;
+        }
+
+        /* Tween connector between frames */
+        .timeline-tween-connector {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 24px;
+            flex-shrink: 0;
+            position: relative;
+        }
+
+        .timeline-tween-connector::before {
+            content: '';
+            position: absolute;
+            width: 100%;
+            height: 2px;
+            background: linear-gradient(90deg, var(--mystic-glow), var(--accent-ember));
+            top: 50%;
+            transform: translateY(-50%);
+        }
+
+        .timeline-tween-connector-icon {
+            background: var(--timeline-track);
+            padding: 2px 4px;
+            font-size: 10px;
+            z-index: 1;
+            color: var(--mystic-glow);
+        }
+
         .timeline-frame-name {
             font-size: 7px;
             color: var(--stone-mid);
@@ -809,6 +843,18 @@
                         </div>
                     </div>
                 </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label class="form-label">Tween Duration (s)</label>
+                        <input type="number" class="form-input" id="tweenDuration" value="0" min="0" max="5" step="0.05">
+                    </div>
+                    <div class="form-group">
+                        <div class="checkbox-group" style="margin-top: 20px;">
+                            <input type="checkbox" id="enableTween">
+                            <label for="enableTween">Enable tweening</label>
+                        </div>
+                    </div>
+                </div>
             </div>
 
             <!-- Selected Frame Editor -->
@@ -873,7 +919,10 @@
             isPlaying: false,
             playbackFrame: 0,
             playbackTimer: 0,
-            speedMultiplier: 1
+            speedMultiplier: 1,
+            tweenEnabled: false,
+            tweenDuration: 0,
+            tweenProgress: 0  // 0-1 progress through current tween
         };
 
         let spriteIndex = null;
@@ -901,6 +950,8 @@
             animationName: document.getElementById('animationName'),
             defaultDuration: document.getElementById('defaultDuration'),
             uniformDuration: document.getElementById('uniformDuration'),
+            tweenDuration: document.getElementById('tweenDuration'),
+            enableTween: document.getElementById('enableTween'),
             frameEditor: document.getElementById('frameEditor'),
             frameSpriteName: document.getElementById('frameSpriteName'),
             frameDuration: document.getElementById('frameDuration'),
@@ -1163,6 +1214,15 @@
                 frameEl.addEventListener('drop', handleDrop);
 
                 elements.timelineTrack.appendChild(frameEl);
+
+                // Add tween connector after frame (except for last frame)
+                if (state.tweenEnabled && state.tweenDuration > 0 && index < state.frames.length - 1) {
+                    const connector = document.createElement('div');
+                    connector.className = 'timeline-tween-connector';
+                    connector.innerHTML = `<span class="timeline-tween-connector-icon">~</span>`;
+                    connector.title = `Tween: ${state.tweenDuration.toFixed(2)}s`;
+                    elements.timelineTrack.appendChild(connector);
+                }
             });
         }
 
@@ -1209,8 +1269,18 @@
         }
 
         function updateTimelineInfo() {
-            const totalDuration = state.frames.reduce((sum, f) => sum + f.duration, 0);
-            elements.timelineInfo.textContent = `${state.frames.length} frames | ${totalDuration.toFixed(2)}s`;
+            const holdDuration = state.frames.reduce((sum, f) => sum + f.duration, 0);
+            // Add tween time between frames (n-1 tweens for n frames in a loop)
+            const tweenTime = state.tweenEnabled && state.frames.length > 1
+                ? state.tweenDuration * state.frames.length
+                : 0;
+            const totalDuration = holdDuration + tweenTime;
+
+            let info = `${state.frames.length} frames | ${totalDuration.toFixed(2)}s`;
+            if (tweenTime > 0) {
+                info += ` (${tweenTime.toFixed(2)}s tween)`;
+            }
+            elements.timelineInfo.textContent = info;
         }
 
         function clearTimeline() {
@@ -1310,8 +1380,29 @@
             state.playbackTimer += dt;
 
             const currentFrame = state.frames[state.playbackFrame];
-            if (currentFrame && state.playbackTimer >= currentFrame.duration) {
+            if (!currentFrame) {
+                animationLoop = requestAnimationFrame(updatePlayback);
+                return;
+            }
+
+            // Calculate total frame time (hold + tween)
+            const holdDuration = currentFrame.duration;
+            const tweenDur = state.tweenEnabled ? state.tweenDuration : 0;
+            const totalFrameTime = holdDuration + tweenDur;
+
+            // Determine if we're in hold phase or tween phase
+            if (state.playbackTimer < holdDuration) {
+                // Hold phase - no tweening
+                state.tweenProgress = 0;
+            } else if (tweenDur > 0) {
+                // Tween phase - calculate progress 0-1
+                state.tweenProgress = Math.min((state.playbackTimer - holdDuration) / tweenDur, 1);
+            }
+
+            // Advance to next frame when total time exceeded
+            if (state.playbackTimer >= totalFrameTime) {
                 state.playbackTimer = 0;
+                state.tweenProgress = 0;
                 state.playbackFrame = (state.playbackFrame + 1) % state.frames.length;
                 renderTimeline();
             }
@@ -1327,28 +1418,62 @@
 
             if (state.frames.length === 0 || !state.spriteSheet) return;
 
-            const frame = state.frames[state.playbackFrame];
-            if (!frame) return;
+            const currentFrame = state.frames[state.playbackFrame];
+            if (!currentFrame) return;
 
-            const sprite = frame.spriteData;
-            const scale = Math.min(120 / sprite.width, 120 / sprite.height);
-            const destW = Math.floor(sprite.width * scale);
-            const destH = Math.floor(sprite.height * scale);
-            const destX = Math.floor((128 - destW) / 2);
-            const destY = Math.floor((128 - destH) / 2);
+            const nextFrameIndex = (state.playbackFrame + 1) % state.frames.length;
+            const nextFrame = state.frames[nextFrameIndex];
 
-            previewCtx.drawImage(
-                state.spriteSheet,
-                sprite.x, sprite.y, sprite.width, sprite.height,
-                destX, destY, destW, destH
-            );
+            // Helper to draw a sprite with given opacity
+            function drawSprite(frame, alpha) {
+                const sprite = frame.spriteData;
+                const scale = Math.min(120 / sprite.width, 120 / sprite.height);
+                const destW = Math.floor(sprite.width * scale);
+                const destH = Math.floor(sprite.height * scale);
+                const destX = Math.floor((128 - destW) / 2);
+                const destY = Math.floor((128 - destH) / 2);
+
+                previewCtx.globalAlpha = alpha;
+                previewCtx.drawImage(
+                    state.spriteSheet,
+                    sprite.x, sprite.y, sprite.width, sprite.height,
+                    destX, destY, destW, destH
+                );
+            }
+
+            // If tweening and we have progress, crossfade between frames
+            if (state.tweenEnabled && state.tweenProgress > 0 && state.tweenDuration > 0 && nextFrame) {
+                // Ease the tween progress for smoother transition
+                const easedProgress = easeInOutCubic(state.tweenProgress);
+
+                // Draw current frame fading out
+                drawSprite(currentFrame, 1 - easedProgress);
+                // Draw next frame fading in
+                drawSprite(nextFrame, easedProgress);
+
+                previewCtx.globalAlpha = 1;
+            } else {
+                // No tween - draw current frame at full opacity
+                drawSprite(currentFrame, 1);
+            }
+        }
+
+        // Easing function for smooth tweens
+        function easeInOutCubic(t) {
+            return t < 0.5
+                ? 4 * t * t * t
+                : 1 - Math.pow(-2 * t + 2, 3) / 2;
         }
 
         function updatePreviewInfo() {
             if (state.frames.length === 0) {
                 elements.previewInfo.textContent = 'No frames';
             } else {
-                elements.previewInfo.textContent = `Frame ${state.playbackFrame + 1}/${state.frames.length}`;
+                let info = `Frame ${state.playbackFrame + 1}/${state.frames.length}`;
+                if (state.tweenEnabled && state.tweenProgress > 0 && state.tweenDuration > 0) {
+                    info += ` (tween ${Math.round(state.tweenProgress * 100)}%)`;
+                }
+                elements.previewInfo.textContent = info;
             }
         }
 
@@ -1359,29 +1484,35 @@
             const animName = elements.animationName.value || 'untitled';
             const useUniform = elements.uniformDuration.checked;
 
-            let output;
+            let animData;
 
             if (useUniform) {
                 // Standard format: uniform duration for all frames
                 const defaultDur = parseFloat(elements.defaultDuration.value) || 0.5;
-                output = {
-                    [animName]: {
-                        frames: state.frames.map(f => f.sprite),
-                        frameDuration: defaultDur
-                    }
+                animData = {
+                    frames: state.frames.map(f => f.sprite),
+                    frameDuration: defaultDur
                 };
             } else {
                 // Extended format: per-frame durations
-                output = {
-                    [animName]: {
-                        frames: state.frames.map(f => ({
-                            sprite: f.sprite,
-                            duration: f.duration
-                        }))
-                    }
+                animData = {
+                    frames: state.frames.map(f => ({
+                        sprite: f.sprite,
+                        duration: f.duration
+                    }))
                 };
             }
 
+            // Add tween data if enabled
+            if (state.tweenEnabled && state.tweenDuration > 0) {
+                animData.tween = {
+                    enabled: true,
+                    duration: state.tweenDuration,
+                    easing: 'easeInOutCubic'
+                };
+            }
+
+            const output = { [animName]: animData };
             elements.jsonOutput.textContent = JSON.stringify(output, null, 2);
         }
 
@@ -1397,13 +1528,24 @@
             const useUniform = elements.uniformDuration.checked;
             const defaultDur = parseFloat(elements.defaultDuration.value) || 0.5;
 
+            const animData = {
+                frames: state.frames.map(f => f.sprite),
+                frameDuration: useUniform ? defaultDur : state.frames.map(f => f.duration)
+            };
+
+            // Add tween data if enabled
+            if (state.tweenEnabled && state.tweenDuration > 0) {
+                animData.tween = {
+                    enabled: true,
+                    duration: state.tweenDuration,
+                    easing: 'easeInOutCubic'
+                };
+            }
+
             const indexEntry = {
                 [state.spriteSheetName]: {
                     animations: {
-                        [animName]: {
-                            frames: state.frames.map(f => f.sprite),
-                            frameDuration: useUniform ? defaultDur : state.frames.map(f => f.duration)
-                        }
+                        [animName]: animData
                     }
                 }
             };
@@ -1458,6 +1600,28 @@
 
         elements.uniformDuration.addEventListener('change', () => {
             applyUniformDuration();
+            updateJsonOutput();
+        });
+
+        elements.enableTween.addEventListener('change', (e) => {
+            state.tweenEnabled = e.target.checked;
+            if (state.tweenEnabled && state.tweenDuration === 0) {
+                state.tweenDuration = 0.15;
+                elements.tweenDuration.value = 0.15;
+            }
+            renderTimeline();
+            updateTimelineInfo();
+            updateJsonOutput();
+        });
+
+        elements.tweenDuration.addEventListener('change', (e) => {
+            state.tweenDuration = parseFloat(e.target.value) || 0;
+            if (state.tweenDuration > 0 && !state.tweenEnabled) {
+                state.tweenEnabled = true;
+                elements.enableTween.checked = true;
+            }
+            renderTimeline();
+            updateTimelineInfo();
             updateJsonOutput();
         });
 
