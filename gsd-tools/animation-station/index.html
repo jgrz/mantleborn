@@ -1,0 +1,1484 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Animation Station | Mantleborn Dev Tools</title>
+    <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+    <style>
+        /* ============================================
+           MANTLEBORN ANIMATION-STATION - CSS
+           ============================================ */
+
+        :root {
+            /* Backgrounds */
+            --bg-deep: #0d0d14;
+            --bg-mid: #1a1a2e;
+            --bg-surface: #252542;
+
+            /* Accents - ember warmth */
+            --accent-ember: #e07020;
+            --accent-ember-glow: #ff9040;
+            --accent-magma: #c04020;
+
+            /* Stone/neutral tones */
+            --stone-dark: #3a3a5c;
+            --stone-mid: #6a6a8e;
+            --stone-light: #9a9abe;
+            --stone-bright: #d0d0e8;
+
+            /* Purple undertones */
+            --mystic-deep: #2a1a3e;
+            --mystic-glow: #8060c0;
+
+            /* Timeline colors */
+            --timeline-bg: #151520;
+            --timeline-track: #202030;
+            --frame-border: #4a4a6e;
+            --frame-selected: #8060c0;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'JetBrains Mono', monospace;
+            background: var(--bg-deep);
+            color: var(--stone-light);
+            min-height: 100vh;
+            overflow: hidden;
+        }
+
+        /* Header */
+        .header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 12px 20px;
+            background: var(--bg-mid);
+            border-bottom: 1px solid var(--stone-dark);
+        }
+
+        .brand {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .brand-icon {
+            font-size: 20px;
+            animation: flicker 2s infinite;
+        }
+
+        @keyframes flicker {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.8; }
+            70% { opacity: 1; }
+            75% { opacity: 0.7; }
+            80% { opacity: 1; }
+        }
+
+        .brand-text {
+            font-family: 'Press Start 2P', cursive;
+            font-size: 10px;
+            color: var(--stone-mid);
+        }
+
+        .brand-text span {
+            color: var(--accent-ember);
+            text-shadow: 0 0 10px rgba(224, 112, 32, 0.5);
+        }
+
+        .header-actions {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+
+        .sprite-select {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 12px;
+            padding: 8px 12px;
+            background: var(--bg-surface);
+            border: 1px solid var(--stone-dark);
+            border-radius: 4px;
+            color: var(--stone-light);
+            cursor: pointer;
+            min-width: 200px;
+        }
+
+        .sprite-select:focus {
+            outline: none;
+            border-color: var(--mystic-glow);
+        }
+
+        /* Buttons */
+        .btn {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 12px;
+            padding: 8px 16px;
+            border: 1px solid var(--stone-dark);
+            border-radius: 4px;
+            background: var(--bg-surface);
+            color: var(--stone-light);
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .btn:hover {
+            background: var(--stone-dark);
+            border-color: var(--stone-mid);
+        }
+
+        .btn:focus {
+            outline: none;
+            box-shadow: 0 0 0 2px var(--mystic-glow);
+        }
+
+        .btn-primary {
+            background: var(--accent-ember);
+            border-color: var(--accent-ember);
+            color: var(--bg-deep);
+            font-weight: 600;
+        }
+
+        .btn-primary:hover {
+            background: var(--accent-ember-glow);
+            border-color: var(--accent-ember-glow);
+        }
+
+        .btn-small {
+            padding: 4px 8px;
+            font-size: 10px;
+        }
+
+        .btn-icon {
+            padding: 6px 10px;
+            font-size: 14px;
+        }
+
+        /* Main Layout */
+        .main {
+            display: grid;
+            grid-template-columns: 1fr 320px;
+            grid-template-rows: 1fr auto;
+            height: calc(100vh - 53px);
+        }
+
+        /* Left Panel - Sprites & Timeline */
+        .left-panel {
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        /* Sprite Palette */
+        .sprite-palette {
+            flex: 1;
+            padding: 16px;
+            overflow-y: auto;
+            border-bottom: 1px solid var(--stone-dark);
+        }
+
+        .sprite-palette::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        .sprite-palette::-webkit-scrollbar-thumb {
+            background: var(--stone-dark);
+            border-radius: 4px;
+        }
+
+        .section-header {
+            font-family: 'Press Start 2P', cursive;
+            font-size: 8px;
+            color: var(--stone-bright);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 12px;
+        }
+
+        .sprite-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(70px, 1fr));
+            gap: 8px;
+        }
+
+        .sprite-tile {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 8px;
+            background: var(--bg-surface);
+            border: 1px solid var(--stone-dark);
+            border-radius: 4px;
+            cursor: pointer;
+            transition: all 0.15s;
+        }
+
+        .sprite-tile:hover {
+            border-color: var(--mystic-glow);
+            background: var(--mystic-deep);
+        }
+
+        .sprite-tile-canvas {
+            width: 48px;
+            height: 48px;
+            background: repeating-conic-gradient(
+                var(--bg-mid) 0% 25%,
+                var(--bg-deep) 0% 50%
+            ) 50% / 8px 8px;
+            border-radius: 2px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 4px;
+        }
+
+        .sprite-tile-canvas canvas {
+            image-rendering: pixelated;
+        }
+
+        .sprite-tile-name {
+            font-size: 8px;
+            color: var(--stone-mid);
+            text-align: center;
+            max-width: 100%;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        /* Timeline */
+        .timeline-section {
+            background: var(--timeline-bg);
+            border-top: 1px solid var(--stone-dark);
+            padding: 16px;
+        }
+
+        .timeline-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 12px;
+        }
+
+        .timeline-controls {
+            display: flex;
+            gap: 8px;
+            align-items: center;
+        }
+
+        .timeline-info {
+            font-size: 10px;
+            color: var(--stone-mid);
+        }
+
+        .timeline-track {
+            display: flex;
+            gap: 4px;
+            padding: 12px;
+            background: var(--timeline-track);
+            border-radius: 4px;
+            min-height: 100px;
+            overflow-x: auto;
+            align-items: flex-start;
+        }
+
+        .timeline-track::-webkit-scrollbar {
+            height: 6px;
+        }
+
+        .timeline-track::-webkit-scrollbar-thumb {
+            background: var(--stone-dark);
+            border-radius: 3px;
+        }
+
+        .timeline-frame {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 8px;
+            background: var(--bg-surface);
+            border: 2px solid var(--frame-border);
+            border-radius: 4px;
+            cursor: grab;
+            transition: all 0.15s;
+            min-width: 72px;
+            position: relative;
+        }
+
+        .timeline-frame:hover {
+            border-color: var(--stone-mid);
+        }
+
+        .timeline-frame.selected {
+            border-color: var(--frame-selected);
+            background: var(--mystic-deep);
+        }
+
+        .timeline-frame.dragging {
+            opacity: 0.5;
+            cursor: grabbing;
+        }
+
+        .timeline-frame-canvas {
+            width: 48px;
+            height: 48px;
+            background: repeating-conic-gradient(
+                var(--bg-mid) 0% 25%,
+                var(--bg-deep) 0% 50%
+            ) 50% / 8px 8px;
+            border-radius: 2px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 4px;
+        }
+
+        .timeline-frame-canvas canvas {
+            image-rendering: pixelated;
+        }
+
+        .timeline-frame-duration {
+            font-size: 9px;
+            color: var(--accent-ember);
+            margin-bottom: 2px;
+        }
+
+        .timeline-frame-name {
+            font-size: 7px;
+            color: var(--stone-mid);
+            max-width: 64px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        .timeline-frame-number {
+            position: absolute;
+            top: 2px;
+            left: 4px;
+            font-size: 8px;
+            color: var(--stone-dark);
+        }
+
+        .timeline-frame-remove {
+            position: absolute;
+            top: 2px;
+            right: 2px;
+            width: 14px;
+            height: 14px;
+            background: var(--accent-magma);
+            border: none;
+            border-radius: 2px;
+            color: white;
+            font-size: 10px;
+            cursor: pointer;
+            opacity: 0;
+            transition: opacity 0.15s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .timeline-frame:hover .timeline-frame-remove {
+            opacity: 1;
+        }
+
+        .timeline-empty {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            width: 100%;
+            padding: 20px;
+            color: var(--stone-mid);
+            font-size: 11px;
+        }
+
+        .timeline-empty-icon {
+            font-size: 24px;
+            margin-bottom: 8px;
+            opacity: 0.5;
+        }
+
+        .add-frame-btn {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 48px;
+            height: 76px;
+            background: transparent;
+            border: 2px dashed var(--stone-dark);
+            border-radius: 4px;
+            color: var(--stone-mid);
+            font-size: 20px;
+            cursor: pointer;
+            transition: all 0.15s;
+        }
+
+        .add-frame-btn:hover {
+            border-color: var(--accent-ember);
+            color: var(--accent-ember);
+        }
+
+        /* Right Panel - Preview & Settings */
+        .right-panel {
+            display: flex;
+            flex-direction: column;
+            background: var(--bg-mid);
+            border-left: 1px solid var(--stone-dark);
+        }
+
+        /* Preview Section */
+        .preview-section {
+            padding: 16px;
+            border-bottom: 1px solid var(--stone-dark);
+        }
+
+        .preview-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .preview-canvas-wrapper {
+            width: 200px;
+            height: 200px;
+            background: repeating-conic-gradient(
+                var(--bg-surface) 0% 25%,
+                var(--bg-mid) 0% 50%
+            ) 50% / 16px 16px;
+            border: 1px solid var(--stone-dark);
+            border-radius: 4px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 12px;
+        }
+
+        #previewCanvas {
+            image-rendering: pixelated;
+        }
+
+        .preview-controls {
+            display: flex;
+            gap: 8px;
+            align-items: center;
+            margin-bottom: 12px;
+        }
+
+        .preview-info {
+            font-size: 10px;
+            color: var(--stone-mid);
+            text-align: center;
+        }
+
+        .speed-control {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 10px;
+            color: var(--stone-mid);
+        }
+
+        .speed-control input {
+            width: 60px;
+            padding: 4px 6px;
+            background: var(--bg-deep);
+            border: 1px solid var(--stone-dark);
+            border-radius: 3px;
+            color: var(--stone-bright);
+            font-family: inherit;
+            font-size: 10px;
+            text-align: center;
+        }
+
+        /* Settings Section */
+        .settings-section {
+            padding: 16px;
+            border-bottom: 1px solid var(--stone-dark);
+        }
+
+        .form-group {
+            margin-bottom: 12px;
+        }
+
+        .form-label {
+            display: block;
+            font-size: 10px;
+            color: var(--stone-mid);
+            text-transform: uppercase;
+            margin-bottom: 6px;
+        }
+
+        .form-input {
+            width: 100%;
+            padding: 8px 10px;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 12px;
+            background: var(--bg-deep);
+            border: 1px solid var(--stone-dark);
+            border-radius: 4px;
+            color: var(--stone-bright);
+        }
+
+        .form-input:focus {
+            outline: none;
+            border-color: var(--mystic-glow);
+        }
+
+        .form-row {
+            display: flex;
+            gap: 12px;
+        }
+
+        .form-row .form-group {
+            flex: 1;
+        }
+
+        .checkbox-group {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .checkbox-group input[type="checkbox"] {
+            width: 16px;
+            height: 16px;
+            accent-color: var(--accent-ember);
+        }
+
+        .checkbox-group label {
+            font-size: 11px;
+            color: var(--stone-light);
+        }
+
+        /* Frame Editor */
+        .frame-editor {
+            padding: 16px;
+            border-bottom: 1px solid var(--stone-dark);
+            display: none;
+        }
+
+        .frame-editor.active {
+            display: block;
+        }
+
+        .frame-editor-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 12px;
+        }
+
+        /* Export Section */
+        .export-section {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            padding: 16px;
+            min-height: 0;
+        }
+
+        .export-actions {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 12px;
+        }
+
+        .export-actions .btn {
+            flex: 1;
+        }
+
+        .export-hint {
+            font-size: 10px;
+            color: var(--stone-mid);
+            margin-bottom: 8px;
+        }
+
+        .export-hint code {
+            color: var(--accent-ember);
+            background: var(--bg-surface);
+            padding: 2px 4px;
+            border-radius: 2px;
+        }
+
+        .json-preview {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            min-height: 0;
+        }
+
+        .json-preview-header {
+            padding: 8px 12px;
+            background: var(--bg-surface);
+            font-size: 10px;
+            color: var(--stone-mid);
+            text-transform: uppercase;
+            cursor: pointer;
+        }
+
+        .json-preview-content {
+            flex: 1;
+            overflow: auto;
+            padding: 8px 12px;
+            background: var(--bg-deep);
+            font-size: 10px;
+            line-height: 1.5;
+            white-space: pre;
+        }
+
+        .json-preview-content::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        .json-preview-content::-webkit-scrollbar-thumb {
+            background: var(--stone-dark);
+            border-radius: 3px;
+        }
+
+        /* Toast */
+        .toast {
+            position: fixed;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%) translateY(100px);
+            padding: 12px 20px;
+            background: var(--bg-surface);
+            border: 1px solid var(--accent-ember);
+            border-radius: 4px;
+            font-size: 12px;
+            color: var(--stone-bright);
+            opacity: 0;
+            transition: all 0.3s;
+            z-index: 1000;
+        }
+
+        .toast.show {
+            transform: translateX(-50%) translateY(0);
+            opacity: 1;
+        }
+
+        /* Empty State */
+        .empty-state {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100%;
+            color: var(--stone-mid);
+            text-align: center;
+            padding: 20px;
+        }
+
+        .empty-state-icon {
+            font-size: 48px;
+            margin-bottom: 16px;
+            opacity: 0.5;
+        }
+
+        .empty-state-text {
+            font-size: 12px;
+            margin-bottom: 8px;
+        }
+
+        .empty-state-hint {
+            font-size: 10px;
+            color: var(--stone-dark);
+        }
+
+        /* Drag indicator */
+        .drag-indicator {
+            position: absolute;
+            width: 2px;
+            height: 80px;
+            background: var(--accent-ember);
+            pointer-events: none;
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <!-- Header -->
+    <header class="header">
+        <div class="brand">
+            <span class="brand-icon">&#128293;</span>
+            <span class="brand-text">MANTLEBORN / <span>ANIMATION-STATION</span></span>
+        </div>
+        <div class="header-actions">
+            <select class="sprite-select" id="spriteSheetSelect">
+                <option value="">-- Select Sprite Sheet --</option>
+            </select>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="main">
+        <!-- Left Panel -->
+        <div class="left-panel">
+            <!-- Sprite Palette -->
+            <div class="sprite-palette" id="spritePalette">
+                <div class="empty-state" id="paletteEmpty">
+                    <div class="empty-state-icon">&#127912;</div>
+                    <div class="empty-state-text">Select a sprite sheet to begin</div>
+                    <div class="empty-state-hint">Sprites will appear here for you to add to your animation</div>
+                </div>
+                <div id="paletteContent" style="display: none;">
+                    <div class="section-header">Available Sprites</div>
+                    <div class="sprite-grid" id="spriteGrid"></div>
+                </div>
+            </div>
+
+            <!-- Timeline -->
+            <div class="timeline-section">
+                <div class="timeline-header">
+                    <div class="section-header" style="margin-bottom: 0;">Timeline</div>
+                    <div class="timeline-controls">
+                        <span class="timeline-info" id="timelineInfo">0 frames | 0.00s</span>
+                        <button class="btn btn-small" id="clearTimeline">Clear</button>
+                    </div>
+                </div>
+                <div class="timeline-track" id="timelineTrack">
+                    <div class="timeline-empty" id="timelineEmpty">
+                        <div class="timeline-empty-icon">&#128247;</div>
+                        <div>Click sprites above to add frames</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Right Panel -->
+        <div class="right-panel">
+            <!-- Preview -->
+            <div class="preview-section">
+                <div class="section-header">Preview</div>
+                <div class="preview-container">
+                    <div class="preview-canvas-wrapper">
+                        <canvas id="previewCanvas" width="128" height="128"></canvas>
+                    </div>
+                    <div class="preview-controls">
+                        <button class="btn btn-icon" id="playBtn" title="Play/Pause">&#9658;</button>
+                        <button class="btn btn-icon" id="stopBtn" title="Stop">&#9632;</button>
+                        <button class="btn btn-icon" id="stepBtn" title="Step">&#9654;|</button>
+                    </div>
+                    <div class="speed-control">
+                        <span>Speed:</span>
+                        <input type="number" id="speedMultiplier" value="1" min="0.1" max="5" step="0.1">
+                        <span>x</span>
+                    </div>
+                    <div class="preview-info" id="previewInfo">Frame 0/0</div>
+                </div>
+            </div>
+
+            <!-- Animation Settings -->
+            <div class="settings-section">
+                <div class="section-header">Animation Settings</div>
+                <div class="form-group">
+                    <label class="form-label">Animation Name *</label>
+                    <input type="text" class="form-input" id="animationName" placeholder="idle_look_around">
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label class="form-label">Default Duration (s)</label>
+                        <input type="number" class="form-input" id="defaultDuration" value="0.5" min="0.01" max="10" step="0.01">
+                    </div>
+                    <div class="form-group">
+                        <div class="checkbox-group" style="margin-top: 20px;">
+                            <input type="checkbox" id="uniformDuration" checked>
+                            <label for="uniformDuration">Uniform duration</label>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Selected Frame Editor -->
+            <div class="frame-editor" id="frameEditor">
+                <div class="frame-editor-header">
+                    <span class="section-header" style="margin-bottom: 0;">Selected Frame</span>
+                    <button class="btn btn-small" id="removeFrameBtn">Remove</button>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Sprite</label>
+                    <input type="text" class="form-input" id="frameSpriteName" readonly>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Duration (seconds)</label>
+                    <input type="number" class="form-input" id="frameDuration" value="0.5" min="0.01" max="10" step="0.01">
+                </div>
+            </div>
+
+            <!-- Export -->
+            <div class="export-section">
+                <div class="export-actions">
+                    <button class="btn btn-primary" id="copyAnimationBtn">Copy Animation</button>
+                    <button class="btn" id="copyForIndexBtn">Copy for Index</button>
+                </div>
+                <div class="export-hint">
+                    Paste into <code>player.json</code> animations
+                </div>
+                <div class="json-preview">
+                    <div class="json-preview-header">JSON Output</div>
+                    <div class="json-preview-content" id="jsonOutput">{}</div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Toast -->
+    <div class="toast" id="toast"></div>
+
+    <script>
+        /* ============================================
+           MANTLEBORN ANIMATION-STATION - JavaScript
+           ============================================ */
+
+        // ==========================================
+        // Configuration
+        // ==========================================
+        const SPRITE_INDEX_PATH = '/assets/sprites/sprite-index.json';
+        const PROJECT_SPRITE_SHEETS = [
+            { name: 'player.png', path: '/assets/sprites/player.png' }
+        ];
+
+        // ==========================================
+        // State
+        // ==========================================
+        const state = {
+            spriteSheet: null,
+            spriteSheetName: '',
+            spriteSheetPath: '',
+            sprites: [],
+            frames: [],
+            selectedFrameIndex: -1,
+            isPlaying: false,
+            playbackFrame: 0,
+            playbackTimer: 0,
+            speedMultiplier: 1
+        };
+
+        let spriteIndex = null;
+        let animationLoop = null;
+        let lastTime = 0;
+
+        // ==========================================
+        // DOM Elements
+        // ==========================================
+        const elements = {
+            spriteSheetSelect: document.getElementById('spriteSheetSelect'),
+            paletteEmpty: document.getElementById('paletteEmpty'),
+            paletteContent: document.getElementById('paletteContent'),
+            spriteGrid: document.getElementById('spriteGrid'),
+            timelineTrack: document.getElementById('timelineTrack'),
+            timelineEmpty: document.getElementById('timelineEmpty'),
+            timelineInfo: document.getElementById('timelineInfo'),
+            clearTimeline: document.getElementById('clearTimeline'),
+            previewCanvas: document.getElementById('previewCanvas'),
+            playBtn: document.getElementById('playBtn'),
+            stopBtn: document.getElementById('stopBtn'),
+            stepBtn: document.getElementById('stepBtn'),
+            speedMultiplier: document.getElementById('speedMultiplier'),
+            previewInfo: document.getElementById('previewInfo'),
+            animationName: document.getElementById('animationName'),
+            defaultDuration: document.getElementById('defaultDuration'),
+            uniformDuration: document.getElementById('uniformDuration'),
+            frameEditor: document.getElementById('frameEditor'),
+            frameSpriteName: document.getElementById('frameSpriteName'),
+            frameDuration: document.getElementById('frameDuration'),
+            removeFrameBtn: document.getElementById('removeFrameBtn'),
+            copyAnimationBtn: document.getElementById('copyAnimationBtn'),
+            copyForIndexBtn: document.getElementById('copyForIndexBtn'),
+            jsonOutput: document.getElementById('jsonOutput'),
+            toast: document.getElementById('toast')
+        };
+
+        const previewCtx = elements.previewCanvas.getContext('2d');
+        previewCtx.imageSmoothingEnabled = false;
+
+        // ==========================================
+        // Utilities
+        // ==========================================
+        function showToast(message) {
+            elements.toast.textContent = message;
+            elements.toast.classList.add('show');
+            setTimeout(() => elements.toast.classList.remove('show'), 2500);
+        }
+
+        // ==========================================
+        // Sprite Loading
+        // ==========================================
+        function initSpriteSheetSelect() {
+            PROJECT_SPRITE_SHEETS.forEach(sheet => {
+                const option = document.createElement('option');
+                option.value = sheet.path;
+                option.textContent = sheet.name;
+                option.dataset.name = sheet.name;
+                elements.spriteSheetSelect.appendChild(option);
+            });
+        }
+
+        async function loadSpriteIndex() {
+            if (spriteIndex) return spriteIndex;
+            try {
+                const response = await fetch(SPRITE_INDEX_PATH);
+                if (response.ok) {
+                    spriteIndex = await response.json();
+                }
+            } catch (e) {
+                console.warn('Could not load sprite index:', e);
+            }
+            return spriteIndex;
+        }
+
+        async function loadSpriteSheet(name, path) {
+            // Load image
+            const img = new Image();
+            img.src = path;
+
+            await new Promise((resolve, reject) => {
+                img.onload = resolve;
+                img.onerror = reject;
+            });
+
+            state.spriteSheet = img;
+            state.spriteSheetName = name;
+            state.spriteSheetPath = path;
+
+            // Load sprites from index
+            const index = await loadSpriteIndex();
+            if (index && index[name]) {
+                state.sprites = index[name].sprites;
+            } else {
+                state.sprites = [];
+            }
+
+            // Clear current animation
+            state.frames = [];
+            state.selectedFrameIndex = -1;
+            stopPlayback();
+
+            // Update UI
+            renderSpritePalette();
+            renderTimeline();
+            updateJsonOutput();
+
+            showToast(`Loaded ${state.sprites.length} sprites`);
+        }
+
+        // ==========================================
+        // Sprite Palette
+        // ==========================================
+        function renderSpritePalette() {
+            if (state.sprites.length === 0) {
+                elements.paletteEmpty.style.display = 'flex';
+                elements.paletteContent.style.display = 'none';
+                return;
+            }
+
+            elements.paletteEmpty.style.display = 'none';
+            elements.paletteContent.style.display = 'block';
+
+            elements.spriteGrid.innerHTML = '';
+
+            state.sprites.forEach((sprite, index) => {
+                const tile = document.createElement('div');
+                tile.className = 'sprite-tile';
+                tile.dataset.index = index;
+
+                const canvasWrapper = document.createElement('div');
+                canvasWrapper.className = 'sprite-tile-canvas';
+
+                const canvas = document.createElement('canvas');
+                const scale = Math.min(44 / sprite.width, 44 / sprite.height);
+                canvas.width = Math.floor(sprite.width * scale);
+                canvas.height = Math.floor(sprite.height * scale);
+
+                const ctx = canvas.getContext('2d');
+                ctx.imageSmoothingEnabled = false;
+                ctx.drawImage(
+                    state.spriteSheet,
+                    sprite.x, sprite.y, sprite.width, sprite.height,
+                    0, 0, canvas.width, canvas.height
+                );
+
+                canvasWrapper.appendChild(canvas);
+
+                const nameLabel = document.createElement('div');
+                nameLabel.className = 'sprite-tile-name';
+                nameLabel.textContent = sprite.name;
+                nameLabel.title = sprite.name;
+
+                tile.appendChild(canvasWrapper);
+                tile.appendChild(nameLabel);
+
+                tile.addEventListener('click', () => addFrameToTimeline(sprite));
+
+                elements.spriteGrid.appendChild(tile);
+            });
+        }
+
+        // ==========================================
+        // Timeline
+        // ==========================================
+        function addFrameToTimeline(sprite) {
+            const duration = parseFloat(elements.defaultDuration.value) || 0.5;
+
+            state.frames.push({
+                sprite: sprite.name,
+                duration: duration,
+                spriteData: sprite
+            });
+
+            renderTimeline();
+            updateJsonOutput();
+            updateTimelineInfo();
+
+            // Select the new frame
+            selectFrame(state.frames.length - 1);
+        }
+
+        function removeFrame(index) {
+            state.frames.splice(index, 1);
+
+            if (state.selectedFrameIndex >= state.frames.length) {
+                state.selectedFrameIndex = state.frames.length - 1;
+            }
+
+            renderTimeline();
+            updateJsonOutput();
+            updateTimelineInfo();
+            updateFrameEditor();
+        }
+
+        function selectFrame(index) {
+            state.selectedFrameIndex = index;
+            renderTimeline();
+            updateFrameEditor();
+        }
+
+        function renderTimeline() {
+            elements.timelineTrack.innerHTML = '';
+
+            if (state.frames.length === 0) {
+                const empty = document.createElement('div');
+                empty.className = 'timeline-empty';
+                empty.innerHTML = `
+                    <div class="timeline-empty-icon">&#128247;</div>
+                    <div>Click sprites above to add frames</div>
+                `;
+                elements.timelineTrack.appendChild(empty);
+                return;
+            }
+
+            state.frames.forEach((frame, index) => {
+                const frameEl = document.createElement('div');
+                frameEl.className = 'timeline-frame';
+                if (index === state.selectedFrameIndex) {
+                    frameEl.classList.add('selected');
+                }
+                if (index === state.playbackFrame && state.isPlaying) {
+                    frameEl.style.boxShadow = '0 0 8px var(--accent-ember)';
+                }
+                frameEl.dataset.index = index;
+                frameEl.draggable = true;
+
+                const sprite = frame.spriteData;
+
+                // Frame number
+                const numberEl = document.createElement('div');
+                numberEl.className = 'timeline-frame-number';
+                numberEl.textContent = index + 1;
+
+                // Canvas
+                const canvasWrapper = document.createElement('div');
+                canvasWrapper.className = 'timeline-frame-canvas';
+
+                const canvas = document.createElement('canvas');
+                const scale = Math.min(44 / sprite.width, 44 / sprite.height);
+                canvas.width = Math.floor(sprite.width * scale);
+                canvas.height = Math.floor(sprite.height * scale);
+
+                const ctx = canvas.getContext('2d');
+                ctx.imageSmoothingEnabled = false;
+                ctx.drawImage(
+                    state.spriteSheet,
+                    sprite.x, sprite.y, sprite.width, sprite.height,
+                    0, 0, canvas.width, canvas.height
+                );
+
+                canvasWrapper.appendChild(canvas);
+
+                // Duration
+                const durationEl = document.createElement('div');
+                durationEl.className = 'timeline-frame-duration';
+                durationEl.textContent = frame.duration.toFixed(2) + 's';
+
+                // Name
+                const nameEl = document.createElement('div');
+                nameEl.className = 'timeline-frame-name';
+                nameEl.textContent = frame.sprite;
+                nameEl.title = frame.sprite;
+
+                // Remove button
+                const removeBtn = document.createElement('button');
+                removeBtn.className = 'timeline-frame-remove';
+                removeBtn.textContent = '×';
+                removeBtn.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    removeFrame(index);
+                });
+
+                frameEl.appendChild(numberEl);
+                frameEl.appendChild(canvasWrapper);
+                frameEl.appendChild(durationEl);
+                frameEl.appendChild(nameEl);
+                frameEl.appendChild(removeBtn);
+
+                // Click to select
+                frameEl.addEventListener('click', () => selectFrame(index));
+
+                // Drag and drop
+                frameEl.addEventListener('dragstart', handleDragStart);
+                frameEl.addEventListener('dragend', handleDragEnd);
+                frameEl.addEventListener('dragover', handleDragOver);
+                frameEl.addEventListener('drop', handleDrop);
+
+                elements.timelineTrack.appendChild(frameEl);
+            });
+        }
+
+        // Drag and drop handlers
+        let draggedIndex = -1;
+
+        function handleDragStart(e) {
+            draggedIndex = parseInt(e.target.dataset.index);
+            e.target.classList.add('dragging');
+            e.dataTransfer.effectAllowed = 'move';
+        }
+
+        function handleDragEnd(e) {
+            e.target.classList.remove('dragging');
+            draggedIndex = -1;
+        }
+
+        function handleDragOver(e) {
+            e.preventDefault();
+            e.dataTransfer.dropEffect = 'move';
+        }
+
+        function handleDrop(e) {
+            e.preventDefault();
+            const targetIndex = parseInt(e.target.closest('.timeline-frame').dataset.index);
+
+            if (draggedIndex !== -1 && draggedIndex !== targetIndex) {
+                // Reorder frames
+                const frame = state.frames.splice(draggedIndex, 1)[0];
+                state.frames.splice(targetIndex, 0, frame);
+
+                // Update selection
+                if (state.selectedFrameIndex === draggedIndex) {
+                    state.selectedFrameIndex = targetIndex;
+                } else if (state.selectedFrameIndex > draggedIndex && state.selectedFrameIndex <= targetIndex) {
+                    state.selectedFrameIndex--;
+                } else if (state.selectedFrameIndex < draggedIndex && state.selectedFrameIndex >= targetIndex) {
+                    state.selectedFrameIndex++;
+                }
+
+                renderTimeline();
+                updateJsonOutput();
+            }
+        }
+
+        function updateTimelineInfo() {
+            const totalDuration = state.frames.reduce((sum, f) => sum + f.duration, 0);
+            elements.timelineInfo.textContent = `${state.frames.length} frames | ${totalDuration.toFixed(2)}s`;
+        }
+
+        function clearTimeline() {
+            state.frames = [];
+            state.selectedFrameIndex = -1;
+            stopPlayback();
+            renderTimeline();
+            updateJsonOutput();
+            updateTimelineInfo();
+            updateFrameEditor();
+        }
+
+        // ==========================================
+        // Frame Editor
+        // ==========================================
+        function updateFrameEditor() {
+            if (state.selectedFrameIndex < 0 || state.selectedFrameIndex >= state.frames.length) {
+                elements.frameEditor.classList.remove('active');
+                return;
+            }
+
+            elements.frameEditor.classList.add('active');
+
+            const frame = state.frames[state.selectedFrameIndex];
+            elements.frameSpriteName.value = frame.sprite;
+            elements.frameDuration.value = frame.duration;
+        }
+
+        function updateSelectedFrameDuration(duration) {
+            if (state.selectedFrameIndex < 0) return;
+
+            state.frames[state.selectedFrameIndex].duration = duration;
+            renderTimeline();
+            updateJsonOutput();
+            updateTimelineInfo();
+        }
+
+        // ==========================================
+        // Preview Playback
+        // ==========================================
+        function startPlayback() {
+            if (state.frames.length === 0) return;
+
+            state.isPlaying = true;
+            state.playbackFrame = 0;
+            state.playbackTimer = 0;
+            elements.playBtn.textContent = '⏸';
+
+            lastTime = performance.now();
+            animationLoop = requestAnimationFrame(updatePlayback);
+        }
+
+        function stopPlayback() {
+            state.isPlaying = false;
+            state.playbackFrame = 0;
+            state.playbackTimer = 0;
+            elements.playBtn.textContent = '▶';
+
+            if (animationLoop) {
+                cancelAnimationFrame(animationLoop);
+                animationLoop = null;
+            }
+
+            renderPreview();
+            renderTimeline();
+            updatePreviewInfo();
+        }
+
+        function togglePlayback() {
+            if (state.isPlaying) {
+                state.isPlaying = false;
+                elements.playBtn.textContent = '▶';
+                if (animationLoop) {
+                    cancelAnimationFrame(animationLoop);
+                    animationLoop = null;
+                }
+            } else {
+                startPlayback();
+            }
+        }
+
+        function stepFrame() {
+            if (state.frames.length === 0) return;
+
+            state.playbackFrame = (state.playbackFrame + 1) % state.frames.length;
+            renderPreview();
+            renderTimeline();
+            updatePreviewInfo();
+        }
+
+        function updatePlayback(currentTime) {
+            if (!state.isPlaying) return;
+
+            const dt = (currentTime - lastTime) / 1000 * state.speedMultiplier;
+            lastTime = currentTime;
+
+            state.playbackTimer += dt;
+
+            const currentFrame = state.frames[state.playbackFrame];
+            if (currentFrame && state.playbackTimer >= currentFrame.duration) {
+                state.playbackTimer = 0;
+                state.playbackFrame = (state.playbackFrame + 1) % state.frames.length;
+                renderTimeline();
+            }
+
+            renderPreview();
+            updatePreviewInfo();
+
+            animationLoop = requestAnimationFrame(updatePlayback);
+        }
+
+        function renderPreview() {
+            previewCtx.clearRect(0, 0, 128, 128);
+
+            if (state.frames.length === 0 || !state.spriteSheet) return;
+
+            const frame = state.frames[state.playbackFrame];
+            if (!frame) return;
+
+            const sprite = frame.spriteData;
+            const scale = Math.min(120 / sprite.width, 120 / sprite.height);
+            const destW = Math.floor(sprite.width * scale);
+            const destH = Math.floor(sprite.height * scale);
+            const destX = Math.floor((128 - destW) / 2);
+            const destY = Math.floor((128 - destH) / 2);
+
+            previewCtx.drawImage(
+                state.spriteSheet,
+                sprite.x, sprite.y, sprite.width, sprite.height,
+                destX, destY, destW, destH
+            );
+        }
+
+        function updatePreviewInfo() {
+            if (state.frames.length === 0) {
+                elements.previewInfo.textContent = 'No frames';
+            } else {
+                elements.previewInfo.textContent = `Frame ${state.playbackFrame + 1}/${state.frames.length}`;
+            }
+        }
+
+        // ==========================================
+        // JSON Output
+        // ==========================================
+        function updateJsonOutput() {
+            const animName = elements.animationName.value || 'untitled';
+            const useUniform = elements.uniformDuration.checked;
+
+            let output;
+
+            if (useUniform) {
+                // Standard format: uniform duration for all frames
+                const defaultDur = parseFloat(elements.defaultDuration.value) || 0.5;
+                output = {
+                    [animName]: {
+                        frames: state.frames.map(f => f.sprite),
+                        frameDuration: defaultDur
+                    }
+                };
+            } else {
+                // Extended format: per-frame durations
+                output = {
+                    [animName]: {
+                        frames: state.frames.map(f => ({
+                            sprite: f.sprite,
+                            duration: f.duration
+                        }))
+                    }
+                };
+            }
+
+            elements.jsonOutput.textContent = JSON.stringify(output, null, 2);
+        }
+
+        function copyAnimation() {
+            navigator.clipboard.writeText(elements.jsonOutput.textContent)
+                .then(() => showToast('Animation JSON copied!'))
+                .catch(() => showToast('Failed to copy'));
+        }
+
+        function copyForIndex() {
+            // Format for animation-index.json (similar to sprite-index)
+            const animName = elements.animationName.value || 'untitled';
+            const useUniform = elements.uniformDuration.checked;
+            const defaultDur = parseFloat(elements.defaultDuration.value) || 0.5;
+
+            const indexEntry = {
+                [state.spriteSheetName]: {
+                    animations: {
+                        [animName]: {
+                            frames: state.frames.map(f => f.sprite),
+                            frameDuration: useUniform ? defaultDur : state.frames.map(f => f.duration)
+                        }
+                    }
+                }
+            };
+
+            navigator.clipboard.writeText(JSON.stringify(indexEntry, null, 2))
+                .then(() => showToast('Index entry copied!'))
+                .catch(() => showToast('Failed to copy'));
+        }
+
+        // ==========================================
+        // Uniform Duration Sync
+        // ==========================================
+        function applyUniformDuration() {
+            if (!elements.uniformDuration.checked) return;
+
+            const duration = parseFloat(elements.defaultDuration.value) || 0.5;
+            state.frames.forEach(f => f.duration = duration);
+            renderTimeline();
+            updateJsonOutput();
+            updateTimelineInfo();
+            updateFrameEditor();
+        }
+
+        // ==========================================
+        // Event Listeners
+        // ==========================================
+        elements.spriteSheetSelect.addEventListener('change', (e) => {
+            const path = e.target.value;
+            if (path) {
+                const option = e.target.selectedOptions[0];
+                const name = option.dataset.name || option.textContent;
+                loadSpriteSheet(name, path);
+            }
+        });
+
+        elements.clearTimeline.addEventListener('click', clearTimeline);
+
+        elements.playBtn.addEventListener('click', togglePlayback);
+        elements.stopBtn.addEventListener('click', stopPlayback);
+        elements.stepBtn.addEventListener('click', stepFrame);
+
+        elements.speedMultiplier.addEventListener('change', (e) => {
+            state.speedMultiplier = parseFloat(e.target.value) || 1;
+        });
+
+        elements.animationName.addEventListener('input', updateJsonOutput);
+
+        elements.defaultDuration.addEventListener('change', () => {
+            applyUniformDuration();
+            updateJsonOutput();
+        });
+
+        elements.uniformDuration.addEventListener('change', () => {
+            applyUniformDuration();
+            updateJsonOutput();
+        });
+
+        elements.frameDuration.addEventListener('change', (e) => {
+            const duration = parseFloat(e.target.value) || 0.5;
+            updateSelectedFrameDuration(duration);
+        });
+
+        elements.removeFrameBtn.addEventListener('click', () => {
+            if (state.selectedFrameIndex >= 0) {
+                removeFrame(state.selectedFrameIndex);
+            }
+        });
+
+        elements.copyAnimationBtn.addEventListener('click', copyAnimation);
+        elements.copyForIndexBtn.addEventListener('click', copyForIndex);
+
+        // Keyboard shortcuts
+        window.addEventListener('keydown', (e) => {
+            if (e.key === ' ' && document.activeElement.tagName !== 'INPUT') {
+                e.preventDefault();
+                togglePlayback();
+            }
+            if (e.key === 'Delete' && state.selectedFrameIndex >= 0) {
+                removeFrame(state.selectedFrameIndex);
+            }
+        });
+
+        // ==========================================
+        // Initialize
+        // ==========================================
+        initSpriteSheetSelect();
+        updateJsonOutput();
+        updatePreviewInfo();
+        updateTimelineInfo();
+    </script>
+</body>
+</html>
