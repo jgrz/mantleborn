@@ -94,6 +94,34 @@
         .header-actions {
             display: flex;
             gap: 10px;
+            align-items: center;
+        }
+
+        .sprite-select {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 12px;
+            padding: 8px 12px;
+            background: var(--bg-surface);
+            border: 1px solid var(--stone-dark);
+            border-radius: 4px;
+            color: var(--stone-light);
+            cursor: pointer;
+            min-width: 200px;
+        }
+
+        .sprite-select:hover {
+            border-color: var(--stone-mid);
+        }
+
+        .sprite-select:focus {
+            outline: none;
+            border-color: var(--mystic-glow);
+            box-shadow: 0 0 0 2px rgba(128, 96, 192, 0.2);
+        }
+
+        .sprite-select option {
+            background: var(--bg-mid);
+            color: var(--stone-light);
         }
 
         /* Buttons */
@@ -730,8 +758,9 @@
             <span class="brand-text">MANTLEBORN / <span>SPRITE-RITE</span></span>
         </div>
         <div class="header-actions">
-            <input type="file" id="fileInput" class="hidden-input" accept=".png,.jpg,.jpeg,.gif,.webp">
-            <button class="btn" id="loadImageBtn">Load Image</button>
+            <select class="sprite-select" id="spriteSheetSelect">
+                <option value="">-- Select Sprite Sheet --</option>
+            </select>
             <input type="file" id="importInput" class="hidden-input" accept=".json">
             <button class="btn" id="importJsonBtn">Import JSON</button>
         </div>
@@ -771,8 +800,8 @@
             <div class="canvas-wrapper" id="canvasWrapper">
                 <div class="drop-zone" id="dropZone">
                     <div class="drop-zone-icon">&#128444;</div>
-                    <div class="drop-zone-text">Drop a sprite sheet here</div>
-                    <div class="drop-zone-hint">or click "Load Image" above</div>
+                    <div class="drop-zone-text">Select a sprite sheet from the dropdown</div>
+                    <div class="drop-zone-hint">Sprite sheets are loaded from /assets/sprites/</div>
                 </div>
 
                 <div class="canvas-container" id="canvasContainer" style="display: none;">
@@ -871,6 +900,17 @@
            ============================================ */
 
         // ==========================================
+        // Project Sprite Sheets Configuration
+        // Add new sprite sheets here as they're added to the project
+        // ==========================================
+        const PROJECT_SPRITE_SHEETS = [
+            { name: 'player.png', path: '/assets/sprites/player.png' }
+            // Add more sprite sheets here:
+            // { name: 'enemies.png', path: '/assets/sprites/enemies.png' },
+            // { name: 'tiles.png', path: '/assets/sprites/tiles.png' },
+        ];
+
+        // ==========================================
         // State Management
         // ==========================================
         const state = {
@@ -894,10 +934,9 @@
         // DOM Elements
         // ==========================================
         const elements = {
-            // File inputs
-            fileInput: document.getElementById('fileInput'),
+            // Sprite sheet selection
+            spriteSheetSelect: document.getElementById('spriteSheetSelect'),
             importInput: document.getElementById('importInput'),
-            loadImageBtn: document.getElementById('loadImageBtn'),
             importJsonBtn: document.getElementById('importJsonBtn'),
 
             // Canvas elements
@@ -990,32 +1029,53 @@
         // ==========================================
         // Image Loading
         // ==========================================
-        function loadImage(file) {
-            if (!file) return;
+        function loadSpriteSheet(name, path) {
+            if (!path) return;
 
-            const reader = new FileReader();
-            reader.onload = (e) => {
-                const img = new Image();
-                img.onload = () => {
-                    state.image = img;
-                    state.imageName = file.name;
-                    state.imageWidth = img.width;
-                    state.imageHeight = img.height;
+            const img = new Image();
+            img.onload = () => {
+                state.image = img;
+                state.imageName = name;
+                state.imagePath = path;
+                state.imageWidth = img.width;
+                state.imageHeight = img.height;
 
-                    elements.dropZone.style.display = 'none';
-                    elements.canvasContainer.style.display = 'block';
+                // Clear previous session data
+                state.selection = null;
+                state.sprites = [];
+                state.selectedSpriteIndex = -1;
+                state.editingSpriteIndex = -1;
+                hideCreatePanel();
 
-                    updateCanvasSize();
-                    render();
+                elements.dropZone.style.display = 'none';
+                elements.canvasContainer.style.display = 'block';
 
-                    elements.imageInfo.textContent = `${file.name} — ${img.width}×${img.height}px`;
+                updateCanvasSize();
+                render();
 
-                    // Try to load saved session
-                    loadFromLocalStorage();
-                };
-                img.src = e.target.result;
+                elements.imageInfo.textContent = `${name} — ${img.width}×${img.height}px`;
+
+                // Try to load saved session for this sprite sheet
+                loadFromLocalStorage();
+                updateSpriteList();
+                updateJsonPreview();
             };
-            reader.readAsDataURL(file);
+            img.onerror = () => {
+                showToast(`Failed to load ${name}`, 'error');
+                elements.spriteSheetSelect.value = '';
+            };
+            img.src = path;
+        }
+
+        function initSpriteSheetSelect() {
+            // Populate dropdown with project sprite sheets
+            PROJECT_SPRITE_SHEETS.forEach(sheet => {
+                const option = document.createElement('option');
+                option.value = sheet.path;
+                option.textContent = sheet.name;
+                option.dataset.name = sheet.name;
+                elements.spriteSheetSelect.appendChild(option);
+            });
         }
 
         // ==========================================
@@ -1516,7 +1576,7 @@
         // ==========================================
         function generateJson(includeCurrentSelection = false) {
             const result = {
-                spriteSheet: state.imageName,
+                spriteSheet: state.imagePath || state.imageName,
                 exportedAt: new Date().toISOString(),
                 sprites: state.sprites.map(s => ({
                     name: s.name,
@@ -1633,44 +1693,20 @@
         // Event Listeners
         // ==========================================
 
-        // File loading
-        elements.loadImageBtn.addEventListener('click', () => elements.fileInput.click());
-        elements.fileInput.addEventListener('change', (e) => {
-            if (e.target.files[0]) loadImage(e.target.files[0]);
+        // Sprite sheet selection
+        elements.spriteSheetSelect.addEventListener('change', (e) => {
+            const path = e.target.value;
+            if (path) {
+                const option = e.target.selectedOptions[0];
+                const name = option.dataset.name || option.textContent;
+                loadSpriteSheet(name, path);
+            }
         });
 
+        // JSON import
         elements.importJsonBtn.addEventListener('click', () => elements.importInput.click());
         elements.importInput.addEventListener('change', (e) => {
             if (e.target.files[0]) importJson(e.target.files[0]);
-        });
-
-        // Drag and drop
-        elements.dropZone.addEventListener('dragover', (e) => {
-            e.preventDefault();
-            elements.dropZone.classList.add('drag-over');
-        });
-
-        elements.dropZone.addEventListener('dragleave', () => {
-            elements.dropZone.classList.remove('drag-over');
-        });
-
-        elements.dropZone.addEventListener('drop', (e) => {
-            e.preventDefault();
-            elements.dropZone.classList.remove('drag-over');
-            const file = e.dataTransfer.files[0];
-            if (file && file.type.startsWith('image/')) {
-                loadImage(file);
-            }
-        });
-
-        // Also allow drop on canvas
-        elements.canvasWrapper.addEventListener('dragover', (e) => e.preventDefault());
-        elements.canvasWrapper.addEventListener('drop', (e) => {
-            e.preventDefault();
-            const file = e.dataTransfer.files[0];
-            if (file && file.type.startsWith('image/')) {
-                loadImage(file);
-            }
         });
 
         // Zoom controls
@@ -1739,6 +1775,7 @@
         });
 
         // Initialize
+        initSpriteSheetSelect();
         updateJsonPreview();
     </script>
 </body>
