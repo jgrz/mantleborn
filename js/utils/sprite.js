@@ -72,12 +72,16 @@ export class Animator {
         this.currentFrameIndex = 0;
         this.frameTimer = 0;
         this.playing = true;
+        this.overrideFrame = null; // Direct frame override (bypasses animation)
     }
 
     /**
      * Play an animation by name
      */
     play(animationName) {
+        // Clear override when playing animation
+        this.overrideFrame = null;
+
         if (this.currentAnimation === animationName) return;
 
         const anim = this.spriteSheet.animations[animationName];
@@ -90,6 +94,23 @@ export class Animator {
         this.currentFrameIndex = 0;
         this.frameTimer = 0;
         this.playing = true;
+    }
+
+    /**
+     * Set a specific frame directly (bypasses animation system)
+     * @param {string} frameName - Name of the frame to display
+     */
+    setFrame(frameName) {
+        if (this.spriteSheet.getFrame(frameName)) {
+            this.overrideFrame = frameName;
+        }
+    }
+
+    /**
+     * Clear frame override, return to animation control
+     */
+    clearOverride() {
+        this.overrideFrame = null;
     }
 
     /**
@@ -113,6 +134,11 @@ export class Animator {
      * Get the current frame data
      */
     getCurrentFrame() {
+        // Override frame takes priority
+        if (this.overrideFrame) {
+            return this.spriteSheet.getFrame(this.overrideFrame);
+        }
+
         if (!this.currentAnimation) return null;
 
         const anim = this.spriteSheet.animations[this.currentAnimation];

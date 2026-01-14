@@ -220,6 +220,23 @@ class Player {
         // Offset to align 90px tall sprite bottom with 16px collision box bottom: 16-90 = -74
         this.spriteOffsetX = -21;
         this.spriteOffsetY = -74;
+
+        // Advanced idle animation state
+        this.idleTimer = 0;              // Time spent idle
+        this.idleState = 'standing';     // Current idle pose
+        this.idleStateTimer = 0;         // Time in current pose
+        this.idleLookDuration = 0;       // How long current look will last
+        this.isBlinking = false;         // Currently showing blink frame
+        this.blinkTimer = 0;             // Countdown to next blink
+        this.blinkDuration = 0.15;       // How long blink lasts
+        this.nextBlinkDelay = 2;         // Time until next blink
+
+        // Available look directions for idle
+        this.idleLookDirections = [
+            'standing_look_back',
+            'look_up_forward',
+            'look_up_away'
+        ];
     }
 
     /**
@@ -237,17 +254,131 @@ class Player {
 
         if (this.isGroundPounding || this.groundPoundLanding) {
             this.animator.play('duck');
+            this.resetIdleState();
         } else if (!this.onGround) {
             if (this.vy < 0) {
                 this.animator.play('jump');
             } else {
                 this.animator.play('fall');
             }
+            this.resetIdleState();
         } else if (this.isMoving) {
             this.animator.play('walk');
+            this.resetIdleState();
         } else {
-            this.animator.play('idle');
+            // Idle - use advanced idle animation system
+            this.updateIdleAnimation();
         }
+    }
+
+    /**
+     * Reset idle state when player starts moving/jumping
+     */
+    resetIdleState() {
+        this.idleTimer = 0;
+        this.idleState = 'standing';
+        this.idleStateTimer = 0;
+        this.isBlinking = false;
+        if (this.animator) {
+            this.animator.clearOverride();
+        }
+    }
+
+    /**
+     * Advanced idle animation with looking around behavior
+     */
+    updateIdleAnimation() {
+        if (!this.animator) return;
+
+        // Determine current frame based on idle state and blink
+        let frameName = 'standing';
+
+        if (this.idleTimer < 4) {
+            // First 4 seconds: just standing with occasional blinks
+            frameName = this.isBlinking ? 'standing_blink' : 'standing';
+        } else {
+            // After 4 seconds: looking around mode
+            switch (this.idleState) {
+                case 'standing':
+                    frameName = this.isBlinking ? 'standing_blink' : 'standing';
+                    break;
+                case 'standing_look_back':
+                    frameName = this.isBlinking ? 'standing_look_back_blink' : 'standing_look_back';
+                    break;
+                case 'look_up_forward':
+                    frameName = this.isBlinking ? 'look_up_forward_blink' : 'look_up_forward';
+                    break;
+                case 'look_up_away':
+                    frameName = this.isBlinking ? 'look_up_away_blink' : 'look_up_away';
+                    break;
+            }
+        }
+
+        this.animator.setFrame(frameName);
+    }
+
+    /**
+     * Update idle timers and state transitions (called from main update)
+     */
+    updateIdleTimers(dt) {
+        // Only update if truly idle (on ground, not moving)
+        if (!this.onGround || this.isMoving || this.isGroundPounding || this.isMantling) {
+            return;
+        }
+
+        this.idleTimer += dt;
+        this.idleStateTimer += dt;
+
+        // Blink logic
+        if (this.isBlinking) {
+            this.blinkTimer -= dt;
+            if (this.blinkTimer <= 0) {
+                this.isBlinking = false;
+                // Set next blink delay (random 2-5 seconds)
+                this.nextBlinkDelay = 2 + Math.random() * 3;
+                this.blinkTimer = this.nextBlinkDelay;
+            }
+        } else {
+            this.blinkTimer -= dt;
+            if (this.blinkTimer <= 0) {
+                // Start blinking
+                this.isBlinking = true;
+                this.blinkTimer = this.blinkDuration;
+            }
+        }
+
+        // Looking around logic (only after 4 seconds idle)
+        if (this.idleTimer >= 4) {
+            if (this.idleStateTimer >= this.idleLookDuration) {
+                // Time to change look direction or return to standing
+                this.transitionIdleState();
+            }
+        }
+    }
+
+    /**
+     * Transition to a new idle state (look direction)
+     */
+    transitionIdleState() {
+        // 40% chance to return to standing, 60% chance to look somewhere
+        if (this.idleState !== 'standing' && Math.random() < 0.4) {
+            // Return to standing
+            this.idleState = 'standing';
+            this.idleLookDuration = 1 + Math.random() * 2; // Stay standing 1-3 seconds
+        } else {
+            // Pick a random look direction (different from current)
+            const availableDirections = this.idleLookDirections.filter(d => d !== this.idleState);
+            this.idleState = availableDirections[Math.floor(Math.random() * availableDirections.length)];
+
+            // 30% chance for quick glance (0.5-1.5s), 70% chance for longer look (2-4s)
+            if (Math.random() < 0.3) {
+                this.idleLookDuration = 0.5 + Math.random() * 1;
+            } else {
+                this.idleLookDuration = 2 + Math.random() * 2;
+            }
+        }
+
+        this.idleStateTimer = 0;
     }
 
     mountPogo() {
@@ -453,6 +584,9 @@ class Player {
         } else {
             this.animTime = 0;
         }
+
+        // Update idle timers (for advanced idle animation)
+        this.updateIdleTimers(dt);
 
         // Update sprite animation
         this.updateAnimation();
