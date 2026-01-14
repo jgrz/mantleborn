@@ -325,24 +325,37 @@ class Room {
 class Camera {
     constructor(screenWidth, screenHeight, roomWidth) {
         this.x = 0;
+        this.targetX = 0;
         this.screenWidth = screenWidth;
         this.roomWidth = roomWidth;
-        this.deadZone = screenWidth * 0.3; // Player can move this far before camera follows
+        this.deadZone = screenWidth * 0.3;
+        this.smoothSpeed = 8; // Higher = faster catch-up
     }
 
-    follow(player) {
+    follow(player, dt) {
         const playerCenterX = player.x + player.width / 2;
-        const screenCenterX = this.x + this.screenWidth / 2;
+        const screenCenterX = this.targetX + this.screenWidth / 2;
 
         // Only scroll if player moves outside dead zone
         const diff = playerCenterX - screenCenterX;
         if (Math.abs(diff) > this.deadZone) {
-            const target = playerCenterX - this.screenWidth / 2;
-            this.x += (target - this.x) * 0.1;
+            // Adjust target to keep player at edge of dead zone
+            if (diff > 0) {
+                this.targetX = playerCenterX - this.screenWidth / 2 - this.deadZone;
+            } else {
+                this.targetX = playerCenterX - this.screenWidth / 2 + this.deadZone;
+            }
         }
 
-        // Clamp to room bounds
-        this.x = Math.max(0, Math.min(this.x, this.roomWidth - this.screenWidth));
+        // Clamp target to room bounds
+        this.targetX = Math.max(0, Math.min(this.targetX, this.roomWidth - this.screenWidth));
+
+        // Smooth interpolation (frame-rate independent)
+        const lerp = 1 - Math.exp(-this.smoothSpeed * dt);
+        this.x += (this.targetX - this.x) * lerp;
+
+        // Round to whole pixels to prevent sub-pixel jitter
+        this.x = Math.round(this.x);
     }
 }
 
@@ -431,7 +444,7 @@ export class PlayingScreen {
         this.input.jump = false;
 
         // Update camera
-        this.camera.follow(this.player);
+        this.camera.follow(this.player, dt);
     }
 
     render(ctx) {
