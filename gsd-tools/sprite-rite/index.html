@@ -620,6 +620,21 @@
             padding: 6px 10px;
         }
 
+        .export-hint {
+            padding: 8px 12px;
+            font-size: 10px;
+            color: var(--stone-mid);
+            background: var(--bg-deep);
+            border-bottom: 1px solid var(--stone-dark);
+        }
+
+        .export-hint code {
+            color: var(--accent-ember);
+            background: var(--bg-surface);
+            padding: 2px 4px;
+            border-radius: 2px;
+        }
+
         .json-preview {
             flex: 1;
             min-height: 0;
@@ -865,8 +880,11 @@
             <!-- Export Section -->
             <div class="sidebar-section export-section">
                 <div class="export-actions">
-                    <button class="btn btn-primary" id="exportJson">Export JSON</button>
-                    <button class="btn" id="copyJson">Copy</button>
+                    <button class="btn btn-primary" id="copyIndexEntry">Copy for Index</button>
+                    <button class="btn" id="copyJson">Copy JSON</button>
+                </div>
+                <div class="export-hint">
+                    Copy and paste into <code>sprite-index.json</code> to persist
                 </div>
                 <div class="json-preview" id="jsonPreview">
                     <div class="json-preview-header" id="jsonPreviewToggle">
@@ -900,15 +918,19 @@
            ============================================ */
 
         // ==========================================
-        // Project Sprite Sheets Configuration
-        // Add new sprite sheets here as they're added to the project
+        // Project Configuration
         // ==========================================
+        const SPRITE_INDEX_PATH = '/assets/sprites/sprite-index.json';
+
         const PROJECT_SPRITE_SHEETS = [
             { name: 'player.png', path: '/assets/sprites/player.png' }
             // Add more sprite sheets here:
             // { name: 'enemies.png', path: '/assets/sprites/enemies.png' },
             // { name: 'tiles.png', path: '/assets/sprites/tiles.png' },
         ];
+
+        // Cached sprite index data
+        let spriteIndex = null;
 
         // ==========================================
         // State Management
@@ -967,7 +989,7 @@
             spriteCount: document.getElementById('spriteCount'),
 
             // Export
-            exportJson: document.getElementById('exportJson'),
+            copyIndexEntry: document.getElementById('copyIndexEntry'),
             copyJson: document.getElementById('copyJson'),
             jsonPreview: document.getElementById('jsonPreview'),
             jsonPreviewToggle: document.getElementById('jsonPreviewToggle'),
@@ -1033,7 +1055,7 @@
             if (!path) return;
 
             const img = new Image();
-            img.onload = () => {
+            img.onload = async () => {
                 state.image = img;
                 state.imageName = name;
                 state.imagePath = path;
@@ -1055,8 +1077,8 @@
 
                 elements.imageInfo.textContent = `${name} — ${img.width}×${img.height}px`;
 
-                // Try to load saved session for this sprite sheet
-                loadFromLocalStorage();
+                // Load sprites from project index
+                await loadSpritesFromIndex(name);
                 updateSpriteList();
                 updateJsonPreview();
             };
@@ -1076,6 +1098,42 @@
                 option.dataset.name = sheet.name;
                 elements.spriteSheetSelect.appendChild(option);
             });
+        }
+
+        async function loadSpriteIndex() {
+            if (spriteIndex) return spriteIndex;
+
+            try {
+                const response = await fetch(SPRITE_INDEX_PATH);
+                if (response.ok) {
+                    spriteIndex = await response.json();
+                    return spriteIndex;
+                }
+            } catch (e) {
+                console.warn('Could not load sprite index:', e);
+            }
+            return null;
+        }
+
+        async function loadSpritesFromIndex(sheetName) {
+            const index = await loadSpriteIndex();
+            if (!index || !index[sheetName]) {
+                // Fall back to localStorage if no index entry
+                loadFromLocalStorage();
+                return;
+            }
+
+            const sheetData = index[sheetName];
+            state.sprites = sheetData.sprites.map(s => ({
+                name: s.name,
+                description: s.description || '',
+                x: s.x,
+                y: s.y,
+                width: s.width,
+                height: s.height
+            }));
+
+            showToast(`Loaded ${state.sprites.length} sprites from index`);
         }
 
         // ==========================================
@@ -1626,6 +1684,30 @@
                 .catch(() => showToast('Failed to copy', 'error'));
         }
 
+        function generateIndexEntry() {
+            // Generate sprite-index.json format for this sprite sheet
+            return {
+                [state.imageName]: {
+                    path: state.imagePath,
+                    sprites: state.sprites.map(s => ({
+                        name: s.name,
+                        description: s.description || '',
+                        x: s.x,
+                        y: s.y,
+                        width: s.width,
+                        height: s.height
+                    }))
+                }
+            };
+        }
+
+        function copyIndexEntry() {
+            const entry = generateIndexEntry();
+            navigator.clipboard.writeText(JSON.stringify(entry, null, 2))
+                .then(() => showToast('Index entry copied! Paste into sprite-index.json'))
+                .catch(() => showToast('Failed to copy', 'error'));
+        }
+
         function importJson(file) {
             const reader = new FileReader();
             reader.onload = (e) => {
@@ -1737,7 +1819,7 @@
         elements.cancelSprite.addEventListener('click', cancelSprite);
 
         // Export
-        elements.exportJson.addEventListener('click', exportJson);
+        elements.copyIndexEntry.addEventListener('click', copyIndexEntry);
         elements.copyJson.addEventListener('click', copyJson);
 
         // JSON preview toggle

@@ -1,0 +1,26 @@
+{
+  "player.png": {
+    "path": "/assets/sprites/player.png",
+    "sprites": [
+      { "name": "standing", "description": "Standing neutral pose", "x": 0, "y": 0, "width": 54, "height": 90 },
+      { "name": "standing_blink", "description": "Standing with eyes closed", "x": 54, "y": 0, "width": 54, "height": 90 },
+      { "name": "standing_look_back", "description": "Standing looking over shoulder", "x": 108, "y": 0, "width": 52, "height": 90 },
+      { "name": "standing_look_back_blink", "description": "Looking over shoulder with eyes closed", "x": 160, "y": 0, "width": 52, "height": 90 },
+      { "name": "duck", "description": "Crouching/ducking pose", "x": 212, "y": 22, "width": 58, "height": 68 },
+      { "name": "walk_far", "description": "Walking animation - far leg forward", "x": 270, "y": 0, "width": 58, "height": 90 },
+      { "name": "walk_near", "description": "Walking animation - near leg forward", "x": 328, "y": 0, "width": 56, "height": 90 },
+      { "name": "look_down", "description": "Looking downward", "x": 384, "y": 0, "width": 54, "height": 90 },
+      { "name": "look_down_blink", "description": "Looking downward with eyes closed", "x": 438, "y": 0, "width": 54, "height": 90 },
+      { "name": "look_down_away", "description": "Looking down and away", "x": 492, "y": 0, "width": 52, "height": 90 },
+      { "name": "look_down_away_blink", "description": "Looking down and away with eyes closed", "x": 0, "y": 90, "width": 52, "height": 90 },
+      { "name": "look_up_away", "description": "Looking up and away", "x": 52, "y": 90, "width": 52, "height": 90 },
+      { "name": "look_up_away_blink", "description": "Looking up and away with eyes closed", "x": 104, "y": 90, "width": 52, "height": 90 },
+      { "name": "look_up_forward", "description": "Looking up forward", "x": 156, "y": 90, "width": 52, "height": 90 },
+      { "name": "look_up_forward_blink", "description": "Looking up forward with eyes closed", "x": 208, "y": 90, "width": 52, "height": 90 },
+      { "name": "jump", "description": "Jumping pose", "x": 260, "y": 90, "width": 54, "height": 83 },
+      { "name": "throw_raise", "description": "Throwing animation - arm raised", "x": 314, "y": 90, "width": 54, "height": 90 },
+      { "name": "throw_extend", "description": "Throwing animation - arm extended", "x": 368, "y": 90, "width": 62, "height": 90 },
+      { "name": "throw_release", "description": "Throwing animation - release", "x": 430, "y": 90, "width": 56, "height": 90 }
+    ]
+  }
+}
