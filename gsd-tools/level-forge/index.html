@@ -38,6 +38,8 @@
             --tile-open-bright: #3a7a40;
             --tile-obstruction: #6a2a2a;
             --tile-obstruction-bright: #8a3a3a;
+            --tile-spawn: #2a4a6a;
+            --tile-spawn-bright: #3a6a9a;
         }
 
         * {
@@ -251,6 +253,10 @@
             background: var(--tile-obstruction);
         }
 
+        .state-btn[data-state="spawn"] {
+            background: var(--tile-spawn);
+        }
+
         .toolbar-divider {
             width: 1px;
             height: 28px;
@@ -309,6 +315,14 @@
 
         .tile[data-state="obstruction"]:hover {
             background: var(--tile-obstruction-bright);
+        }
+
+        .tile[data-state="spawn"] {
+            background: var(--tile-spawn);
+        }
+
+        .tile[data-state="spawn"]:hover {
+            background: var(--tile-spawn-bright);
         }
 
         .tile.selected {
@@ -526,6 +540,10 @@
             background: var(--tile-obstruction);
         }
 
+        .legend-color.spawn {
+            background: var(--tile-spawn);
+        }
+
         /* Toast */
         .toast {
             position: fixed;
@@ -672,6 +690,7 @@
                     <button class="state-btn" data-state="undefined" title="Undefined (1)">?</button>
                     <button class="state-btn active" data-state="open" title="Open (2)">&#10003;</button>
                     <button class="state-btn" data-state="obstruction" title="Obstruction (3)">&#10005;</button>
+                    <button class="state-btn" data-state="spawn" title="Spawn Point (4)">&#9679;</button>
                 </div>
 
                 <div class="toolbar-divider"></div>
@@ -747,6 +766,10 @@
                         <div class="legend-color obstruction"></div>
                         <span>Obstruction</span>
                     </div>
+                    <div class="legend-item">
+                        <div class="legend-color spawn"></div>
+                        <span>Spawn</span>
+                    </div>
                 </div>
 
                 <div class="stats-grid">
@@ -774,7 +797,8 @@
                     <kbd>S</kbd> Select<br>
                     <kbd>1</kbd> Undefined &nbsp;
                     <kbd>2</kbd> Open &nbsp;
-                    <kbd>3</kbd> Obstruction
+                    <kbd>3</kbd> Obstruction &nbsp;
+                    <kbd>4</kbd> Spawn
                 </div>
             </div>
 
@@ -816,7 +840,7 @@
             selectedTiles: new Set()
         };
 
-        const TILE_STATES = ['undefined', 'open', 'obstruction'];
+        const TILE_STATES = ['undefined', 'open', 'obstruction', 'spawn'];
 
         // ==========================================
         // DOM Elements
@@ -949,6 +973,20 @@
         // ==========================================
         function setTileState(x, y, newState) {
             if (x < 0 || x >= state.gridWidth || y < 0 || y >= state.gridHeight) return;
+
+            // Spawn point limit: only one allowed
+            if (newState === 'spawn') {
+                // Find and remove existing spawn point
+                for (let sy = 0; sy < state.gridHeight; sy++) {
+                    for (let sx = 0; sx < state.gridWidth; sx++) {
+                        if (state.tiles[sy][sx] === 'spawn' && (sx !== x || sy !== y)) {
+                            state.tiles[sy][sx] = 'open';  // Convert old spawn to open
+                            const oldTile = getTileElement(sx, sy);
+                            if (oldTile) oldTile.dataset.state = 'open';
+                        }
+                    }
+                }
+            }
 
             state.tiles[y][x] = newState;
 
@@ -1158,6 +1196,7 @@
             let undefinedCount = 0;
             let openCount = 0;
             let obstructionCount = 0;
+            let spawnCount = 0;
 
             for (let y = 0; y < state.gridHeight; y++) {
                 for (let x = 0; x < state.gridWidth; x++) {
@@ -1165,6 +1204,7 @@
                     if (tileState === 'undefined') undefinedCount++;
                     else if (tileState === 'open') openCount++;
                     else if (tileState === 'obstruction') obstructionCount++;
+                    else if (tileState === 'spawn') spawnCount++;
                 }
             }
 
@@ -1172,7 +1212,8 @@
 
             elements.totalTiles.textContent = total;
             elements.undefinedTiles.textContent = undefinedCount;
-            elements.openTiles.textContent = openCount;
+            // Include spawn in the "open" count since it's walkable
+            elements.openTiles.textContent = openCount + spawnCount;
             elements.obstructionTiles.textContent = obstructionCount;
         }
 
@@ -1184,8 +1225,10 @@
             const levelType = state.levelType;
 
             // Encode tiles - we'll use a compact format
-            // 0 = undefined, 1 = open, 2 = obstruction
+            // 0 = undefined, 1 = open, 2 = obstruction, 3 = spawn
             const tileData = [];
+            let spawnPoint = null;
+
             for (let y = 0; y < state.gridHeight; y++) {
                 const row = [];
                 for (let x = 0; x < state.gridWidth; x++) {
@@ -1193,6 +1236,10 @@
                     if (tileState === 'undefined') row.push(0);
                     else if (tileState === 'open') row.push(1);
                     else if (tileState === 'obstruction') row.push(2);
+                    else if (tileState === 'spawn') {
+                        row.push(3);
+                        spawnPoint = { x, y };
+                    }
                 }
                 tileData.push(row);
             }
@@ -1204,7 +1251,7 @@
             for (let y = 0; y < state.gridHeight; y++) {
                 for (let x = 0; x < state.gridWidth; x++) {
                     const tileState = state.tiles[y][x];
-                    if (tileState === 'open') {
+                    if (tileState === 'open' || tileState === 'spawn') {
                         walkable.push({ x, y });
                     } else if (tileState === 'obstruction') {
                         obstructions.push({ x, y });
@@ -1234,6 +1281,7 @@
                 height: state.gridHeight,
                 tileSize: 24,  // Can be adjusted for game
                 physics: physics,
+                spawn: spawnPoint,
                 grid: tileData,
                 walkable: walkable,
                 obstructions: obstructions,
@@ -1276,6 +1324,7 @@
                             const value = levelData.grid[y]?.[x] ?? 0;
                             if (value === 1) row.push('open');
                             else if (value === 2) row.push('obstruction');
+                            else if (value === 3) row.push('spawn');
                             else row.push('undefined');
                         }
                         state.tiles.push(row);
@@ -1345,6 +1394,9 @@
                     break;
                 case '3':
                     setState('obstruction');
+                    break;
+                case '4':
+                    setState('spawn');
                     break;
                 case 'escape':
                     clearTileHighlights();
@@ -1432,8 +1484,31 @@
         function resetPlayerPosition() {
             const tileSize = 24;
 
+            // First, look for spawn point
+            let spawnX = -1, spawnY = -1;
+            for (let y = 0; y < state.gridHeight; y++) {
+                for (let x = 0; x < state.gridWidth; x++) {
+                    if (state.tiles[y][x] === 'spawn') {
+                        spawnX = x;
+                        spawnY = y;
+                        break;
+                    }
+                }
+                if (spawnX !== -1) break;
+            }
+
+            // If spawn point found, use it
+            if (spawnX !== -1) {
+                demo.player.x = spawnX * tileSize + (tileSize - demo.player.width) / 2;
+                demo.player.y = spawnY * tileSize + (tileSize - demo.player.height);
+                demo.player.vx = 0;
+                demo.player.vy = 0;
+                demo.player.onGround = false;
+                return;
+            }
+
             if (state.levelType === 'platformer') {
-                // Find first open tile from bottom, scanning left to right
+                // Find first open tile from bottom, scanning left to right (not on obstruction)
                 for (let y = state.gridHeight - 1; y >= 0; y--) {
                     for (let x = 0; x < state.gridWidth; x++) {
                         if (state.tiles[y][x] === 'open') {
@@ -1454,7 +1529,19 @@
                 demo.player.x = tileSize;
                 demo.player.y = tileSize;
             } else {
-                // Top-down: center of level
+                // Top-down: find first open tile or center of level
+                for (let y = 0; y < state.gridHeight; y++) {
+                    for (let x = 0; x < state.gridWidth; x++) {
+                        if (state.tiles[y][x] === 'open') {
+                            demo.player.x = x * tileSize + (tileSize - demo.player.width) / 2;
+                            demo.player.y = y * tileSize + (tileSize - demo.player.height) / 2;
+                            demo.player.vx = 0;
+                            demo.player.vy = 0;
+                            return;
+                        }
+                    }
+                }
+                // Fallback: center of level
                 demo.player.x = (state.gridWidth * tileSize) / 2 - demo.player.width / 2;
                 demo.player.y = (state.gridHeight * tileSize) / 2 - demo.player.height / 2;
             }
@@ -1598,7 +1685,9 @@
 
             for (let ty = top; ty <= bottom; ty++) {
                 for (let tx = left; tx <= right; tx++) {
-                    if (state.tiles[ty]?.[tx] === 'obstruction') {
+                    const tile = state.tiles[ty]?.[tx];
+                    // Only obstruction blocks movement (open, spawn, undefined are walkable)
+                    if (tile === 'obstruction') {
                         return true;
                     }
                 }
@@ -1622,6 +1711,8 @@
                         ctx.fillStyle = '#2a5a30';
                     } else if (tile === 'obstruction') {
                         ctx.fillStyle = '#6a2a2a';
+                    } else if (tile === 'spawn') {
+                        ctx.fillStyle = '#2a4a6a';
                     } else {
                         ctx.fillStyle = '#1a1a2e';
                     }
@@ -1649,6 +1740,13 @@
         // Demo key handlers
         function handleDemoKeyDown(e) {
             if (!demo.active) return;
+
+            // Prevent default for game controls to avoid page scrolling/other browser behavior
+            if (e.code === 'Space' || e.code === 'ArrowUp' || e.code === 'ArrowDown' ||
+                e.code === 'ArrowLeft' || e.code === 'ArrowRight') {
+                e.preventDefault();
+            }
+
             demo.keys[e.code] = true;
 
             if (e.code === 'Escape') {
@@ -1658,6 +1756,13 @@
 
         function handleDemoKeyUp(e) {
             if (!demo.active) return;
+
+            // Prevent default for game controls
+            if (e.code === 'Space' || e.code === 'ArrowUp' || e.code === 'ArrowDown' ||
+                e.code === 'ArrowLeft' || e.code === 'ArrowRight') {
+                e.preventDefault();
+            }
+
             demo.keys[e.code] = false;
         }
 
