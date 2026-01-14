@@ -7,6 +7,7 @@
 
 import { StartScreen } from './screens/startScreen.js';
 import { StoryScreen } from './screens/storyScreen.js';
+import { PlayingScreen } from './screens/playingScreen.js';
 import { Transition } from './utils/transition.js';
 
 // Game states enum
@@ -53,8 +54,8 @@ export class Game {
     initScreens() {
         this.screens[GameState.START] = new StartScreen(this);
         this.screens[GameState.STORY] = new StoryScreen(this);
+        this.screens[GameState.PLAYING] = new PlayingScreen(this);
         // Future screens will be added here:
-        // this.screens[GameState.PLAYING] = new PlayingScreen(this);
         // this.screens[GameState.PAUSED] = new PausedScreen(this);
         // this.screens[GameState.GAME_OVER] = new GameOverScreen(this);
     }
@@ -64,10 +65,30 @@ export class Game {
      * Individual screens can also have their own input handling.
      */
     setupInput() {
-        // Keyboard input
+        // Keyboard input - keydown
         window.addEventListener('keydown', (e) => {
             if (!this.inputEnabled) return;
+
+            // Prevent default for game keys (arrows, space)
+            if (['ArrowLeft', 'ArrowRight', 'ArrowUp', ' '].includes(e.key)) {
+                e.preventDefault();
+            }
+
             this.handleInput('keydown', e);
+
+            // Route to screen's continuous input handler if available
+            const currentScreen = this.screens[this.currentState];
+            if (currentScreen && currentScreen.handleKeyDown) {
+                currentScreen.handleKeyDown(e.key);
+            }
+        });
+
+        // Keyboard input - keyup (for continuous movement)
+        window.addEventListener('keyup', (e) => {
+            const currentScreen = this.screens[this.currentState];
+            if (currentScreen && currentScreen.handleKeyUp) {
+                currentScreen.handleKeyUp(e.key);
+            }
         });
 
         // Mouse/touch input
