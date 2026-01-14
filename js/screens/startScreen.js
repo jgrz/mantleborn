@@ -144,9 +144,12 @@ export class StartScreen {
         if (this.inputCooldown > 0) return;
 
         if (type === 'keydown' || type === 'click') {
-            // Transition to playing state (placeholder for now)
-            // this.game.setState(GameState.PLAYING);
-            console.log('Game starting... (Playing screen not yet implemented)');
+            // Fade transition to story screen
+            this.game.transition.start(GameState.STORY, {
+                fadeOut: 0.5,
+                hold: 0.2,
+                fadeIn: 0.5
+            });
         }
     }
 

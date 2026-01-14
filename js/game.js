@@ -6,10 +6,13 @@
  */
 
 import { StartScreen } from './screens/startScreen.js';
+import { StoryScreen } from './screens/storyScreen.js';
+import { Transition } from './utils/transition.js';
 
 // Game states enum
 export const GameState = {
     START: 'start',
+    STORY: 'story',
     PLAYING: 'playing',
     PAUSED: 'paused',
     GAME_OVER: 'gameOver'
@@ -36,6 +39,9 @@ export class Game {
         // Input tracking
         this.inputEnabled = true;
 
+        // Transition system for smooth screen changes
+        this.transition = new Transition(this);
+
         this.initScreens();
         this.setupInput();
     }
@@ -46,6 +52,7 @@ export class Game {
      */
     initScreens() {
         this.screens[GameState.START] = new StartScreen(this);
+        this.screens[GameState.STORY] = new StoryScreen(this);
         // Future screens will be added here:
         // this.screens[GameState.PLAYING] = new PlayingScreen(this);
         // this.screens[GameState.PAUSED] = new PausedScreen(this);
@@ -141,9 +148,12 @@ export class Game {
     }
 
     /**
-     * Update the current screen.
+     * Update the current screen and transitions.
      */
     update(dt) {
+        // Update transition
+        this.transition.update(dt);
+
         const currentScreen = this.screens[this.currentState];
         if (currentScreen && currentScreen.update) {
             currentScreen.update(dt);
@@ -151,7 +161,7 @@ export class Game {
     }
 
     /**
-     * Render the current screen.
+     * Render the current screen and transition overlay.
      */
     render() {
         // Clear the canvas
@@ -162,6 +172,9 @@ export class Game {
         if (currentScreen && currentScreen.render) {
             currentScreen.render(this.ctx);
         }
+
+        // Render transition overlay last (on top of everything)
+        this.transition.render(this.ctx);
     }
 
     /**
