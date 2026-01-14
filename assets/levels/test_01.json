@@ -1,8 +1,15 @@
 {
   "name": "test_01",
+  "type": "platformer",
   "width": 32,
   "height": 18,
   "tileSize": 24,
+  "physics": {
+    "gravity": true,
+    "gravityStrength": 1800,
+    "collisionMode": "solid",
+    "playerCanLand": true
+  },
   "grid": [
     [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1],
     [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1],
