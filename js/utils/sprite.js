@@ -138,8 +138,12 @@ export class Animator {
         if (!frame) return;
 
         const scale = this.spriteSheet.scale;
-        const destW = frame.w * scale * scaleX;
-        const destH = frame.h * scale * scaleY;
+        const destW = Math.round(frame.w * scale);
+        const destH = Math.round(frame.h * scale);
+
+        // Round to whole pixels to prevent jitter
+        x = Math.round(x);
+        y = Math.round(y);
 
         ctx.save();
 

@@ -681,8 +681,8 @@ class Player {
 
         // Use sprite if available
         if (this.animator && this.animator.spriteSheet.loaded) {
-            const spriteX = this.x + this.spriteOffsetX;
-            const spriteY = this.y + this.spriteOffsetY;
+            const spriteX = Math.round(this.x) + this.spriteOffsetX;
+            const spriteY = Math.round(this.y) + this.spriteOffsetY;
             const flipX = this.facing < 0;
 
             // Dash trail effect with sprite
