@@ -562,6 +562,81 @@
             border-radius: 3px;
             font-family: inherit;
         }
+
+        /* Demo Mode */
+        .demo-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: var(--bg-deep);
+            display: none;
+            z-index: 100;
+        }
+
+        .demo-overlay.active {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .demo-canvas {
+            image-rendering: pixelated;
+            border: 2px solid var(--stone-dark);
+            border-radius: 4px;
+        }
+
+        .demo-hud {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            padding: 8px 12px;
+            background: rgba(13, 13, 20, 0.9);
+            border: 1px solid var(--stone-dark);
+            border-radius: 4px;
+            font-size: 10px;
+            color: var(--stone-light);
+            z-index: 101;
+        }
+
+        .demo-hud-title {
+            font-family: 'Press Start 2P', cursive;
+            font-size: 8px;
+            color: var(--accent-ember);
+            margin-bottom: 6px;
+        }
+
+        .demo-hud-controls {
+            line-height: 1.6;
+        }
+
+        .demo-hud-controls kbd {
+            padding: 1px 4px;
+            background: var(--bg-surface);
+            border: 1px solid var(--stone-dark);
+            border-radius: 2px;
+            font-family: inherit;
+            font-size: 9px;
+        }
+
+        .demo-exit-btn {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            z-index: 101;
+        }
+
+        .btn-play {
+            background: var(--tile-open);
+            border-color: var(--tile-open);
+            color: white;
+        }
+
+        .btn-play:hover {
+            background: var(--tile-open-bright);
+            border-color: var(--tile-open-bright);
+        }
     </style>
 </head>
 <body>
@@ -572,6 +647,7 @@
             <span class="brand-text">MANTLEBORN / <span>LEVEL-FORGE</span></span>
         </div>
         <div class="header-actions">
+            <button class="btn btn-play" id="playDemoBtn">&#9658; Play Demo</button>
             <button class="btn" id="newLevelBtn">New Level</button>
         </div>
     </header>
@@ -610,6 +686,16 @@
                 <div class="grid-wrapper">
                     <div class="grid" id="grid"></div>
                     <div class="selection-box" id="selectionBox"></div>
+                </div>
+
+                <!-- Demo Mode Overlay -->
+                <div class="demo-overlay" id="demoOverlay">
+                    <canvas class="demo-canvas" id="demoCanvas"></canvas>
+                    <div class="demo-hud" id="demoHud">
+                        <div class="demo-hud-title">DEMO MODE</div>
+                        <div class="demo-hud-controls" id="demoControls"></div>
+                    </div>
+                    <button class="btn btn-danger demo-exit-btn" id="exitDemoBtn">Exit Demo</button>
                 </div>
             </div>
         </div>
@@ -752,7 +838,13 @@
             clearGridBtn: document.getElementById('clearGridBtn'),
             newLevelBtn: document.getElementById('newLevelBtn'),
             jsonOutput: document.getElementById('jsonOutput'),
-            toast: document.getElementById('toast')
+            toast: document.getElementById('toast'),
+            // Demo mode
+            playDemoBtn: document.getElementById('playDemoBtn'),
+            demoOverlay: document.getElementById('demoOverlay'),
+            demoCanvas: document.getElementById('demoCanvas'),
+            demoControls: document.getElementById('demoControls'),
+            exitDemoBtn: document.getElementById('exitDemoBtn')
         };
 
         // ==========================================
@@ -1229,9 +1321,11 @@
             updateJsonOutput();
         });
 
-        // Keyboard shortcuts
+        // Keyboard shortcuts (editor mode only)
         window.addEventListener('keydown', (e) => {
+            if (demo.active) return;  // Don't handle editor shortcuts in demo mode
             if (document.activeElement.tagName === 'INPUT') return;
+            if (document.activeElement.tagName === 'SELECT') return;
 
             switch (e.key.toLowerCase()) {
                 case 'p':
@@ -1260,6 +1354,318 @@
                     break;
             }
         });
+
+        // ==========================================
+        // Demo Mode
+        // ==========================================
+        const demo = {
+            active: false,
+            ctx: null,
+            player: {
+                x: 100,
+                y: 100,
+                width: 20,
+                height: 32,
+                vx: 0,
+                vy: 0,
+                onGround: false
+            },
+            keys: {},
+            animationFrame: null,
+            lastTime: 0
+        };
+
+        const DEMO_SCALE = 2;
+        const PLAYER_SPEED = 200;
+        const JUMP_FORCE = 500;
+        const GRAVITY = 1200;
+        const TOPDOWN_SPEED = 150;
+
+        function startDemo() {
+            demo.active = true;
+            demo.ctx = elements.demoCanvas.getContext('2d');
+            demo.ctx.imageSmoothingEnabled = false;
+
+            // Set canvas size
+            const canvasWidth = state.gridWidth * 24;
+            const canvasHeight = state.gridHeight * 24;
+            elements.demoCanvas.width = canvasWidth;
+            elements.demoCanvas.height = canvasHeight;
+            elements.demoCanvas.style.width = (canvasWidth * DEMO_SCALE) + 'px';
+            elements.demoCanvas.style.height = (canvasHeight * DEMO_SCALE) + 'px';
+
+            // Find spawn point (first open tile from bottom-left for platformer, center for topdown)
+            resetPlayerPosition();
+
+            // Update HUD controls text
+            if (state.levelType === 'platformer') {
+                elements.demoControls.innerHTML = `
+                    <kbd>&#8592;</kbd><kbd>&#8594;</kbd> Move<br>
+                    <kbd>Space</kbd> Jump<br>
+                    <kbd>Esc</kbd> Exit
+                `;
+            } else {
+                elements.demoControls.innerHTML = `
+                    <kbd>&#8592;</kbd><kbd>&#8594;</kbd><kbd>&#8593;</kbd><kbd>&#8595;</kbd> Move<br>
+                    <kbd>Esc</kbd> Exit
+                `;
+            }
+
+            // Show overlay
+            elements.demoOverlay.classList.add('active');
+
+            // Start game loop
+            demo.lastTime = performance.now();
+            demo.animationFrame = requestAnimationFrame(demoLoop);
+        }
+
+        function stopDemo() {
+            demo.active = false;
+            elements.demoOverlay.classList.remove('active');
+            if (demo.animationFrame) {
+                cancelAnimationFrame(demo.animationFrame);
+                demo.animationFrame = null;
+            }
+            demo.keys = {};
+        }
+
+        function resetPlayerPosition() {
+            const tileSize = 24;
+
+            if (state.levelType === 'platformer') {
+                // Find first open tile from bottom, scanning left to right
+                for (let y = state.gridHeight - 1; y >= 0; y--) {
+                    for (let x = 0; x < state.gridWidth; x++) {
+                        if (state.tiles[y][x] === 'open') {
+                            // Check if there's ground below or at bottom
+                            const hasGround = y === state.gridHeight - 1 ||
+                                             state.tiles[y + 1]?.[x] === 'obstruction';
+                            if (hasGround) {
+                                demo.player.x = x * tileSize + (tileSize - demo.player.width) / 2;
+                                demo.player.y = y * tileSize + (tileSize - demo.player.height);
+                                demo.player.vx = 0;
+                                demo.player.vy = 0;
+                                return;
+                            }
+                        }
+                    }
+                }
+                // Fallback: top-left
+                demo.player.x = tileSize;
+                demo.player.y = tileSize;
+            } else {
+                // Top-down: center of level
+                demo.player.x = (state.gridWidth * tileSize) / 2 - demo.player.width / 2;
+                demo.player.y = (state.gridHeight * tileSize) / 2 - demo.player.height / 2;
+            }
+            demo.player.vx = 0;
+            demo.player.vy = 0;
+        }
+
+        function demoLoop(currentTime) {
+            if (!demo.active) return;
+
+            const dt = Math.min((currentTime - demo.lastTime) / 1000, 0.05);
+            demo.lastTime = currentTime;
+
+            updatePlayer(dt);
+            renderDemo();
+
+            demo.animationFrame = requestAnimationFrame(demoLoop);
+        }
+
+        function updatePlayer(dt) {
+            const p = demo.player;
+            const tileSize = 24;
+
+            if (state.levelType === 'platformer') {
+                // Horizontal movement
+                p.vx = 0;
+                if (demo.keys['ArrowLeft'] || demo.keys['KeyA']) p.vx = -PLAYER_SPEED;
+                if (demo.keys['ArrowRight'] || demo.keys['KeyD']) p.vx = PLAYER_SPEED;
+
+                // Gravity
+                p.vy += GRAVITY * dt;
+
+                // Jump
+                if ((demo.keys['Space'] || demo.keys['ArrowUp'] || demo.keys['KeyW']) && p.onGround) {
+                    p.vy = -JUMP_FORCE;
+                    p.onGround = false;
+                }
+
+                // Apply velocity
+                p.x += p.vx * dt;
+                p.y += p.vy * dt;
+
+                // Collision detection
+                p.onGround = false;
+
+                // Check tile collisions
+                const left = Math.floor(p.x / tileSize);
+                const right = Math.floor((p.x + p.width - 1) / tileSize);
+                const top = Math.floor(p.y / tileSize);
+                const bottom = Math.floor((p.y + p.height - 1) / tileSize);
+
+                // Vertical collision (landing on platforms)
+                for (let tx = left; tx <= right; tx++) {
+                    // Check below
+                    const tileBelow = state.tiles[bottom]?.[tx];
+                    if (tileBelow === 'obstruction') {
+                        if (p.vy > 0) {
+                            p.y = bottom * tileSize - p.height;
+                            p.vy = 0;
+                            p.onGround = true;
+                        }
+                    }
+                    // Check above
+                    const tileAbove = state.tiles[top]?.[tx];
+                    if (tileAbove === 'obstruction') {
+                        if (p.vy < 0) {
+                            p.y = (top + 1) * tileSize;
+                            p.vy = 0;
+                        }
+                    }
+                }
+
+                // Recalculate after vertical adjustment
+                const newTop = Math.floor(p.y / tileSize);
+                const newBottom = Math.floor((p.y + p.height - 1) / tileSize);
+
+                // Horizontal collision
+                for (let ty = newTop; ty <= newBottom; ty++) {
+                    // Check left
+                    const newLeft = Math.floor(p.x / tileSize);
+                    if (state.tiles[ty]?.[newLeft] === 'obstruction') {
+                        p.x = (newLeft + 1) * tileSize;
+                    }
+                    // Check right
+                    const newRight = Math.floor((p.x + p.width - 1) / tileSize);
+                    if (state.tiles[ty]?.[newRight] === 'obstruction') {
+                        p.x = newRight * tileSize - p.width;
+                    }
+                }
+
+                // Bounds
+                p.x = Math.max(0, Math.min(p.x, state.gridWidth * tileSize - p.width));
+                p.y = Math.max(0, Math.min(p.y, state.gridHeight * tileSize - p.height));
+
+                // Ground at bottom of level
+                if (p.y >= state.gridHeight * tileSize - p.height) {
+                    p.y = state.gridHeight * tileSize - p.height;
+                    p.vy = 0;
+                    p.onGround = true;
+                }
+
+            } else {
+                // Top-down movement
+                p.vx = 0;
+                p.vy = 0;
+                if (demo.keys['ArrowLeft'] || demo.keys['KeyA']) p.vx = -TOPDOWN_SPEED;
+                if (demo.keys['ArrowRight'] || demo.keys['KeyD']) p.vx = TOPDOWN_SPEED;
+                if (demo.keys['ArrowUp'] || demo.keys['KeyW']) p.vy = -TOPDOWN_SPEED;
+                if (demo.keys['ArrowDown'] || demo.keys['KeyS']) p.vy = TOPDOWN_SPEED;
+
+                // Normalize diagonal movement
+                if (p.vx !== 0 && p.vy !== 0) {
+                    p.vx *= 0.707;
+                    p.vy *= 0.707;
+                }
+
+                // Try X movement
+                const newX = p.x + p.vx * dt;
+                if (!checkCollisionTopDown(newX, p.y, p.width, p.height)) {
+                    p.x = newX;
+                }
+
+                // Try Y movement
+                const newY = p.y + p.vy * dt;
+                if (!checkCollisionTopDown(p.x, newY, p.width, p.height)) {
+                    p.y = newY;
+                }
+
+                // Bounds
+                p.x = Math.max(0, Math.min(p.x, state.gridWidth * tileSize - p.width));
+                p.y = Math.max(0, Math.min(p.y, state.gridHeight * tileSize - p.height));
+            }
+        }
+
+        function checkCollisionTopDown(x, y, w, h) {
+            const tileSize = 24;
+            const left = Math.floor(x / tileSize);
+            const right = Math.floor((x + w - 1) / tileSize);
+            const top = Math.floor(y / tileSize);
+            const bottom = Math.floor((y + h - 1) / tileSize);
+
+            for (let ty = top; ty <= bottom; ty++) {
+                for (let tx = left; tx <= right; tx++) {
+                    if (state.tiles[ty]?.[tx] === 'obstruction') {
+                        return true;
+                    }
+                }
+            }
+            return false;
+        }
+
+        function renderDemo() {
+            const ctx = demo.ctx;
+            const tileSize = 24;
+
+            // Clear
+            ctx.fillStyle = '#0d0d14';
+            ctx.fillRect(0, 0, elements.demoCanvas.width, elements.demoCanvas.height);
+
+            // Draw tiles
+            for (let y = 0; y < state.gridHeight; y++) {
+                for (let x = 0; x < state.gridWidth; x++) {
+                    const tile = state.tiles[y][x];
+                    if (tile === 'open') {
+                        ctx.fillStyle = '#2a5a30';
+                    } else if (tile === 'obstruction') {
+                        ctx.fillStyle = '#6a2a2a';
+                    } else {
+                        ctx.fillStyle = '#1a1a2e';
+                    }
+                    ctx.fillRect(x * tileSize, y * tileSize, tileSize - 1, tileSize - 1);
+                }
+            }
+
+            // Draw player
+            ctx.fillStyle = '#e07020';
+            ctx.fillRect(
+                Math.round(demo.player.x),
+                Math.round(demo.player.y),
+                demo.player.width,
+                demo.player.height
+            );
+
+            // Player face indicator (shows direction)
+            ctx.fillStyle = '#fff';
+            const eyeY = Math.round(demo.player.y) + 6;
+            const eyeSize = 3;
+            ctx.fillRect(Math.round(demo.player.x) + 4, eyeY, eyeSize, eyeSize);
+            ctx.fillRect(Math.round(demo.player.x) + demo.player.width - 7, eyeY, eyeSize, eyeSize);
+        }
+
+        // Demo key handlers
+        function handleDemoKeyDown(e) {
+            if (!demo.active) return;
+            demo.keys[e.code] = true;
+
+            if (e.code === 'Escape') {
+                stopDemo();
+            }
+        }
+
+        function handleDemoKeyUp(e) {
+            if (!demo.active) return;
+            demo.keys[e.code] = false;
+        }
+
+        window.addEventListener('keydown', handleDemoKeyDown);
+        window.addEventListener('keyup', handleDemoKeyUp);
+
+        elements.playDemoBtn.addEventListener('click', startDemo);
+        elements.exitDemoBtn.addEventListener('click', stopDemo);
 
         // ==========================================
         // Initialize
