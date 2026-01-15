@@ -1668,15 +1668,32 @@
                    Math.abs(c1.a - c2.a) <= tolerance;
         }
 
-        function removeBackground(clickX, clickY) {
+        function removeBackground() {
             const imageData = getPixelData();
             if (!imageData) return;
 
-            const targetColor = getPixelColor(imageData, clickX, clickY);
+            // Detect background color from corners
+            const corners = [
+                getPixelColor(imageData, 0, 0),
+                getPixelColor(imageData, state.imageWidth - 1, 0),
+                getPixelColor(imageData, 0, state.imageHeight - 1),
+                getPixelColor(imageData, state.imageWidth - 1, state.imageHeight - 1)
+            ];
+
+            // Find most common corner color (likely background)
+            let targetColor = corners[0];
+            let maxMatches = 0;
+            for (const c of corners) {
+                const matches = corners.filter(other => colorsMatch(c, other, 10)).length;
+                if (matches > maxMatches) {
+                    maxMatches = matches;
+                    targetColor = c;
+                }
+            }
 
             // Don't remove if already transparent
             if (targetColor.a === 0) {
-                alert('That pixel is already transparent.');
+                showToast('Background already transparent.', 'error');
                 return;
             }
 
@@ -1694,7 +1711,7 @@
                         a: newData[idx + 3]
                     };
 
-                    if (colorsMatch(pixelColor, targetColor, 5)) {
+                    if (colorsMatch(pixelColor, targetColor, 10)) {
                         newData[idx + 3] = 0; // Make transparent
                         removeCount++;
                     }
@@ -1702,7 +1719,7 @@
             }
 
             if (removeCount === 0) {
-                alert('No matching pixels found.');
+                showToast('No background pixels found.', 'error');
                 return;
             }
 
@@ -1843,14 +1860,10 @@
             }
 
             // Update button states
-            elements.removeBgBtn.classList.toggle('active', state.toolMode === 'removeBg');
             elements.autoDetectBtn.classList.toggle('active', state.toolMode === 'autoDetect');
 
-            // Update cursor
-            if (state.toolMode === 'removeBg') {
-                elements.selectionCanvas.style.cursor = 'crosshair';
-                elements.selectionInfo.innerHTML = 'Click a color to remove it';
-            } else if (state.toolMode === 'autoDetect') {
+            // Update cursor and info
+            if (state.toolMode === 'autoDetect') {
                 elements.selectionCanvas.style.cursor = 'pointer';
                 elements.selectionInfo.innerHTML = 'Click on a sprite to auto-select';
             } else {
@@ -1860,11 +1873,7 @@
         }
 
         function handleToolClick(imgX, imgY) {
-            if (state.toolMode === 'removeBg') {
-                removeBackground(imgX, imgY);
-                setToolMode(null); // Exit mode after use
-                return true;
-            } else if (state.toolMode === 'autoDetect') {
+            if (state.toolMode === 'autoDetect') {
                 const bounds = getIslandBounds(imgX, imgY);
                 if (bounds) {
                     state.selection = bounds;
@@ -1874,7 +1883,7 @@
                     renderSelection();
                     showCreatePanel();
                 } else {
-                    alert('No sprite detected at that location. Try clicking on a non-transparent pixel.');
+                    showToast('No sprite detected. Click on a non-transparent pixel.', 'error');
                 }
                 setToolMode(null); // Exit mode after use
                 return true;
@@ -2452,7 +2461,7 @@
         // Tool buttons
         elements.removeBgBtn.addEventListener('click', () => {
             if (!state.image) return;
-            setToolMode('removeBg');
+            removeBackground();
         });
 
         elements.autoDetectBtn.addEventListener('click', () => {
