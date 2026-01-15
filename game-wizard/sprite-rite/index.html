@@ -280,6 +280,36 @@
             color: var(--mystic-glow);
         }
 
+        .tool-btn {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 11px;
+            padding: 4px 10px;
+            border: 1px solid var(--stone-dark);
+            border-radius: 4px;
+            background: var(--bg-surface);
+            color: var(--stone-light);
+            cursor: pointer;
+            transition: all 0.15s;
+        }
+
+        .tool-btn:hover {
+            border-color: var(--accent-ember);
+            color: var(--accent-ember);
+        }
+
+        .tool-btn.active {
+            background: var(--accent-ember);
+            border-color: var(--accent-ember);
+            color: var(--bg-deep);
+        }
+
+        .tool-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
         .selection-info {
             font-size: 12px;
             color: var(--stone-bright);
@@ -298,6 +328,7 @@
 
         .canvas-wrapper {
             flex: 1;
+            min-height: 0; /* Critical for flex scroll */
             position: relative;
             overflow: auto;
             background: var(--bg-deep);
@@ -909,6 +940,15 @@
                 </div>
 
                 <div class="toolbar-group">
+                    <button class="tool-btn" id="removeBgBtn" title="Click to pick background color, then remove">
+                        <span>Remove BG</span>
+                    </button>
+                    <button class="tool-btn" id="autoDetectBtn" title="Click on a sprite to auto-select its bounds">
+                        <span>Auto-Detect</span>
+                    </button>
+                </div>
+
+                <div class="toolbar-group">
                     <span class="selection-info" id="selectionInfo">
                         Selection: <span class="coord">none</span>
                     </span>
@@ -1055,7 +1095,12 @@
 
             // Save state
             saveTimeout: null,
-            hasUnsavedChanges: false
+            hasUnsavedChanges: false,
+
+            // Tool modes
+            toolMode: null, // 'removeBg', 'autoDetect', or null
+            imageData: null, // Cached pixel data for analysis
+            islandMap: null  // Cached island labels for auto-detect
         };
 
         // ==========================================
@@ -1083,6 +1128,8 @@
             // Toolbar
             zoomButtons: document.querySelectorAll('.zoom-btn'),
             gridToggle: document.getElementById('gridToggle'),
+            removeBgBtn: document.getElementById('removeBgBtn'),
+            autoDetectBtn: document.getElementById('autoDetectBtn'),
             selectionInfo: document.getElementById('selectionInfo'),
             imageInfo: document.getElementById('imageInfo'),
 
@@ -1308,6 +1355,9 @@
             state.selection = null;
             state.selectedSpriteIndex = -1;
             state.editingSpriteIndex = -1;
+            state.imageData = null;
+            state.islandMap = null;
+            state.toolMode = null;
             hideCreatePanel();
 
             elements.dropZone.style.display = 'flex';
@@ -1329,6 +1379,8 @@
                 state.imagePath = url;
                 state.imageWidth = img.width;
                 state.imageHeight = img.height;
+                state.imageData = null; // Clear cached pixel data
+                state.islandMap = null; // Clear cached island map
 
                 // Load sprites from record
                 state.sprites = sprites.map(s => ({
@@ -1582,6 +1634,255 @@
         }
 
         // ==========================================
+        // Tool Functions (Background Removal & Auto-Detect)
+        // ==========================================
+
+        function getPixelData() {
+            if (!state.image) return null;
+            if (state.imageData) return state.imageData;
+
+            // Draw image to temp canvas to get pixel data
+            const tempCanvas = document.createElement('canvas');
+            tempCanvas.width = state.imageWidth;
+            tempCanvas.height = state.imageHeight;
+            const tempCtx = tempCanvas.getContext('2d');
+            tempCtx.drawImage(state.image, 0, 0);
+            state.imageData = tempCtx.getImageData(0, 0, state.imageWidth, state.imageHeight);
+            return state.imageData;
+        }
+
+        function getPixelColor(imageData, x, y) {
+            const idx = (y * imageData.width + x) * 4;
+            return {
+                r: imageData.data[idx],
+                g: imageData.data[idx + 1],
+                b: imageData.data[idx + 2],
+                a: imageData.data[idx + 3]
+            };
+        }
+
+        function colorsMatch(c1, c2, tolerance = 0) {
+            return Math.abs(c1.r - c2.r) <= tolerance &&
+                   Math.abs(c1.g - c2.g) <= tolerance &&
+                   Math.abs(c1.b - c2.b) <= tolerance &&
+                   Math.abs(c1.a - c2.a) <= tolerance;
+        }
+
+        function removeBackground(clickX, clickY) {
+            const imageData = getPixelData();
+            if (!imageData) return;
+
+            const targetColor = getPixelColor(imageData, clickX, clickY);
+
+            // Don't remove if already transparent
+            if (targetColor.a === 0) {
+                alert('That pixel is already transparent.');
+                return;
+            }
+
+            // Count pixels to remove
+            let removeCount = 0;
+            const newData = new Uint8ClampedArray(imageData.data);
+
+            for (let y = 0; y < state.imageHeight; y++) {
+                for (let x = 0; x < state.imageWidth; x++) {
+                    const idx = (y * state.imageWidth + x) * 4;
+                    const pixelColor = {
+                        r: newData[idx],
+                        g: newData[idx + 1],
+                        b: newData[idx + 2],
+                        a: newData[idx + 3]
+                    };
+
+                    if (colorsMatch(pixelColor, targetColor, 5)) {
+                        newData[idx + 3] = 0; // Make transparent
+                        removeCount++;
+                    }
+                }
+            }
+
+            if (removeCount === 0) {
+                alert('No matching pixels found.');
+                return;
+            }
+
+            // Update the image
+            const newImageData = new ImageData(newData, state.imageWidth, state.imageHeight);
+            const tempCanvas = document.createElement('canvas');
+            tempCanvas.width = state.imageWidth;
+            tempCanvas.height = state.imageHeight;
+            const tempCtx = tempCanvas.getContext('2d');
+            tempCtx.putImageData(newImageData, 0, 0);
+
+            // Create new image from canvas
+            const newImg = new Image();
+            newImg.onload = async () => {
+                state.image = newImg;
+                state.imageData = null; // Clear cache
+                state.islandMap = null; // Clear island cache
+                render();
+
+                // Save modified image to cloud if logged in
+                if (state.spritesheetId && state.user) {
+                    try {
+                        showToast('Saving modified image...');
+                        const blob = await new Promise(resolve => tempCanvas.toBlob(resolve, 'image/png'));
+                        await crucibleClient.updateSpritesheetImage(state.spritesheetId, blob);
+                        showToast(`Removed ${removeCount} pixels and saved.`);
+                    } catch (error) {
+                        console.error('Failed to save image:', error);
+                        showToast(`Removed ${removeCount} pixels (save failed)`, 'error');
+                    }
+                } else {
+                    showToast(`Removed ${removeCount} pixels.`);
+                }
+            };
+            newImg.src = tempCanvas.toDataURL('image/png');
+        }
+
+        function buildIslandMap() {
+            if (state.islandMap) return state.islandMap;
+
+            const imageData = getPixelData();
+            if (!imageData) return null;
+
+            const w = state.imageWidth;
+            const h = state.imageHeight;
+            const labels = new Int32Array(w * h); // 0 = not labeled yet
+            let currentLabel = 0;
+
+            // Get background color from top-left corner
+            const bgColor = getPixelColor(imageData, 0, 0);
+
+            // Check if pixel is foreground (not background)
+            function isForeground(x, y) {
+                if (x < 0 || x >= w || y < 0 || y >= h) return false;
+                const color = getPixelColor(imageData, x, y);
+                // Consider transparent or matching background as background
+                if (color.a < 128) return false;
+                return !colorsMatch(color, bgColor, 10);
+            }
+
+            // Flood fill to label connected components
+            function floodFill(startX, startY, label) {
+                const stack = [[startX, startY]];
+
+                while (stack.length > 0) {
+                    const [x, y] = stack.pop();
+                    const idx = y * w + x;
+
+                    if (x < 0 || x >= w || y < 0 || y >= h) continue;
+                    if (labels[idx] !== 0) continue;
+                    if (!isForeground(x, y)) continue;
+
+                    labels[idx] = label;
+
+                    // 4-connected neighbors
+                    stack.push([x + 1, y]);
+                    stack.push([x - 1, y]);
+                    stack.push([x, y + 1]);
+                    stack.push([x, y - 1]);
+                }
+            }
+
+            // Scan and label all islands
+            for (let y = 0; y < h; y++) {
+                for (let x = 0; x < w; x++) {
+                    const idx = y * w + x;
+                    if (labels[idx] === 0 && isForeground(x, y)) {
+                        currentLabel++;
+                        floodFill(x, y, currentLabel);
+                    }
+                }
+            }
+
+            state.islandMap = { labels, w, h, count: currentLabel };
+            return state.islandMap;
+        }
+
+        function getIslandBounds(clickX, clickY) {
+            const map = buildIslandMap();
+            if (!map) return null;
+
+            const idx = clickY * map.w + clickX;
+            const label = map.labels[idx];
+
+            if (label === 0) {
+                // Clicked on background, no island
+                return null;
+            }
+
+            // Find bounds of this label
+            let minX = map.w, maxX = 0, minY = map.h, maxY = 0;
+
+            for (let y = 0; y < map.h; y++) {
+                for (let x = 0; x < map.w; x++) {
+                    if (map.labels[y * map.w + x] === label) {
+                        minX = Math.min(minX, x);
+                        maxX = Math.max(maxX, x);
+                        minY = Math.min(minY, y);
+                        maxY = Math.max(maxY, y);
+                    }
+                }
+            }
+
+            return {
+                x: minX,
+                y: minY,
+                w: maxX - minX + 1,
+                h: maxY - minY + 1
+            };
+        }
+
+        function setToolMode(mode) {
+            // Toggle off if clicking same mode
+            if (state.toolMode === mode) {
+                state.toolMode = null;
+            } else {
+                state.toolMode = mode;
+            }
+
+            // Update button states
+            elements.removeBgBtn.classList.toggle('active', state.toolMode === 'removeBg');
+            elements.autoDetectBtn.classList.toggle('active', state.toolMode === 'autoDetect');
+
+            // Update cursor
+            if (state.toolMode === 'removeBg') {
+                elements.selectionCanvas.style.cursor = 'crosshair';
+                elements.selectionInfo.innerHTML = 'Click a color to remove it';
+            } else if (state.toolMode === 'autoDetect') {
+                elements.selectionCanvas.style.cursor = 'pointer';
+                elements.selectionInfo.innerHTML = 'Click on a sprite to auto-select';
+            } else {
+                elements.selectionCanvas.style.cursor = 'crosshair';
+                updateSelectionInfo();
+            }
+        }
+
+        function handleToolClick(imgX, imgY) {
+            if (state.toolMode === 'removeBg') {
+                removeBackground(imgX, imgY);
+                setToolMode(null); // Exit mode after use
+                return true;
+            } else if (state.toolMode === 'autoDetect') {
+                const bounds = getIslandBounds(imgX, imgY);
+                if (bounds) {
+                    state.selection = bounds;
+                    state.selectedSpriteIndex = -1;
+                    state.editingSpriteIndex = -1;
+                    updateSelectionInfo();
+                    renderSelection();
+                    showCreatePanel();
+                } else {
+                    alert('No sprite detected at that location. Try clicking on a non-transparent pixel.');
+                }
+                setToolMode(null); // Exit mode after use
+                return true;
+            }
+            return false;
+        }
+
+        // ==========================================
         // Selection Handling
         // ==========================================
         function updateSelectionInfo() {
@@ -1623,6 +1924,12 @@
             if (!state.image) return;
 
             const imgCoords = screenToImage(e.clientX, e.clientY);
+
+            // Check for tool mode clicks first
+            if (handleToolClick(imgCoords.x, imgCoords.y)) {
+                return;
+            }
+
             const handle = getResizeHandle(imgCoords.x, imgCoords.y);
 
             if (handle && state.selection) {
@@ -2140,6 +2447,17 @@
             state.showGrid = !state.showGrid;
             elements.gridToggle.classList.toggle('active', state.showGrid);
             renderGrid();
+        });
+
+        // Tool buttons
+        elements.removeBgBtn.addEventListener('click', () => {
+            if (!state.image) return;
+            setToolMode('removeBg');
+        });
+
+        elements.autoDetectBtn.addEventListener('click', () => {
+            if (!state.image) return;
+            setToolMode('autoDetect');
         });
 
         // Selection canvas events

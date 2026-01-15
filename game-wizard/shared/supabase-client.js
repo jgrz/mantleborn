@@ -1055,6 +1055,36 @@ class CrucibleClient {
         return data;
     }
 
+    async updateSpritesheetImage(spritesheetId, imageBlob) {
+        if (!this.client) throw new Error('Crucible not initialized');
+
+        // Get current file path
+        const { data: sheet, error: fetchError } = await this.client
+            .from('spritesheets')
+            .select('file_path, project_id')
+            .eq('id', spritesheetId)
+            .single();
+
+        if (fetchError) throw fetchError;
+
+        // Upload new image with same path (overwrites)
+        const { error: uploadError } = await this.client.storage
+            .from('spritesheets')
+            .update(sheet.file_path, imageBlob, {
+                contentType: 'image/png',
+                upsert: true
+            });
+
+        if (uploadError) throw uploadError;
+
+        // Get new public URL (with cache-busting timestamp)
+        const { data: { publicUrl } } = this.client.storage
+            .from('spritesheets')
+            .getPublicUrl(sheet.file_path);
+
+        return publicUrl + '?t=' + Date.now();
+    }
+
     async deleteSpritesheet(spritesheetId) {
         if (!this.client) throw new Error('Crucible not initialized');
 
