@@ -394,9 +394,97 @@
             90% { opacity: 0.3; }
             100% { transform: translateY(-100vh) rotate(720deg); opacity: 0; }
         }
+
+        /* Auth Bar */
+        .auth-bar {
+            position: fixed;
+            top: 0;
+            right: 0;
+            left: 0;
+            padding: 12px 20px;
+            display: flex;
+            justify-content: flex-end;
+            align-items: center;
+            gap: 15px;
+            z-index: 100;
+            background: linear-gradient(180deg, rgba(13, 13, 20, 0.95) 0%, transparent 100%);
+        }
+
+        .auth-bar a {
+            color: var(--stone-mid);
+            text-decoration: none;
+            font-size: 12px;
+            transition: color 0.2s;
+        }
+
+        .auth-bar a:hover {
+            color: var(--accent-ember);
+        }
+
+        .auth-user {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            color: var(--stone-light);
+            font-size: 12px;
+        }
+
+        .auth-user-avatar {
+            width: 28px;
+            height: 28px;
+            border-radius: 50%;
+            background: var(--stone-dark);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 14px;
+            border: 2px solid var(--stone-mid);
+        }
+
+        .auth-user-name {
+            color: var(--stone-bright);
+        }
+
+        .auth-logout {
+            color: var(--stone-mid);
+            background: none;
+            border: none;
+            font-family: inherit;
+            font-size: 11px;
+            cursor: pointer;
+            padding: 4px 8px;
+            border-radius: 3px;
+            transition: all 0.2s;
+        }
+
+        .auth-logout:hover {
+            color: var(--accent-ember);
+            background: rgba(224, 112, 32, 0.1);
+        }
+
+        .auth-login-btn {
+            background: linear-gradient(180deg, var(--accent-ember) 0%, #c06010 100%);
+            color: #000;
+            padding: 6px 14px;
+            border-radius: 4px;
+            font-weight: 600;
+            font-size: 11px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .auth-login-btn:hover {
+            color: #000;
+            filter: brightness(1.1);
+        }
     </style>
 </head>
 <body>
+    <!-- Auth Bar -->
+    <div class="auth-bar" id="authBar">
+        <!-- Populated by JS -->
+    </div>
+
     <!-- Floating particles -->
     <div class="particles">
         <div class="particle" style="left: 10%; animation-delay: 0s;"></div>
@@ -601,5 +689,60 @@
             <a href="/">Return to Mantleborn</a>
         </p>
     </footer>
+
+    <script src="shared/supabase-client.js"></script>
+    <script>
+        // =============================================
+        // AUTH STATE MANAGEMENT
+        // =============================================
+
+        const authBar = document.getElementById('authBar');
+
+        async function initAuth() {
+            await crucibleClient.init();
+
+            // Check current user
+            const user = await crucibleClient.getUser();
+            updateAuthUI(user);
+
+            // Listen for auth changes
+            crucibleClient.onAuthStateChange((event, session) => {
+                updateAuthUI(session?.user || null);
+            });
+        }
+
+        function updateAuthUI(user) {
+            if (user) {
+                // Get display name from metadata or email
+                const displayName = user.user_metadata?.display_name || user.email?.split('@')[0] || 'Wizard';
+                const initial = displayName.charAt(0).toUpperCase();
+
+                authBar.innerHTML = `
+                    <div class="auth-user">
+                        <div class="auth-user-avatar">${initial}</div>
+                        <span class="auth-user-name">${displayName}</span>
+                    </div>
+                    <button class="auth-logout" onclick="handleLogout()">Sign Out</button>
+                `;
+            } else {
+                authBar.innerHTML = `
+                    <a href="auth/">Sign In</a>
+                    <a href="auth/" class="auth-login-btn">Create Account</a>
+                `;
+            }
+        }
+
+        async function handleLogout() {
+            try {
+                await crucibleClient.signOut();
+                updateAuthUI(null);
+            } catch (error) {
+                console.error('Logout failed:', error);
+            }
+        }
+
+        // Initialize on load
+        initAuth();
+    </script>
 </body>
 </html>

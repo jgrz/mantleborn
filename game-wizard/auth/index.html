@@ -1,0 +1,577 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login - Game Wizard</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --bg-dark: #0a0a0f;
+            --bg-panel: #12121a;
+            --border: #2a2a3a;
+            --text: #e0e0e0;
+            --text-dim: #888;
+            --accent: #ffd700;
+            --accent-glow: rgba(255, 215, 0, 0.3);
+            --success: #4ade80;
+            --error: #f87171;
+        }
+
+        body {
+            font-family: 'Courier New', monospace;
+            background: var(--bg-dark);
+            color: var(--text);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+            background-image:
+                radial-gradient(ellipse at top, rgba(255, 215, 0, 0.05) 0%, transparent 50%),
+                radial-gradient(ellipse at bottom, rgba(100, 100, 150, 0.05) 0%, transparent 50%);
+        }
+
+        .auth-container {
+            width: 100%;
+            max-width: 400px;
+        }
+
+        .auth-header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        .auth-header a {
+            color: var(--text-dim);
+            text-decoration: none;
+            font-size: 12px;
+            display: inline-block;
+            margin-bottom: 10px;
+        }
+
+        .auth-header a:hover {
+            color: var(--accent);
+        }
+
+        .auth-header h1 {
+            font-size: 28px;
+            color: var(--accent);
+            text-shadow: 0 0 20px var(--accent-glow);
+            letter-spacing: 3px;
+            margin-bottom: 5px;
+        }
+
+        .auth-header p {
+            color: var(--text-dim);
+            font-size: 12px;
+        }
+
+        .auth-card {
+            background: var(--bg-panel);
+            border: 2px solid var(--border);
+            border-radius: 8px;
+            padding: 30px;
+            box-shadow:
+                0 0 30px rgba(0, 0, 0, 0.5),
+                inset 0 1px 0 rgba(255, 255, 255, 0.05);
+        }
+
+        .auth-tabs {
+            display: flex;
+            margin-bottom: 25px;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .auth-tab {
+            flex: 1;
+            padding: 12px;
+            background: none;
+            border: none;
+            color: var(--text-dim);
+            font-family: inherit;
+            font-size: 14px;
+            cursor: pointer;
+            transition: all 0.2s;
+            position: relative;
+        }
+
+        .auth-tab:hover {
+            color: var(--text);
+        }
+
+        .auth-tab.active {
+            color: var(--accent);
+        }
+
+        .auth-tab.active::after {
+            content: '';
+            position: absolute;
+            bottom: -1px;
+            left: 0;
+            right: 0;
+            height: 2px;
+            background: var(--accent);
+        }
+
+        .auth-form {
+            display: none;
+        }
+
+        .auth-form.active {
+            display: block;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-group label {
+            display: block;
+            font-size: 11px;
+            color: var(--text-dim);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 8px;
+        }
+
+        .form-group input {
+            width: 100%;
+            padding: 12px 15px;
+            background: var(--bg-dark);
+            border: 1px solid var(--border);
+            border-radius: 4px;
+            color: var(--text);
+            font-family: inherit;
+            font-size: 14px;
+            transition: border-color 0.2s;
+        }
+
+        .form-group input:focus {
+            outline: none;
+            border-color: var(--accent);
+        }
+
+        .form-group input::placeholder {
+            color: var(--text-dim);
+        }
+
+        .submit-btn {
+            width: 100%;
+            padding: 14px;
+            background: linear-gradient(180deg, var(--accent) 0%, #cc9900 100%);
+            border: none;
+            border-radius: 4px;
+            color: #000;
+            font-family: inherit;
+            font-size: 14px;
+            font-weight: bold;
+            letter-spacing: 1px;
+            cursor: pointer;
+            transition: all 0.2s;
+            text-transform: uppercase;
+        }
+
+        .submit-btn:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 4px 15px var(--accent-glow);
+        }
+
+        .submit-btn:active {
+            transform: translateY(0);
+        }
+
+        .submit-btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .message {
+            padding: 12px;
+            border-radius: 4px;
+            font-size: 13px;
+            margin-bottom: 20px;
+            display: none;
+        }
+
+        .message.error {
+            display: block;
+            background: rgba(248, 113, 113, 0.1);
+            border: 1px solid var(--error);
+            color: var(--error);
+        }
+
+        .message.success {
+            display: block;
+            background: rgba(74, 222, 128, 0.1);
+            border: 1px solid var(--success);
+            color: var(--success);
+        }
+
+        .forgot-link {
+            display: block;
+            text-align: center;
+            margin-top: 15px;
+            color: var(--text-dim);
+            font-size: 12px;
+            text-decoration: none;
+        }
+
+        .forgot-link:hover {
+            color: var(--accent);
+        }
+
+        .divider {
+            display: flex;
+            align-items: center;
+            margin: 25px 0;
+            color: var(--text-dim);
+            font-size: 11px;
+        }
+
+        .divider::before,
+        .divider::after {
+            content: '';
+            flex: 1;
+            height: 1px;
+            background: var(--border);
+        }
+
+        .divider span {
+            padding: 0 15px;
+        }
+
+        .guest-btn {
+            width: 100%;
+            padding: 12px;
+            background: transparent;
+            border: 1px solid var(--border);
+            border-radius: 4px;
+            color: var(--text-dim);
+            font-family: inherit;
+            font-size: 13px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .guest-btn:hover {
+            border-color: var(--text-dim);
+            color: var(--text);
+        }
+
+        .loading {
+            display: inline-block;
+            width: 16px;
+            height: 16px;
+            border: 2px solid transparent;
+            border-top-color: currentColor;
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+            margin-right: 8px;
+            vertical-align: middle;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        /* Password reset form */
+        .reset-form {
+            display: none;
+        }
+
+        .reset-form.active {
+            display: block;
+        }
+
+        .back-link {
+            display: inline-block;
+            color: var(--text-dim);
+            font-size: 12px;
+            text-decoration: none;
+            margin-bottom: 20px;
+        }
+
+        .back-link:hover {
+            color: var(--accent);
+        }
+    </style>
+</head>
+<body>
+    <div class="auth-container">
+        <div class="auth-header">
+            <a href="/game-wizard/">&#8592; Back to Game Wizard</a>
+            <h1>GAME WIZARD</h1>
+            <p>Sign in to save your creations</p>
+        </div>
+
+        <div class="auth-card">
+            <div id="message" class="message"></div>
+
+            <!-- Main Auth Forms -->
+            <div id="mainAuth">
+                <div class="auth-tabs">
+                    <button class="auth-tab active" data-tab="login">Sign In</button>
+                    <button class="auth-tab" data-tab="signup">Create Account</button>
+                </div>
+
+                <!-- Login Form -->
+                <form id="loginForm" class="auth-form active">
+                    <div class="form-group">
+                        <label>Email</label>
+                        <input type="email" name="email" placeholder="wizard@example.com" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Password</label>
+                        <input type="password" name="password" placeholder="Enter your password" required>
+                    </div>
+                    <button type="submit" class="submit-btn">
+                        <span class="btn-text">Sign In</span>
+                    </button>
+                    <a href="#" class="forgot-link" id="forgotLink">Forgot password?</a>
+                </form>
+
+                <!-- Signup Form -->
+                <form id="signupForm" class="auth-form">
+                    <div class="form-group">
+                        <label>Display Name</label>
+                        <input type="text" name="displayName" placeholder="Your wizard name">
+                    </div>
+                    <div class="form-group">
+                        <label>Email</label>
+                        <input type="email" name="email" placeholder="wizard@example.com" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Password</label>
+                        <input type="password" name="password" placeholder="At least 6 characters" minlength="6" required>
+                    </div>
+                    <button type="submit" class="submit-btn">
+                        <span class="btn-text">Create Account</span>
+                    </button>
+                </form>
+
+                <div class="divider"><span>or</span></div>
+
+                <button class="guest-btn" id="guestBtn">
+                    Continue as Guest
+                </button>
+            </div>
+
+            <!-- Password Reset Form -->
+            <div id="resetAuth" class="reset-form">
+                <a href="#" class="back-link" id="backToLogin">&#8592; Back to login</a>
+                <form id="resetForm">
+                    <div class="form-group">
+                        <label>Email</label>
+                        <input type="email" name="email" placeholder="wizard@example.com" required>
+                    </div>
+                    <button type="submit" class="submit-btn">
+                        <span class="btn-text">Send Reset Link</span>
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <script src="../shared/supabase-client.js"></script>
+    <script>
+        // =============================================
+        // AUTH PAGE LOGIC
+        // =============================================
+
+        const elements = {
+            tabs: document.querySelectorAll('.auth-tab'),
+            loginForm: document.getElementById('loginForm'),
+            signupForm: document.getElementById('signupForm'),
+            resetForm: document.getElementById('resetForm'),
+            mainAuth: document.getElementById('mainAuth'),
+            resetAuth: document.getElementById('resetAuth'),
+            message: document.getElementById('message'),
+            forgotLink: document.getElementById('forgotLink'),
+            backToLogin: document.getElementById('backToLogin'),
+            guestBtn: document.getElementById('guestBtn')
+        };
+
+        // Initialize
+        async function init() {
+            await crucibleClient.init();
+
+            // Check if already logged in
+            const user = await crucibleClient.getUser();
+            if (user) {
+                redirectToApp();
+                return;
+            }
+
+            setupEventListeners();
+        }
+
+        function setupEventListeners() {
+            // Tab switching
+            elements.tabs.forEach(tab => {
+                tab.addEventListener('click', () => switchTab(tab.dataset.tab));
+            });
+
+            // Form submissions
+            elements.loginForm.addEventListener('submit', handleLogin);
+            elements.signupForm.addEventListener('submit', handleSignup);
+            elements.resetForm.addEventListener('submit', handleReset);
+
+            // Password reset toggle
+            elements.forgotLink.addEventListener('click', (e) => {
+                e.preventDefault();
+                showResetForm();
+            });
+
+            elements.backToLogin.addEventListener('click', (e) => {
+                e.preventDefault();
+                hideResetForm();
+            });
+
+            // Guest mode
+            elements.guestBtn.addEventListener('click', () => {
+                redirectToApp();
+            });
+        }
+
+        function switchTab(tab) {
+            elements.tabs.forEach(t => t.classList.remove('active'));
+            document.querySelector(`[data-tab="${tab}"]`).classList.add('active');
+
+            elements.loginForm.classList.remove('active');
+            elements.signupForm.classList.remove('active');
+
+            if (tab === 'login') {
+                elements.loginForm.classList.add('active');
+            } else {
+                elements.signupForm.classList.add('active');
+            }
+
+            clearMessage();
+        }
+
+        function showResetForm() {
+            elements.mainAuth.style.display = 'none';
+            elements.resetAuth.classList.add('active');
+            clearMessage();
+        }
+
+        function hideResetForm() {
+            elements.mainAuth.style.display = 'block';
+            elements.resetAuth.classList.remove('active');
+            clearMessage();
+        }
+
+        function showMessage(text, type) {
+            elements.message.textContent = text;
+            elements.message.className = `message ${type}`;
+        }
+
+        function clearMessage() {
+            elements.message.className = 'message';
+            elements.message.textContent = '';
+        }
+
+        function setLoading(form, loading) {
+            const btn = form.querySelector('.submit-btn');
+            const btnText = btn.querySelector('.btn-text');
+
+            if (loading) {
+                btn.disabled = true;
+                btnText.innerHTML = '<span class="loading"></span>Please wait...';
+            } else {
+                btn.disabled = false;
+                btnText.textContent = form === elements.loginForm ? 'Sign In' :
+                                      form === elements.signupForm ? 'Create Account' :
+                                      'Send Reset Link';
+            }
+        }
+
+        async function handleLogin(e) {
+            e.preventDefault();
+            clearMessage();
+            setLoading(elements.loginForm, true);
+
+            const formData = new FormData(elements.loginForm);
+            const email = formData.get('email');
+            const password = formData.get('password');
+
+            try {
+                await crucibleClient.signIn(email, password);
+                showMessage('Success! Redirecting...', 'success');
+                setTimeout(redirectToApp, 1000);
+            } catch (error) {
+                showMessage(error.message || 'Login failed', 'error');
+                setLoading(elements.loginForm, false);
+            }
+        }
+
+        async function handleSignup(e) {
+            e.preventDefault();
+            clearMessage();
+            setLoading(elements.signupForm, true);
+
+            const formData = new FormData(elements.signupForm);
+            const displayName = formData.get('displayName');
+            const email = formData.get('email');
+            const password = formData.get('password');
+
+            try {
+                const result = await crucibleClient.signUp(email, password, displayName);
+
+                if (result.user && !result.session) {
+                    // Email confirmation required
+                    showMessage('Check your email to confirm your account!', 'success');
+                    setLoading(elements.signupForm, false);
+                } else {
+                    showMessage('Account created! Redirecting...', 'success');
+                    setTimeout(redirectToApp, 1000);
+                }
+            } catch (error) {
+                showMessage(error.message || 'Signup failed', 'error');
+                setLoading(elements.signupForm, false);
+            }
+        }
+
+        async function handleReset(e) {
+            e.preventDefault();
+            clearMessage();
+            setLoading(elements.resetForm, true);
+
+            const formData = new FormData(elements.resetForm);
+            const email = formData.get('email');
+
+            try {
+                await crucibleClient.resetPassword(email);
+                showMessage('Password reset email sent! Check your inbox.', 'success');
+                setLoading(elements.resetForm, false);
+            } catch (error) {
+                showMessage(error.message || 'Reset failed', 'error');
+                setLoading(elements.resetForm, false);
+            }
+        }
+
+        function redirectToApp() {
+            // Check for redirect param
+            const params = new URLSearchParams(window.location.search);
+            const redirect = params.get('redirect');
+
+            if (redirect) {
+                window.location.href = redirect;
+            } else {
+                window.location.href = '/game-wizard/';
+            }
+        }
+
+        // Start
+        init();
+    </script>
+</body>
+</html>

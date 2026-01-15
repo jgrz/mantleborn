@@ -69,6 +69,134 @@ class CrucibleClient {
     }
 
     // =============================================
+    // AUTHENTICATION
+    // =============================================
+
+    async signUp(email, password, displayName = null) {
+        if (!this.client) throw new Error('Crucible not initialized');
+
+        const { data, error } = await this.client.auth.signUp({
+            email,
+            password,
+            options: {
+                data: {
+                    display_name: displayName || email.split('@')[0]
+                }
+            }
+        });
+
+        if (error) throw error;
+        return data;
+    }
+
+    async signIn(email, password) {
+        if (!this.client) throw new Error('Crucible not initialized');
+
+        const { data, error } = await this.client.auth.signInWithPassword({
+            email,
+            password
+        });
+
+        if (error) throw error;
+        return data;
+    }
+
+    async signOut() {
+        if (!this.client) throw new Error('Crucible not initialized');
+
+        const { error } = await this.client.auth.signOut();
+        if (error) throw error;
+        return true;
+    }
+
+    async getUser() {
+        if (!this.client) return null;
+
+        const { data: { user }, error } = await this.client.auth.getUser();
+        if (error) return null;
+        return user;
+    }
+
+    async getSession() {
+        if (!this.client) return null;
+
+        const { data: { session }, error } = await this.client.auth.getSession();
+        if (error) return null;
+        return session;
+    }
+
+    onAuthStateChange(callback) {
+        if (!this.client) return null;
+
+        return this.client.auth.onAuthStateChange((event, session) => {
+            callback(event, session);
+        });
+    }
+
+    async getProfile(userId = null) {
+        if (!this.client) throw new Error('Crucible not initialized');
+
+        // If no userId, get current user's profile
+        if (!userId) {
+            const user = await this.getUser();
+            if (!user) return null;
+            userId = user.id;
+        }
+
+        const { data, error } = await this.client
+            .from('profiles')
+            .select('*')
+            .eq('id', userId)
+            .single();
+
+        if (error && error.code !== 'PGRST116') throw error; // PGRST116 = not found
+        return data;
+    }
+
+    async updateProfile(updates) {
+        if (!this.client) throw new Error('Crucible not initialized');
+
+        const user = await this.getUser();
+        if (!user) throw new Error('Not authenticated');
+
+        const { data, error } = await this.client
+            .from('profiles')
+            .update({
+                username: updates.username,
+                display_name: updates.displayName,
+                avatar_url: updates.avatarUrl
+            })
+            .eq('id', user.id)
+            .select()
+            .single();
+
+        if (error) throw error;
+        return data;
+    }
+
+    async resetPassword(email) {
+        if (!this.client) throw new Error('Crucible not initialized');
+
+        const { error } = await this.client.auth.resetPasswordForEmail(email, {
+            redirectTo: `${window.location.origin}/game-wizard/auth/reset-password.html`
+        });
+
+        if (error) throw error;
+        return true;
+    }
+
+    async updatePassword(newPassword) {
+        if (!this.client) throw new Error('Crucible not initialized');
+
+        const { error } = await this.client.auth.updateUser({
+            password: newPassword
+        });
+
+        if (error) throw error;
+        return true;
+    }
+
+    // =============================================
     // CONTEXT MANAGEMENT
     // =============================================
 
@@ -116,12 +244,20 @@ class CrucibleClient {
     // PROJECT OPERATIONS
     // =============================================
 
-    async createProject(name, description = '') {
+    async createProject(name, description = '', isPublic = true) {
         if (!this.client) throw new Error('Crucible not initialized');
+
+        // Get current user for ownership
+        const user = await this.getUser();
 
         const { data, error } = await this.client
             .from('projects')
-            .insert({ name, description, is_public: true })
+            .insert({
+                name,
+                description,
+                is_public: isPublic,
+                user_id: user?.id || null
+            })
             .select()
             .single();
 
@@ -136,9 +272,39 @@ class CrucibleClient {
     async getProjects() {
         if (!this.client) throw new Error('Crucible not initialized');
 
+        // Returns projects user can see (their own + public)
         const { data, error } = await this.client
             .from('projects')
             .select('*')
+            .order('updated_at', { ascending: false });
+
+        if (error) throw error;
+        return data;
+    }
+
+    async getMyProjects() {
+        if (!this.client) throw new Error('Crucible not initialized');
+
+        const user = await this.getUser();
+        if (!user) return [];
+
+        const { data, error } = await this.client
+            .from('projects')
+            .select('*')
+            .eq('user_id', user.id)
+            .order('updated_at', { ascending: false });
+
+        if (error) throw error;
+        return data;
+    }
+
+    async getPublicProjects() {
+        if (!this.client) throw new Error('Crucible not initialized');
+
+        const { data, error } = await this.client
+            .from('projects')
+            .select('*')
+            .eq('is_public', true)
             .order('updated_at', { ascending: false });
 
         if (error) throw error;
@@ -743,6 +909,9 @@ class CrucibleClient {
     async uploadSpritesheet(projectId, file, metadata = {}) {
         if (!this.client) throw new Error('Crucible not initialized');
 
+        // Get current user for ownership
+        const user = await this.getUser();
+
         // Generate unique file path
         const ext = file.name.split('.').pop();
         const fileName = `${projectId}/${Date.now()}-${file.name}`;
@@ -764,6 +933,7 @@ class CrucibleClient {
             .from('spritesheets')
             .insert({
                 project_id: projectId,
+                user_id: user?.id || null,
                 name: metadata.name || file.name.replace(/\.[^/.]+$/, ''),
                 file_path: fileName,
                 category: metadata.category || null,
