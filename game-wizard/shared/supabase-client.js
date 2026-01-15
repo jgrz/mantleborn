@@ -8,8 +8,8 @@
 // =============================================
 // CONFIGURATION - UPDATE THESE VALUES
 // =============================================
-const SUPABASE_URL = 'YOUR_SUPABASE_URL';  // e.g., 'https://abc123.supabase.co'
-const SUPABASE_ANON_KEY = 'YOUR_SUPABASE_ANON_KEY';  // From Settings > API
+const SUPABASE_URL = 'https://qcubqjuhwqukjdjamczp.supabase.co';
+const SUPABASE_ANON_KEY = 'sb_secret_BzATRqVrMXg877QjbJI0-A_Pio7ai3p';
 
 // =============================================
 // CRUCIBLE CLIENT CLASS
