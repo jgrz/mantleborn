@@ -132,9 +132,12 @@ Deno.serve(async (req: Request) => {
 
     console.log("Generating character sprites for:", request.prompt);
 
-    const message = await client.messages.create({
+    // Use streaming to avoid timeout for long generations
+    let fullText = "";
+
+    const stream = client.messages.stream({
       model: "claude-sonnet-4-20250514",
-      max_tokens: 32000, // Need more tokens for multiple frames
+      max_tokens: 32000,
       messages: [
         {
           role: "user",
@@ -143,22 +146,27 @@ Deno.serve(async (req: Request) => {
       ],
     });
 
-    // Extract text content
-    const textContent = message.content.find((block) => block.type === "text");
-    if (!textContent || textContent.type !== "text") {
+    // Collect streamed text
+    for await (const event of stream) {
+      if (event.type === "content_block_delta" && event.delta.type === "text_delta") {
+        fullText += event.delta.text;
+      }
+    }
+
+    if (!fullText) {
       throw new Error("No text response from Claude");
     }
 
     // Parse JSON from response
     let result;
     try {
-      const jsonMatch = textContent.text.match(/\{[\s\S]*\}/);
+      const jsonMatch = fullText.match(/\{[\s\S]*\}/);
       if (!jsonMatch) {
         throw new Error("No JSON found in response");
       }
       result = JSON.parse(jsonMatch[0]);
     } catch (parseError) {
-      console.error("Failed to parse Claude response:", textContent.text.substring(0, 500));
+      console.error("Failed to parse Claude response:", fullText.substring(0, 500));
       throw new Error("Failed to parse AI response as JSON");
     }
 
