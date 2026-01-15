@@ -1744,6 +1744,8 @@
     <!-- Supabase Client -->
     <script src="../shared/supabase-client.js"></script>
     <script src="../shared/master-sheet.js"></script>
+    <script src="../shared/help-drawer.js"></script>
+    <script src="../shared/docs/level-forge-docs.js"></script>
 
     <script>
         /* ============================================
@@ -4470,6 +4472,17 @@
         initGrid();
         initVisualTiles();
         loadSpriteIndex();
+
+        // Initialize help drawer
+        if (typeof HelpDrawer !== 'undefined' && typeof LEVEL_FORGE_DOCS !== 'undefined') {
+            HelpDrawer.init({
+                toolId: 'level-forge',
+                toolName: 'Level Forge',
+                toolIcon: '&#128293;',
+                accentColor: '#e07020',
+                docs: LEVEL_FORGE_DOCS
+            });
+        }
     </script>
 </body>
 </html>

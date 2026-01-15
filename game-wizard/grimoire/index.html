@@ -621,7 +621,7 @@
                         <a href="#level-forge" class="nav-link">
                             <span class="nav-icon">&#128293;</span>
                             Level Forge
-                            <span class="nav-badge">Soon</span>
+                            <span class="nav-badge">8</span>
                         </a>
                     </li>
                     <li class="nav-item">
@@ -698,9 +698,9 @@
                         <div class="tool-card-icon">&#128293;</div>
                         <div class="tool-card-title">Level Forge</div>
                         <div class="tool-card-desc">
-                            Design game levels with tile painting and state management.
+                            Design levels with collision grids, backgrounds, visual tiles, and demo mode.
                         </div>
-                        <div class="tool-card-count">Coming soon</div>
+                        <div class="tool-card-count">8 articles</div>
                     </a>
 
                     <a href="#crucible" class="tool-card">
@@ -729,6 +729,7 @@
     <script src="../shared/docs/tilesmith-docs.js"></script>
     <script src="../shared/docs/sprite-rite-docs.js"></script>
     <script src="../shared/docs/animation-station-docs.js"></script>
+    <script src="../shared/docs/level-forge-docs.js"></script>
 
     <script>
         // Simple client-side routing
@@ -892,6 +893,45 @@
             'Create and preview sprite animations. Build frame sequences, control timing, and export for your game engine.',
             ANIMATION_STATION_OVERVIEW,
             typeof ANIMATION_STATION_DOCS !== 'undefined' ? ANIMATION_STATION_DOCS : null);
+
+        const LEVEL_FORGE_OVERVIEW = `
+            <p>Level Forge is your complete level design toolkit. Build collision maps, add parallax backgrounds, paint visual tiles, and test with built-in demo mode.</p>
+            <div class="feature-grid">
+                <div class="feature-item">
+                    <span class="feature-icon">&#9638;</span>
+                    <div class="feature-text">
+                        <strong>Grid Editor</strong>
+                        <span>Define walkable areas, obstructions, spawns, and portal markers.</span>
+                    </div>
+                </div>
+                <div class="feature-item">
+                    <span class="feature-icon">&#127748;</span>
+                    <div class="feature-text">
+                        <strong>Background Editor</strong>
+                        <span>Add layered backgrounds with parallax scrolling and retro Pixelify effects.</span>
+                    </div>
+                </div>
+                <div class="feature-item">
+                    <span class="feature-icon">&#127912;</span>
+                    <div class="feature-text">
+                        <strong>Tile Painter</strong>
+                        <span>Paint visual sprites onto the level grid from your spritesheets.</span>
+                    </div>
+                </div>
+                <div class="feature-item">
+                    <span class="feature-icon">&#9654;</span>
+                    <div class="feature-text">
+                        <strong>Demo Mode</strong>
+                        <span>Test levels with platformer or top-down physics built in.</span>
+                    </div>
+                </div>
+            </div>
+        `;
+
+        buildToolDocs('level-forge', 'Level Forge',
+            'Design complete game levels with collision editing, background art, visual tiles, and integrated demo testing.',
+            LEVEL_FORGE_OVERVIEW,
+            typeof LEVEL_FORGE_DOCS !== 'undefined' ? LEVEL_FORGE_DOCS : null);
 
         function navigateTo(hash) {
             const page = hash.replace('#', '') || 'welcome';
