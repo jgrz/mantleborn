@@ -40,6 +40,10 @@
             --tile-obstruction-bright: #8a3a3a;
             --tile-spawn: #2a4a6a;
             --tile-spawn-bright: #3a6a9a;
+            --tile-exit: #6a2a6a;
+            --tile-exit-bright: #9a4a9a;
+            --tile-return: #2a6a6a;
+            --tile-return-bright: #4a9a9a;
         }
 
         * {
@@ -276,6 +280,14 @@
             background: var(--tile-spawn);
         }
 
+        .state-btn[data-state="exit"] {
+            background: var(--tile-exit);
+        }
+
+        .state-btn[data-state="return"] {
+            background: var(--tile-return);
+        }
+
         .toolbar-divider {
             width: 1px;
             height: 28px;
@@ -342,6 +354,78 @@
 
         .tile[data-state="spawn"]:hover {
             background: var(--tile-spawn-bright);
+        }
+
+        .tile[data-state="exit"] {
+            background: var(--tile-exit);
+        }
+
+        .tile[data-state="exit"]:hover {
+            background: var(--tile-exit-bright);
+        }
+
+        .tile[data-state="return"] {
+            background: var(--tile-return);
+        }
+
+        .tile[data-state="return"]:hover {
+            background: var(--tile-return-bright);
+        }
+
+        /* Direction arrows for portal tiles */
+        .tile[data-state="exit"]::after,
+        .tile[data-state="return"]::after,
+        .tile[data-state="spawn"]::after {
+            content: '';
+            position: absolute;
+            width: 0;
+            height: 0;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            opacity: 0.7;
+        }
+
+        .tile[data-state="exit"]::after {
+            border-left: 5px solid transparent;
+            border-right: 5px solid transparent;
+            border-top: 6px solid white;
+        }
+
+        .tile[data-state="return"]::after {
+            border-left: 6px solid white;
+            border-right: 6px solid white;
+            border-top: 4px solid transparent;
+            border-bottom: 4px solid transparent;
+            width: 0;
+            height: 0;
+        }
+
+        .tile[data-state="spawn"]::after {
+            width: 6px;
+            height: 6px;
+            background: white;
+            border-radius: 50%;
+        }
+
+        /* Direction variants */
+        .tile[data-direction="up"]::after {
+            border-top: none !important;
+            border-bottom: 6px solid white !important;
+        }
+
+        .tile[data-direction="left"]::after {
+            border-top: 5px solid transparent !important;
+            border-bottom: 5px solid transparent !important;
+            border-left: none !important;
+            border-right: 6px solid white !important;
+        }
+
+        .tile[data-direction="right"]::after {
+            border-top: 5px solid transparent !important;
+            border-bottom: 5px solid transparent !important;
+            border-right: none !important;
+            border-left: 6px solid white !important;
         }
 
         .tile.selected {
@@ -639,6 +723,95 @@
             border: 1px solid var(--stone-dark);
             border-radius: 3px;
             font-family: inherit;
+        }
+
+        /* Portal Markers Section */
+        .markers-summary {
+            display: flex;
+            gap: 12px;
+            margin-bottom: 12px;
+        }
+
+        .marker-stat {
+            font-size: 11px;
+            color: var(--stone-mid);
+        }
+
+        .marker-count {
+            font-weight: bold;
+            color: var(--stone-light);
+        }
+
+        .unconfigured-markers {
+            background: var(--bg-surface);
+            border-radius: 4px;
+            padding: 8px;
+        }
+
+        .unconfigured-header {
+            font-size: 9px;
+            color: var(--stone-dark);
+            margin-bottom: 8px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .unconfigured-list {
+            max-height: 150px;
+            overflow-y: auto;
+        }
+
+        .marker-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 6px 8px;
+            background: var(--bg-mid);
+            border-radius: 4px;
+            margin-bottom: 4px;
+            cursor: pointer;
+            font-size: 11px;
+            transition: background 0.15s;
+        }
+
+        .marker-item:hover {
+            background: var(--bg-deep);
+        }
+
+        .marker-item.spawn {
+            border-left: 3px solid var(--tile-spawn);
+        }
+
+        .marker-item.exit {
+            border-left: 3px solid var(--tile-exit);
+        }
+
+        .marker-item.return {
+            border-left: 3px solid var(--tile-return);
+        }
+
+        .marker-icon {
+            font-size: 14px;
+            opacity: 0.8;
+        }
+
+        .marker-name {
+            flex: 1;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        .marker-coords {
+            color: var(--stone-dark);
+            font-size: 9px;
+        }
+
+        .no-markers-message {
+            color: var(--stone-dark);
+            font-size: 11px;
+            text-align: center;
+            padding: 8px;
         }
 
         /* Demo Mode */
@@ -1216,6 +1389,8 @@
                     <button class="state-btn active" data-state="open" title="Open (2)">&#10003;</button>
                     <button class="state-btn" data-state="obstruction" title="Obstruction (3)">&#10005;</button>
                     <button class="state-btn" data-state="spawn" title="Spawn Point (4)">&#9679;</button>
+                    <button class="state-btn" data-state="exit" title="Exit (5)">&#10132;</button>
+                    <button class="state-btn" data-state="return" title="Return (6)">&#8644;</button>
                 </div>
 
                 <div class="toolbar-divider"></div>
@@ -1506,6 +1681,25 @@
                 </div>
             </div>
 
+            <!-- Portal Markers -->
+            <div class="section" id="portalMarkersSection">
+                <div class="section-header">Portal Markers</div>
+                <div class="markers-summary" id="markersSummary">
+                    <div class="marker-stat"><span class="marker-count" id="spawnCountDisplay">0</span> spawns</div>
+                    <div class="marker-stat"><span class="marker-count" id="exitCountDisplay">0</span> exits</div>
+                    <div class="marker-stat"><span class="marker-count" id="returnCountDisplay">0</span> returns</div>
+                </div>
+                <div class="unconfigured-markers" id="unconfiguredMarkers">
+                    <div class="unconfigured-header">Unconfigured (configure in Portals)</div>
+                    <div class="unconfigured-list" id="unconfiguredList">
+                        <div class="no-markers-message">All markers configured</div>
+                    </div>
+                </div>
+                <div class="keyboard-hints" style="margin-top: 8px;">
+                    <kbd>Right-click</kbd> Cycle direction
+                </div>
+            </div>
+
             <!-- Export -->
             <div class="export-section">
                 <div class="export-actions">
@@ -1595,10 +1789,23 @@
             spriteSheets: {},  // Loaded sprite sheet data
             spriteImages: {},  // Loaded sprite sheet images
             selectedSpriteSheet: '',
-            tileMouseDown: false
+            tileMouseDown: false,
+
+            // Background drag state
+            bgDragging: false,
+            bgDragStart: { x: 0, y: 0 },
+            bgDragLayerStart: { x: 0, y: 0 },
+
+            // Portal metadata (spawns, exits, returns)
+            spawnMetadata: {},   // { "x,y": { name, direction, isPrimary } }
+            exitMetadata: {},    // { "x,y": { name, direction, type } }
+            returnMetadata: {},  // { "x,y": { name, direction } }
+            spawnCount: 0,
+            exitCount: 0,
+            returnCount: 0
         };
 
-        const TILE_STATES = ['undefined', 'open', 'obstruction', 'spawn'];
+        const TILE_STATES = ['undefined', 'open', 'obstruction', 'spawn', 'exit', 'return'];
 
         // ==========================================
         // DOM Elements
@@ -1673,7 +1880,14 @@
             gridSettings: document.getElementById('gridSettings'),
             bgSettings: document.getElementById('bgSettings'),
             pixelifySettings: document.getElementById('pixelifySettings'),
-            tileSettings: document.getElementById('tileSettings')
+            tileSettings: document.getElementById('tileSettings'),
+
+            // Portal markers
+            portalMarkersSection: document.getElementById('portalMarkersSection'),
+            spawnCountDisplay: document.getElementById('spawnCountDisplay'),
+            exitCountDisplay: document.getElementById('exitCountDisplay'),
+            returnCountDisplay: document.getElementById('returnCountDisplay'),
+            unconfiguredList: document.getElementById('unconfiguredList')
         };
 
         // ==========================================
@@ -1733,6 +1947,7 @@
                     tile.addEventListener('mousedown', handleTileMouseDown);
                     tile.addEventListener('mouseenter', handleTileMouseEnter);
                     tile.addEventListener('mouseup', handleTileMouseUp);
+                    tile.addEventListener('contextmenu', (e) => e.preventDefault());
 
                     elements.grid.appendChild(tile);
                 }
@@ -1806,17 +2021,48 @@
         function setTileState(x, y, newState) {
             if (x < 0 || x >= state.gridWidth || y < 0 || y >= state.gridHeight) return;
 
-            // Spawn point limit: only one allowed
-            if (newState === 'spawn') {
-                // Find and remove existing spawn point
-                for (let sy = 0; sy < state.gridHeight; sy++) {
-                    for (let sx = 0; sx < state.gridWidth; sx++) {
-                        if (state.tiles[sy][sx] === 'spawn' && (sx !== x || sy !== y)) {
-                            state.tiles[sy][sx] = 'open';  // Convert old spawn to open
-                            const oldTile = getTileElement(sx, sy);
-                            if (oldTile) oldTile.dataset.state = 'open';
-                        }
-                    }
+            const key = `${x},${y}`;
+            const oldState = state.tiles[y][x];
+            const levelName = elements.levelName.value.trim().toLowerCase().replace(/[^a-z0-9]+/g, '_') || 'untitled';
+
+            // Clean up old metadata when changing state
+            if (oldState !== newState) {
+                if (oldState === 'spawn' && state.spawnMetadata[key]) {
+                    delete state.spawnMetadata[key];
+                } else if (oldState === 'exit' && state.exitMetadata[key]) {
+                    delete state.exitMetadata[key];
+                } else if (oldState === 'return' && state.returnMetadata[key]) {
+                    delete state.returnMetadata[key];
+                }
+            }
+
+            // Handle portal tiles - require level name and generate metadata
+            if (newState === 'spawn' || newState === 'exit' || newState === 'return') {
+                if (!elements.levelName.value.trim()) {
+                    showToast('Name the level before placing portal markers');
+                    return;
+                }
+
+                if (newState === 'spawn' && !state.spawnMetadata[key]) {
+                    state.spawnCount++;
+                    state.spawnMetadata[key] = {
+                        name: `${levelName}_spawn_${state.spawnCount}`,
+                        direction: 'down',
+                        isPrimary: Object.keys(state.spawnMetadata).length === 0
+                    };
+                } else if (newState === 'exit' && !state.exitMetadata[key]) {
+                    state.exitCount++;
+                    state.exitMetadata[key] = {
+                        name: `${levelName}_exit_${state.exitCount}`,
+                        direction: 'down',
+                        type: 'exit'
+                    };
+                } else if (newState === 'return' && !state.returnMetadata[key]) {
+                    state.returnCount++;
+                    state.returnMetadata[key] = {
+                        name: `${levelName}_return_${state.returnCount}`,
+                        direction: 'down'
+                    };
                 }
             }
 
@@ -1827,10 +2073,32 @@
             if (tile) {
                 if (newState === 'undefined') {
                     delete tile.dataset.state;
+                    delete tile.dataset.direction;
                 } else {
                     tile.dataset.state = newState;
+                    // Set direction for portal tiles
+                    const meta = state.spawnMetadata[key] || state.exitMetadata[key] || state.returnMetadata[key];
+                    if (meta) {
+                        tile.dataset.direction = meta.direction;
+                    }
                 }
             }
+        }
+
+        function cyclePortalDirection(x, y) {
+            const key = `${x},${y}`;
+            const meta = state.spawnMetadata[key] || state.exitMetadata[key] || state.returnMetadata[key];
+            if (!meta) return;
+
+            const directions = ['down', 'right', 'up', 'left'];
+            const currentIndex = directions.indexOf(meta.direction);
+            meta.direction = directions[(currentIndex + 1) % directions.length];
+
+            const tile = getTileElement(x, y);
+            if (tile) {
+                tile.dataset.direction = meta.direction;
+            }
+            updateJsonOutput();
         }
 
         function getTileElement(x, y) {
@@ -1876,10 +2144,20 @@
         // ==========================================
         function handleTileMouseDown(e) {
             e.preventDefault();
-            state.isMouseDown = true;
 
             const x = parseInt(e.target.dataset.x);
             const y = parseInt(e.target.dataset.y);
+
+            // Right-click to cycle portal direction
+            if (e.button === 2) {
+                const tileState = state.tiles[y][x];
+                if (tileState === 'spawn' || tileState === 'exit' || tileState === 'return') {
+                    cyclePortalDirection(x, y);
+                }
+                return;
+            }
+
+            state.isMouseDown = true;
 
             if (state.currentTool === 'paint') {
                 // Cycle through states on click
@@ -2029,6 +2307,8 @@
             let openCount = 0;
             let obstructionCount = 0;
             let spawnCount = 0;
+            let exitCount = 0;
+            let returnCount = 0;
 
             for (let y = 0; y < state.gridHeight; y++) {
                 for (let x = 0; x < state.gridWidth; x++) {
@@ -2037,6 +2317,8 @@
                     else if (tileState === 'open') openCount++;
                     else if (tileState === 'obstruction') obstructionCount++;
                     else if (tileState === 'spawn') spawnCount++;
+                    else if (tileState === 'exit') exitCount++;
+                    else if (tileState === 'return') returnCount++;
                 }
             }
 
@@ -2044,9 +2326,75 @@
 
             elements.totalTiles.textContent = total;
             elements.undefinedTiles.textContent = undefinedCount;
-            // Include spawn in the "open" count since it's walkable
-            elements.openTiles.textContent = openCount + spawnCount;
+            // Include spawn, exit, return in the "open" count since they're walkable
+            elements.openTiles.textContent = openCount + spawnCount + exitCount + returnCount;
             elements.obstructionTiles.textContent = obstructionCount;
+
+            // Update portal markers section
+            updatePortalMarkers();
+        }
+
+        function updatePortalMarkers() {
+            const spawnCount = Object.keys(state.spawnMetadata).length;
+            const exitCount = Object.keys(state.exitMetadata).length;
+            const returnCount = Object.keys(state.returnMetadata).length;
+
+            elements.spawnCountDisplay.textContent = spawnCount;
+            elements.exitCountDisplay.textContent = exitCount;
+            elements.returnCountDisplay.textContent = returnCount;
+
+            // Build unconfigured list
+            // For now, exits and returns are always "unconfigured" until linked in Portals
+            // Spawns don't need configuration
+            const unconfigured = [];
+
+            Object.entries(state.exitMetadata).forEach(([key, meta]) => {
+                const [x, y] = key.split(',').map(Number);
+                unconfigured.push({
+                    type: 'exit',
+                    name: meta.name,
+                    x, y,
+                    direction: meta.direction
+                });
+            });
+
+            Object.entries(state.returnMetadata).forEach(([key, meta]) => {
+                const [x, y] = key.split(',').map(Number);
+                unconfigured.push({
+                    type: 'return',
+                    name: meta.name,
+                    x, y,
+                    direction: meta.direction
+                });
+            });
+
+            if (unconfigured.length === 0) {
+                elements.unconfiguredList.innerHTML = '<div class="no-markers-message">No exits or returns placed</div>';
+                return;
+            }
+
+            elements.unconfiguredList.innerHTML = unconfigured.map(m => `
+                <div class="marker-item ${m.type}" data-x="${m.x}" data-y="${m.y}">
+                    <span class="marker-icon">${m.type === 'exit' ? '&#10132;' : '&#8644;'}</span>
+                    <span class="marker-name">${m.name}</span>
+                    <span class="marker-coords">(${m.x}, ${m.y})</span>
+                </div>
+            `).join('');
+
+            // Add click handlers to scroll to the marker
+            elements.unconfiguredList.querySelectorAll('.marker-item').forEach(item => {
+                item.addEventListener('click', () => {
+                    const x = parseInt(item.dataset.x);
+                    const y = parseInt(item.dataset.y);
+                    const tile = getTileElement(x, y);
+                    if (tile) {
+                        tile.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                        // Flash the tile
+                        tile.style.outline = '2px solid var(--accent-ember)';
+                        setTimeout(() => { tile.style.outline = ''; }, 1000);
+                    }
+                });
+            });
         }
 
         // ==========================================
@@ -2057,9 +2405,8 @@
             const levelType = state.levelType;
 
             // Encode tiles - we'll use a compact format
-            // 0 = undefined, 1 = open, 2 = obstruction, 3 = spawn
+            // 0 = undefined, 1 = open, 2 = obstruction, 3 = spawn, 4 = exit, 5 = return
             const tileData = [];
-            let spawnPoint = null;
 
             for (let y = 0; y < state.gridHeight; y++) {
                 const row = [];
@@ -2068,13 +2415,51 @@
                     if (tileState === 'undefined') row.push(0);
                     else if (tileState === 'open') row.push(1);
                     else if (tileState === 'obstruction') row.push(2);
-                    else if (tileState === 'spawn') {
-                        row.push(3);
-                        spawnPoint = { x, y };
-                    }
+                    else if (tileState === 'spawn') row.push(3);
+                    else if (tileState === 'exit') row.push(4);
+                    else if (tileState === 'return') row.push(5);
                 }
                 tileData.push(row);
             }
+
+            // Collect spawn points with metadata
+            const spawns = [];
+            Object.entries(state.spawnMetadata).forEach(([key, meta]) => {
+                const [x, y] = key.split(',').map(Number);
+                spawns.push({
+                    x, y,
+                    name: meta.name,
+                    direction: meta.direction,
+                    isPrimary: meta.isPrimary
+                });
+            });
+
+            // Collect exits with metadata
+            const exits = [];
+            Object.entries(state.exitMetadata).forEach(([key, meta]) => {
+                const [x, y] = key.split(',').map(Number);
+                exits.push({
+                    x, y,
+                    name: meta.name,
+                    direction: meta.direction,
+                    type: 'exit'
+                });
+            });
+
+            // Collect returns with metadata
+            Object.entries(state.returnMetadata).forEach(([key, meta]) => {
+                const [x, y] = key.split(',').map(Number);
+                exits.push({
+                    x, y,
+                    name: meta.name,
+                    direction: meta.direction,
+                    type: 'return'
+                });
+            });
+
+            // Legacy spawn point (first primary or first spawn)
+            const primarySpawn = spawns.find(s => s.isPrimary) || spawns[0];
+            const spawnPoint = primarySpawn ? { x: primarySpawn.x, y: primarySpawn.y } : null;
 
             // Also generate a list of walkable coordinates for easier game use
             const walkable = [];
@@ -2083,7 +2468,7 @@
             for (let y = 0; y < state.gridHeight; y++) {
                 for (let x = 0; x < state.gridWidth; x++) {
                     const tileState = state.tiles[y][x];
-                    if (tileState === 'open' || tileState === 'spawn') {
+                    if (tileState === 'open' || tileState === 'spawn' || tileState === 'exit' || tileState === 'return') {
                         walkable.push({ x, y });
                     } else if (tileState === 'obstruction') {
                         obstructions.push({ x, y });
@@ -2146,6 +2531,8 @@
                 tileSize: 24,
                 physics: physics,
                 spawn: spawnPoint,
+                spawns: spawns,
+                exits: exits,
                 grid: tileData,
                 walkable: walkable,
                 obstructions: obstructions,
@@ -2156,7 +2543,9 @@
                     walkableCount: walkable.length,
                     obstructionCount: obstructions.length,
                     backgroundCount: backgrounds.length,
-                    visualTileCount: visualTiles.length
+                    visualTileCount: visualTiles.length,
+                    spawnCount: spawns.length,
+                    exitCount: exits.length
                 }
             };
         }
@@ -2869,6 +3258,8 @@
             state.selectedBgLayer = index;
             renderBackgroundLayers();
             updateBgLayerControls();
+            // Update cursor for drag-to-reposition
+            elements.backgroundCanvas.style.cursor = index >= 0 ? 'grab' : 'default';
         }
 
         function toggleBgLayerVisibility(index) {
@@ -2973,6 +3364,48 @@
             const val = parseFloat(e.target.value);
             elements.bgScaleValue.textContent = val + 'x';
             updateSelectedBgLayer('scale', val);
+        });
+
+        // Background drag-to-reposition
+        elements.backgroundCanvas.addEventListener('mousedown', (e) => {
+            if (state.selectedBgLayer < 0) return;
+            state.bgDragging = true;
+            state.bgDragStart = { x: e.clientX, y: e.clientY };
+            const layer = state.backgrounds[state.selectedBgLayer];
+            state.bgDragLayerStart = { x: layer.offsetX, y: layer.offsetY };
+            elements.backgroundCanvas.style.cursor = 'grabbing';
+        });
+
+        elements.backgroundCanvas.addEventListener('mousemove', (e) => {
+            if (!state.bgDragging || state.selectedBgLayer < 0) return;
+            const dx = e.clientX - state.bgDragStart.x;
+            const dy = e.clientY - state.bgDragStart.y;
+
+            const layer = state.backgrounds[state.selectedBgLayer];
+            layer.offsetX = state.bgDragLayerStart.x + dx;
+            layer.offsetY = state.bgDragLayerStart.y + dy;
+
+            // Sync input fields
+            elements.bgOffsetX.value = layer.offsetX;
+            elements.bgOffsetY.value = layer.offsetY;
+
+            renderBackgroundPreview();
+        });
+
+        elements.backgroundCanvas.addEventListener('mouseup', () => {
+            if (state.bgDragging) {
+                state.bgDragging = false;
+                elements.backgroundCanvas.style.cursor = state.selectedBgLayer >= 0 ? 'grab' : 'default';
+                updateJsonOutput();
+            }
+        });
+
+        elements.backgroundCanvas.addEventListener('mouseleave', () => {
+            if (state.bgDragging) {
+                state.bgDragging = false;
+                elements.backgroundCanvas.style.cursor = state.selectedBgLayer >= 0 ? 'grab' : 'default';
+                updateJsonOutput();
+            }
         });
 
         // Pixelify controls
@@ -3828,6 +4261,16 @@
 
                 // Save visual tiles
                 await crucible.saveTileData(levelId, levelData.visualTiles);
+
+                // Save spawns
+                if (levelData.spawns && levelData.spawns.length > 0) {
+                    await crucible.saveSpawns(levelId, levelData.spawns);
+                }
+
+                // Save exits (includes both exits and returns)
+                if (levelData.exits && levelData.exits.length > 0) {
+                    await crucible.saveExits(levelId, levelData.exits);
+                }
 
                 // Update context
                 crucible.setContext(selectedCrucibleProject.id, levelId, selectedCrucibleLevel.slug);

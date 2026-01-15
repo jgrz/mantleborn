@@ -1,0 +1,1171 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MANTLEBORN / PORTALS</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-deep: #0a0a14;
+            --bg-mid: #12121e;
+            --bg-surface: #1a1a2e;
+            --stone-dark: #3a3a5a;
+            --stone-mid: #6a6a8a;
+            --stone-light: #9a9aba;
+            --stone-bright: #cacaea;
+            --accent-portal: #bf60ff;
+            --accent-portal-dark: #4a2a5a;
+            --tile-spawn: #2a4a6a;
+            --tile-exit: #6a2a6a;
+            --tile-return: #2a6a6a;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'JetBrains Mono', monospace;
+            background: var(--bg-deep);
+            color: var(--stone-light);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* Header */
+        .header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 12px 20px;
+            background: var(--bg-mid);
+            border-bottom: 1px solid var(--stone-dark);
+        }
+
+        .brand {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .brand-icon {
+            font-size: 24px;
+        }
+
+        .brand-text {
+            font-family: 'Press Start 2P', cursive;
+            font-size: 10px;
+            color: var(--stone-mid);
+        }
+
+        .brand-text span {
+            color: var(--accent-portal);
+        }
+
+        .header-actions {
+            display: flex;
+            gap: 12px;
+            align-items: center;
+        }
+
+        .btn {
+            padding: 8px 16px;
+            font-family: inherit;
+            font-size: 11px;
+            background: var(--bg-surface);
+            border: 1px solid var(--stone-dark);
+            color: var(--stone-light);
+            border-radius: 4px;
+            cursor: pointer;
+            transition: all 0.15s;
+        }
+
+        .btn:hover {
+            background: var(--bg-mid);
+            border-color: var(--stone-mid);
+        }
+
+        .btn-primary {
+            background: var(--accent-portal-dark);
+            border-color: var(--accent-portal);
+            color: var(--accent-portal);
+        }
+
+        .btn-primary:hover {
+            background: var(--accent-portal);
+            color: white;
+        }
+
+        .btn-home {
+            padding: 8px 12px;
+        }
+
+        /* Toolbar */
+        .toolbar {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            padding: 12px 20px;
+            background: var(--bg-surface);
+            border-bottom: 1px solid var(--stone-dark);
+        }
+
+        .toolbar-group {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .toolbar-label {
+            font-size: 10px;
+            color: var(--stone-mid);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .form-select {
+            padding: 6px 10px;
+            font-family: inherit;
+            font-size: 11px;
+            background: var(--bg-mid);
+            border: 1px solid var(--stone-dark);
+            color: var(--stone-light);
+            border-radius: 4px;
+            min-width: 180px;
+        }
+
+        /* Main Layout */
+        .main {
+            flex: 1;
+            display: flex;
+            overflow: hidden;
+        }
+
+        /* Node Mapper */
+        .node-mapper {
+            flex: 1;
+            position: relative;
+            overflow: hidden;
+            background:
+                radial-gradient(circle at center, rgba(191, 96, 255, 0.03) 0%, transparent 50%),
+                repeating-linear-gradient(0deg, transparent, transparent 40px, var(--bg-surface) 40px, var(--bg-surface) 41px),
+                repeating-linear-gradient(90deg, transparent, transparent 40px, var(--bg-surface) 40px, var(--bg-surface) 41px),
+                var(--bg-deep);
+        }
+
+        .node-mapper-container {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            overflow: auto;
+        }
+
+        .pathways-svg {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 3000px;
+            height: 2000px;
+            pointer-events: none;
+        }
+
+        .pathway {
+            fill: none;
+            stroke: var(--accent-portal);
+            stroke-width: 2;
+            opacity: 0.6;
+        }
+
+        .pathway.bidirectional {
+            stroke: var(--tile-return);
+        }
+
+        .pathway-arrow {
+            fill: var(--accent-portal);
+        }
+
+        /* Level Nodes */
+        .level-node {
+            position: absolute;
+            width: 160px;
+            background: var(--bg-mid);
+            border: 2px solid var(--stone-dark);
+            border-radius: 8px;
+            cursor: move;
+            transition: border-color 0.15s, box-shadow 0.15s;
+        }
+
+        .level-node:hover {
+            border-color: var(--accent-portal);
+        }
+
+        .level-node.selected {
+            border-color: var(--accent-portal);
+            box-shadow: 0 0 20px rgba(191, 96, 255, 0.3);
+        }
+
+        .node-header {
+            padding: 10px 12px;
+            background: var(--bg-surface);
+            border-bottom: 1px solid var(--stone-dark);
+            border-radius: 6px 6px 0 0;
+        }
+
+        .node-title {
+            font-size: 11px;
+            font-weight: 600;
+            color: var(--stone-bright);
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        .node-body {
+            padding: 10px 12px;
+        }
+
+        .node-stats {
+            display: flex;
+            gap: 12px;
+            font-size: 10px;
+            color: var(--stone-mid);
+        }
+
+        .node-stat {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+        .stat-icon {
+            font-size: 12px;
+        }
+
+        .stat-icon.spawn { color: var(--tile-spawn); }
+        .stat-icon.exit { color: var(--tile-exit); }
+        .stat-icon.return { color: var(--tile-return); }
+
+        .node-status {
+            margin-top: 8px;
+            padding: 4px 8px;
+            font-size: 9px;
+            border-radius: 4px;
+            text-align: center;
+        }
+
+        .node-status.complete {
+            background: rgba(42, 90, 48, 0.3);
+            color: #6a9a70;
+        }
+
+        .node-status.incomplete {
+            background: rgba(106, 42, 42, 0.3);
+            color: #9a6a6a;
+        }
+
+        /* Sidebar */
+        .sidebar {
+            width: 300px;
+            background: var(--bg-mid);
+            border-left: 1px solid var(--stone-dark);
+            display: flex;
+            flex-direction: column;
+        }
+
+        .sidebar-header {
+            padding: 16px;
+            border-bottom: 1px solid var(--stone-dark);
+        }
+
+        .sidebar-title {
+            font-family: 'Press Start 2P', cursive;
+            font-size: 10px;
+            color: var(--accent-portal);
+        }
+
+        .sidebar-content {
+            flex: 1;
+            overflow-y: auto;
+            padding: 16px;
+        }
+
+        .section {
+            margin-bottom: 20px;
+        }
+
+        .section-header {
+            font-size: 10px;
+            color: var(--stone-mid);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 10px;
+            padding-bottom: 6px;
+            border-bottom: 1px solid var(--stone-dark);
+        }
+
+        /* Connection List */
+        .connection-item {
+            background: var(--bg-surface);
+            border-radius: 6px;
+            padding: 10px;
+            margin-bottom: 8px;
+        }
+
+        .connection-path {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 11px;
+        }
+
+        .connection-source,
+        .connection-target {
+            flex: 1;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        .connection-arrow {
+            color: var(--accent-portal);
+            font-size: 14px;
+        }
+
+        .connection-bidirectional .connection-arrow {
+            color: var(--tile-return);
+        }
+
+        .connection-actions {
+            display: flex;
+            gap: 8px;
+            margin-top: 8px;
+        }
+
+        .btn-small {
+            padding: 4px 8px;
+            font-size: 10px;
+        }
+
+        .btn-danger {
+            color: #ff6b6b;
+            border-color: #6a2a2a;
+        }
+
+        .btn-danger:hover {
+            background: #6a2a2a;
+            color: white;
+        }
+
+        /* Empty State */
+        .empty-state {
+            text-align: center;
+            padding: 40px 20px;
+            color: var(--stone-dark);
+        }
+
+        .empty-icon {
+            font-size: 48px;
+            margin-bottom: 16px;
+            opacity: 0.5;
+        }
+
+        .empty-text {
+            font-size: 12px;
+            margin-bottom: 8px;
+        }
+
+        .empty-hint {
+            font-size: 10px;
+            color: var(--stone-mid);
+        }
+
+        /* Modal */
+        .modal-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.8);
+            z-index: 1000;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .modal-overlay.active {
+            display: flex;
+        }
+
+        .modal {
+            background: var(--bg-mid);
+            border: 1px solid var(--stone-dark);
+            border-radius: 12px;
+            padding: 24px;
+            min-width: 400px;
+            max-width: 90vw;
+        }
+
+        .modal-header {
+            font-family: 'Press Start 2P', cursive;
+            font-size: 12px;
+            color: var(--accent-portal);
+            margin-bottom: 20px;
+        }
+
+        .form-group {
+            margin-bottom: 16px;
+        }
+
+        .form-label {
+            display: block;
+            font-size: 10px;
+            color: var(--stone-mid);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 6px;
+        }
+
+        .form-input {
+            width: 100%;
+            padding: 8px 12px;
+            font-family: inherit;
+            font-size: 12px;
+            background: var(--bg-surface);
+            border: 1px solid var(--stone-dark);
+            color: var(--stone-light);
+            border-radius: 4px;
+        }
+
+        .form-input:focus {
+            outline: none;
+            border-color: var(--accent-portal);
+        }
+
+        .checkbox-group {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .checkbox-group input[type="checkbox"] {
+            width: 16px;
+            height: 16px;
+            accent-color: var(--accent-portal);
+        }
+
+        .checkbox-group label {
+            font-size: 11px;
+            color: var(--stone-light);
+            cursor: pointer;
+        }
+
+        .modal-actions {
+            display: flex;
+            gap: 12px;
+            justify-content: flex-end;
+            margin-top: 24px;
+        }
+
+        .info-box {
+            background: var(--bg-surface);
+            border-radius: 6px;
+            padding: 12px;
+            margin-bottom: 16px;
+        }
+
+        .info-label {
+            font-size: 10px;
+            color: var(--stone-mid);
+            margin-bottom: 4px;
+        }
+
+        .info-value {
+            font-size: 12px;
+            color: var(--stone-bright);
+        }
+
+        /* Toast */
+        .toast {
+            position: fixed;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%) translateY(100px);
+            background: var(--bg-surface);
+            border: 1px solid var(--stone-dark);
+            padding: 12px 20px;
+            border-radius: 8px;
+            font-size: 12px;
+            opacity: 0;
+            transition: all 0.3s;
+            z-index: 1000;
+        }
+
+        .toast.show {
+            transform: translateX(-50%) translateY(0);
+            opacity: 1;
+        }
+    </style>
+</head>
+<body>
+    <header class="header">
+        <div class="brand">
+            <a href="../" class="btn btn-home" title="Back to Game Wizard">&#127968;</a>
+            <span class="brand-icon">&#128279;</span>
+            <span class="brand-text">MANTLEBORN / <span>PORTALS</span></span>
+        </div>
+        <div class="header-actions">
+            <button class="btn" id="refreshBtn">&#8635; Refresh</button>
+            <button class="btn btn-primary" id="validateBtn">Validate</button>
+        </div>
+    </header>
+
+    <div class="toolbar">
+        <div class="toolbar-group">
+            <span class="toolbar-label">Project</span>
+            <select class="form-select" id="projectSelect">
+                <option value="">Loading projects...</option>
+            </select>
+        </div>
+        <div class="toolbar-group">
+            <label class="checkbox-group">
+                <input type="checkbox" id="showPathways" checked>
+                <span>Show Pathways</span>
+            </label>
+        </div>
+    </div>
+
+    <main class="main">
+        <div class="node-mapper">
+            <div class="node-mapper-container" id="nodeMapperContainer">
+                <svg class="pathways-svg" id="pathwaysSvg"></svg>
+                <div id="nodesContainer"></div>
+            </div>
+        </div>
+
+        <aside class="sidebar">
+            <div class="sidebar-header">
+                <div class="sidebar-title">Connections</div>
+            </div>
+            <div class="sidebar-content">
+                <div class="section">
+                    <div class="section-header">Level Connections</div>
+                    <div id="connectionsList">
+                        <div class="empty-state">
+                            <div class="empty-icon">&#128279;</div>
+                            <div class="empty-text">No connections yet</div>
+                            <div class="empty-hint">Click an exit node to create a connection</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="section">
+                    <div class="section-header">Validation</div>
+                    <div id="validationResults">
+                        <div class="empty-state">
+                            <div class="empty-text">Click Validate to check connections</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </aside>
+    </main>
+
+    <!-- Connection Modal -->
+    <div class="modal-overlay" id="connectionModal">
+        <div class="modal">
+            <div class="modal-header">Create Connection</div>
+
+            <div class="info-box">
+                <div class="info-label">Source Exit</div>
+                <div class="info-value" id="sourceExitInfo">-</div>
+            </div>
+
+            <div class="form-group">
+                <label class="form-label">Target Level</label>
+                <select class="form-input" id="targetLevelSelect">
+                    <option value="">Select destination level...</option>
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label class="form-label">Target Spawn</label>
+                <select class="form-input" id="targetSpawnSelect" disabled>
+                    <option value="">Select level first...</option>
+                </select>
+            </div>
+
+            <div class="form-group checkbox-group">
+                <input type="checkbox" id="bidirectionalCheck">
+                <label for="bidirectionalCheck">Create bi-directional (return) connection</label>
+            </div>
+
+            <div class="form-group" id="returnExitGroup" style="display: none;">
+                <label class="form-label">Return Exit (on target level)</label>
+                <select class="form-input" id="returnExitSelect">
+                    <option value="">Select return exit...</option>
+                </select>
+            </div>
+
+            <div class="modal-actions">
+                <button class="btn" id="cancelConnectionBtn">Cancel</button>
+                <button class="btn btn-primary" id="saveConnectionBtn" disabled>Create Connection</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast -->
+    <div class="toast" id="toast"></div>
+
+    <!-- Supabase Client -->
+    <script src="../shared/supabase-client.js"></script>
+
+    <script>
+        // ==========================================
+        // State
+        // ==========================================
+        const state = {
+            projectId: null,
+            levels: [],
+            connections: [],
+            selectedLevel: null,
+            selectedExit: null,
+            showPathways: true,
+            nodePositions: {}  // { levelId: { x, y } }
+        };
+
+        // ==========================================
+        // DOM Elements
+        // ==========================================
+        const elements = {
+            projectSelect: document.getElementById('projectSelect'),
+            showPathways: document.getElementById('showPathways'),
+            refreshBtn: document.getElementById('refreshBtn'),
+            validateBtn: document.getElementById('validateBtn'),
+            nodesContainer: document.getElementById('nodesContainer'),
+            pathwaysSvg: document.getElementById('pathwaysSvg'),
+            connectionsList: document.getElementById('connectionsList'),
+            validationResults: document.getElementById('validationResults'),
+            connectionModal: document.getElementById('connectionModal'),
+            sourceExitInfo: document.getElementById('sourceExitInfo'),
+            targetLevelSelect: document.getElementById('targetLevelSelect'),
+            targetSpawnSelect: document.getElementById('targetSpawnSelect'),
+            bidirectionalCheck: document.getElementById('bidirectionalCheck'),
+            returnExitGroup: document.getElementById('returnExitGroup'),
+            returnExitSelect: document.getElementById('returnExitSelect'),
+            cancelConnectionBtn: document.getElementById('cancelConnectionBtn'),
+            saveConnectionBtn: document.getElementById('saveConnectionBtn'),
+            toast: document.getElementById('toast')
+        };
+
+        // ==========================================
+        // Utilities
+        // ==========================================
+        function showToast(message) {
+            elements.toast.textContent = message;
+            elements.toast.classList.add('show');
+            setTimeout(() => elements.toast.classList.remove('show'), 3000);
+        }
+
+        // ==========================================
+        // Data Loading
+        // ==========================================
+        async function loadProjects() {
+            try {
+                const crucible = await getCrucible();
+                if (!crucible.isConfigured()) {
+                    elements.projectSelect.innerHTML = '<option value="">Supabase not configured</option>';
+                    return;
+                }
+
+                const projects = await crucible.getProjects();
+
+                if (projects.length === 0) {
+                    elements.projectSelect.innerHTML = '<option value="">No projects - create one in Crucible</option>';
+                    return;
+                }
+
+                elements.projectSelect.innerHTML = '<option value="">Select a project...</option>' +
+                    projects.map(p => `<option value="${p.id}">${p.name}</option>`).join('');
+
+                // Check for saved context
+                const ctx = crucible.getContext();
+                if (ctx.projectId) {
+                    elements.projectSelect.value = ctx.projectId;
+                    await loadProject(ctx.projectId);
+                }
+            } catch (err) {
+                console.error('Failed to load projects:', err);
+                elements.projectSelect.innerHTML = '<option value="">Error loading projects</option>';
+            }
+        }
+
+        async function loadProject(projectId) {
+            if (!projectId) {
+                state.projectId = null;
+                state.levels = [];
+                state.connections = [];
+                renderNodes();
+                renderConnections();
+                return;
+            }
+
+            state.projectId = projectId;
+
+            try {
+                const crucible = await getCrucible();
+
+                // Load levels with spawn/exit counts
+                state.levels = await crucible.getProjectLevelsWithPortalCounts(projectId);
+
+                // Load connections
+                state.connections = await crucible.getProjectConnections(projectId);
+
+                // Generate initial node positions
+                generateNodePositions();
+
+                renderNodes();
+                renderConnectionsList();
+                renderPathways();
+            } catch (err) {
+                console.error('Failed to load project:', err);
+                showToast('Failed to load project');
+            }
+        }
+
+        function generateNodePositions() {
+            const startX = 100;
+            const startY = 100;
+            const spacingX = 220;
+            const spacingY = 150;
+            const cols = Math.ceil(Math.sqrt(state.levels.length));
+
+            state.levels.forEach((level, i) => {
+                if (!state.nodePositions[level.id]) {
+                    const col = i % cols;
+                    const row = Math.floor(i / cols);
+                    state.nodePositions[level.id] = {
+                        x: startX + col * spacingX,
+                        y: startY + row * spacingY
+                    };
+                }
+            });
+        }
+
+        // ==========================================
+        // Rendering
+        // ==========================================
+        function renderNodes() {
+            if (state.levels.length === 0) {
+                elements.nodesContainer.innerHTML = `
+                    <div class="empty-state" style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);">
+                        <div class="empty-icon">&#128279;</div>
+                        <div class="empty-text">No levels in project</div>
+                        <div class="empty-hint">Create levels in Crucible first</div>
+                    </div>
+                `;
+                return;
+            }
+
+            elements.nodesContainer.innerHTML = state.levels.map(level => {
+                const pos = state.nodePositions[level.id] || { x: 100, y: 100 };
+                const isComplete = level.unconfiguredExitCount === 0;
+
+                return `
+                    <div class="level-node ${state.selectedLevel === level.id ? 'selected' : ''}"
+                         data-level-id="${level.id}"
+                         style="left: ${pos.x}px; top: ${pos.y}px;">
+                        <div class="node-header">
+                            <div class="node-title">${level.name}</div>
+                        </div>
+                        <div class="node-body">
+                            <div class="node-stats">
+                                <div class="node-stat">
+                                    <span class="stat-icon spawn">&#9679;</span>
+                                    <span>${level.spawnCount}</span>
+                                </div>
+                                <div class="node-stat">
+                                    <span class="stat-icon exit">&#10132;</span>
+                                    <span>${level.exitCount}</span>
+                                </div>
+                            </div>
+                            ${level.exitCount > 0 ? `
+                                <div class="node-status ${isComplete ? 'complete' : 'incomplete'}">
+                                    ${isComplete ? 'All exits linked' : `${level.unconfiguredExitCount} unconfigured`}
+                                </div>
+                            ` : ''}
+                        </div>
+                    </div>
+                `;
+            }).join('');
+
+            // Add event handlers
+            elements.nodesContainer.querySelectorAll('.level-node').forEach(node => {
+                makeDraggable(node);
+                node.addEventListener('click', (e) => {
+                    if (!node.classList.contains('dragging')) {
+                        selectLevel(node.dataset.levelId);
+                    }
+                });
+            });
+        }
+
+        function renderConnectionsList() {
+            if (state.connections.length === 0) {
+                elements.connectionsList.innerHTML = `
+                    <div class="empty-state">
+                        <div class="empty-icon">&#128279;</div>
+                        <div class="empty-text">No connections yet</div>
+                        <div class="empty-hint">Click a level to see its exits</div>
+                    </div>
+                `;
+                return;
+            }
+
+            elements.connectionsList.innerHTML = state.connections.map(conn => {
+                const sourceLevel = conn.source_exit?.level?.name || 'Unknown';
+                const sourceExit = conn.source_exit?.name || 'Unknown';
+                const targetLevel = conn.target_spawn?.level?.name || 'Unknown';
+                const targetSpawn = conn.target_spawn?.name || 'Unknown';
+
+                return `
+                    <div class="connection-item ${conn.bidirectional ? 'connection-bidirectional' : ''}"
+                         data-connection-id="${conn.id}">
+                        <div class="connection-path">
+                            <span class="connection-source">${sourceLevel}<br><small>${sourceExit}</small></span>
+                            <span class="connection-arrow">${conn.bidirectional ? '&#8644;' : '&#8594;'}</span>
+                            <span class="connection-target">${targetLevel}<br><small>${targetSpawn}</small></span>
+                        </div>
+                        <div class="connection-actions">
+                            <button class="btn btn-small btn-danger" onclick="deleteConnection('${conn.id}')">Delete</button>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        function renderPathways() {
+            const svg = elements.pathwaysSvg;
+            svg.innerHTML = '';
+
+            if (!state.showPathways || state.connections.length === 0) return;
+
+            state.connections.forEach(conn => {
+                const sourceLevel = state.levels.find(l => l.id === conn.source_exit?.level?.id);
+                const targetLevel = state.levels.find(l => l.id === conn.target_spawn?.level?.id);
+
+                if (!sourceLevel || !targetLevel) return;
+
+                const sourcePos = state.nodePositions[sourceLevel.id];
+                const targetPos = state.nodePositions[targetLevel.id];
+
+                if (!sourcePos || !targetPos) return;
+
+                // Calculate connection points (center-right of source, center-left of target)
+                const x1 = sourcePos.x + 160;
+                const y1 = sourcePos.y + 50;
+                const x2 = targetPos.x;
+                const y2 = targetPos.y + 50;
+
+                // Create bezier curve
+                const midX = (x1 + x2) / 2;
+                const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+                path.setAttribute('d', `M ${x1} ${y1} C ${midX} ${y1}, ${midX} ${y2}, ${x2} ${y2}`);
+                path.setAttribute('class', `pathway ${conn.bidirectional ? 'bidirectional' : ''}`);
+                svg.appendChild(path);
+
+                // Add arrow
+                const arrow = document.createElementNS('http://www.w3.org/2000/svg', 'polygon');
+                arrow.setAttribute('points', `${x2},${y2} ${x2-10},${y2-5} ${x2-10},${y2+5}`);
+                arrow.setAttribute('class', 'pathway-arrow');
+                svg.appendChild(arrow);
+            });
+        }
+
+        // ==========================================
+        // Node Dragging
+        // ==========================================
+        function makeDraggable(node) {
+            let startX, startY, startLeft, startTop;
+
+            node.addEventListener('mousedown', (e) => {
+                if (e.target.tagName === 'BUTTON') return;
+
+                startX = e.clientX;
+                startY = e.clientY;
+                startLeft = parseInt(node.style.left) || 0;
+                startTop = parseInt(node.style.top) || 0;
+
+                const onMouseMove = (e) => {
+                    const dx = e.clientX - startX;
+                    const dy = e.clientY - startY;
+
+                    if (Math.abs(dx) > 5 || Math.abs(dy) > 5) {
+                        node.classList.add('dragging');
+                    }
+
+                    node.style.left = (startLeft + dx) + 'px';
+                    node.style.top = (startTop + dy) + 'px';
+
+                    // Update state
+                    const levelId = node.dataset.levelId;
+                    state.nodePositions[levelId] = {
+                        x: startLeft + dx,
+                        y: startTop + dy
+                    };
+
+                    renderPathways();
+                };
+
+                const onMouseUp = () => {
+                    document.removeEventListener('mousemove', onMouseMove);
+                    document.removeEventListener('mouseup', onMouseUp);
+                    setTimeout(() => node.classList.remove('dragging'), 50);
+                };
+
+                document.addEventListener('mousemove', onMouseMove);
+                document.addEventListener('mouseup', onMouseUp);
+            });
+        }
+
+        // ==========================================
+        // Level Selection & Connection Modal
+        // ==========================================
+        async function selectLevel(levelId) {
+            state.selectedLevel = levelId;
+
+            // Update node selection visuals
+            elements.nodesContainer.querySelectorAll('.level-node').forEach(node => {
+                node.classList.toggle('selected', node.dataset.levelId === levelId);
+            });
+
+            // Load level details and show exits
+            try {
+                const crucible = await getCrucible();
+                const exits = await crucible.getExits(levelId);
+
+                if (exits.length === 0) {
+                    showToast('This level has no exits');
+                    return;
+                }
+
+                // For now, show the first unconfigured exit
+                const unconfiguredExit = exits.find(e => !e.configured);
+                if (unconfiguredExit) {
+                    openConnectionModal(unconfiguredExit);
+                } else {
+                    showToast('All exits in this level are configured');
+                }
+            } catch (err) {
+                console.error('Failed to load level exits:', err);
+            }
+        }
+
+        async function openConnectionModal(exit) {
+            state.selectedExit = exit;
+
+            elements.sourceExitInfo.textContent = `${exit.name} (${exit.grid_x}, ${exit.grid_y})`;
+
+            // Load target levels
+            const otherLevels = state.levels.filter(l => l.id !== exit.level_id);
+            elements.targetLevelSelect.innerHTML = '<option value="">Select destination level...</option>' +
+                otherLevels.map(l => `<option value="${l.id}">${l.name}</option>`).join('');
+
+            elements.targetSpawnSelect.innerHTML = '<option value="">Select level first...</option>';
+            elements.targetSpawnSelect.disabled = true;
+            elements.saveConnectionBtn.disabled = true;
+            elements.bidirectionalCheck.checked = false;
+            elements.returnExitGroup.style.display = 'none';
+
+            elements.connectionModal.classList.add('active');
+        }
+
+        async function loadTargetSpawns(levelId) {
+            if (!levelId) {
+                elements.targetSpawnSelect.innerHTML = '<option value="">Select level first...</option>';
+                elements.targetSpawnSelect.disabled = true;
+                elements.saveConnectionBtn.disabled = true;
+                return;
+            }
+
+            try {
+                const crucible = await getCrucible();
+                const spawns = await crucible.getSpawns(levelId);
+
+                if (spawns.length === 0) {
+                    elements.targetSpawnSelect.innerHTML = '<option value="">No spawns in this level</option>';
+                    elements.targetSpawnSelect.disabled = true;
+                    return;
+                }
+
+                elements.targetSpawnSelect.disabled = false;
+                elements.targetSpawnSelect.innerHTML = '<option value="">Select spawn point...</option>' +
+                    spawns.map(s => `<option value="${s.name}">${s.name} (${s.grid_x}, ${s.grid_y})</option>`).join('');
+
+                // Also load exits for return connection
+                const exits = await crucible.getExits(levelId);
+                const unconfiguredExits = exits.filter(e => !e.configured && e.exit_type === 'return');
+
+                if (unconfiguredExits.length > 0) {
+                    elements.returnExitSelect.innerHTML = '<option value="">Select return exit...</option>' +
+                        unconfiguredExits.map(e => `<option value="${e.id}">${e.name}</option>`).join('');
+                } else {
+                    elements.returnExitSelect.innerHTML = '<option value="">No unconfigured return exits</option>';
+                }
+            } catch (err) {
+                console.error('Failed to load spawns:', err);
+            }
+        }
+
+        async function saveConnection() {
+            const targetLevelId = elements.targetLevelSelect.value;
+            const targetSpawnName = elements.targetSpawnSelect.value;
+            const bidirectional = elements.bidirectionalCheck.checked;
+            const returnExitId = bidirectional ? elements.returnExitSelect.value : null;
+
+            if (!targetLevelId || !targetSpawnName) {
+                showToast('Please select target level and spawn');
+                return;
+            }
+
+            try {
+                const crucible = await getCrucible();
+
+                // Configure the exit
+                await crucible.configureExit(state.selectedExit.id, targetLevelId, targetSpawnName);
+
+                // Get the target spawn ID for the connection
+                const targetSpawns = await crucible.getSpawns(targetLevelId);
+                const targetSpawn = targetSpawns.find(s => s.name === targetSpawnName);
+
+                if (targetSpawn) {
+                    // Create the connection record
+                    await crucible.createConnection(
+                        state.projectId,
+                        state.selectedExit.id,
+                        targetSpawn.id,
+                        bidirectional,
+                        returnExitId
+                    );
+                }
+
+                elements.connectionModal.classList.remove('active');
+                showToast('Connection created!');
+
+                // Refresh data
+                await loadProject(state.projectId);
+            } catch (err) {
+                console.error('Failed to save connection:', err);
+                showToast('Failed to create connection');
+            }
+        }
+
+        async function deleteConnection(connectionId) {
+            if (!confirm('Delete this connection?')) return;
+
+            try {
+                const crucible = await getCrucible();
+                await crucible.deleteConnection(connectionId);
+                showToast('Connection deleted');
+                await loadProject(state.projectId);
+            } catch (err) {
+                console.error('Failed to delete connection:', err);
+                showToast('Failed to delete connection');
+            }
+        }
+
+        // ==========================================
+        // Validation
+        // ==========================================
+        function validateConnections() {
+            const issues = [];
+
+            state.levels.forEach(level => {
+                if (level.unconfiguredExitCount > 0) {
+                    issues.push({
+                        type: 'warning',
+                        message: `${level.name}: ${level.unconfiguredExitCount} unconfigured exit(s)`
+                    });
+                }
+
+                if (level.spawnCount === 0 && level.exitCount > 0) {
+                    issues.push({
+                        type: 'error',
+                        message: `${level.name}: Has exits but no spawn points`
+                    });
+                }
+            });
+
+            if (issues.length === 0) {
+                elements.validationResults.innerHTML = `
+                    <div style="color: #6a9a70; text-align: center; padding: 20px;">
+                        &#10003; All connections valid!
+                    </div>
+                `;
+            } else {
+                elements.validationResults.innerHTML = issues.map(issue => `
+                    <div style="padding: 8px; margin-bottom: 4px; background: ${issue.type === 'error' ? 'rgba(106,42,42,0.3)' : 'rgba(106,106,42,0.3)'}; border-radius: 4px; font-size: 11px;">
+                        ${issue.type === 'error' ? '&#10060;' : '&#9888;'} ${issue.message}
+                    </div>
+                `).join('');
+            }
+        }
+
+        // ==========================================
+        // Event Listeners
+        // ==========================================
+        elements.projectSelect.addEventListener('change', (e) => {
+            loadProject(e.target.value);
+        });
+
+        elements.showPathways.addEventListener('change', (e) => {
+            state.showPathways = e.target.checked;
+            renderPathways();
+        });
+
+        elements.refreshBtn.addEventListener('click', () => {
+            if (state.projectId) {
+                loadProject(state.projectId);
+            }
+        });
+
+        elements.validateBtn.addEventListener('click', validateConnections);
+
+        elements.targetLevelSelect.addEventListener('change', (e) => {
+            loadTargetSpawns(e.target.value);
+        });
+
+        elements.targetSpawnSelect.addEventListener('change', (e) => {
+            elements.saveConnectionBtn.disabled = !e.target.value;
+        });
+
+        elements.bidirectionalCheck.addEventListener('change', (e) => {
+            elements.returnExitGroup.style.display = e.target.checked ? 'block' : 'none';
+        });
+
+        elements.cancelConnectionBtn.addEventListener('click', () => {
+            elements.connectionModal.classList.remove('active');
+        });
+
+        elements.saveConnectionBtn.addEventListener('click', saveConnection);
+
+        elements.connectionModal.addEventListener('click', (e) => {
+            if (e.target === elements.connectionModal) {
+                elements.connectionModal.classList.remove('active');
+            }
+        });
+
+        // ==========================================
+        // Initialize
+        // ==========================================
+        loadProjects();
+    </script>
+</body>
+</html>

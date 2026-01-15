@@ -501,6 +501,240 @@ class CrucibleClient {
             }
         };
     }
+
+    // =============================================
+    // SPAWN OPERATIONS
+    // =============================================
+
+    async saveSpawns(levelId, spawns) {
+        if (!this.client) throw new Error('Crucible not initialized');
+
+        // Delete existing spawns for this level
+        await this.client
+            .from('level_spawns')
+            .delete()
+            .eq('level_id', levelId);
+
+        if (spawns.length === 0) return [];
+
+        const payload = spawns.map(spawn => ({
+            level_id: levelId,
+            name: spawn.name,
+            grid_x: spawn.x,
+            grid_y: spawn.y,
+            direction: spawn.direction || 'down',
+            is_primary: spawn.isPrimary || false
+        }));
+
+        const { data, error } = await this.client
+            .from('level_spawns')
+            .insert(payload)
+            .select();
+
+        if (error) throw error;
+        return data;
+    }
+
+    async getSpawns(levelId) {
+        if (!this.client) throw new Error('Crucible not initialized');
+
+        const { data, error } = await this.client
+            .from('level_spawns')
+            .select('*')
+            .eq('level_id', levelId)
+            .order('is_primary', { ascending: false });
+
+        if (error) throw error;
+        return data || [];
+    }
+
+    // =============================================
+    // EXIT OPERATIONS
+    // =============================================
+
+    async saveExits(levelId, exits) {
+        if (!this.client) throw new Error('Crucible not initialized');
+
+        // Delete existing exits for this level
+        await this.client
+            .from('level_exits')
+            .delete()
+            .eq('level_id', levelId);
+
+        if (exits.length === 0) return [];
+
+        const payload = exits.map(exit => ({
+            level_id: levelId,
+            name: exit.name,
+            grid_x: exit.x,
+            grid_y: exit.y,
+            direction: exit.direction || 'right',
+            exit_type: exit.type || 'exit',
+            target_level_id: exit.targetLevelId || null,
+            target_spawn_name: exit.targetSpawnName || null,
+            configured: exit.configured || false
+        }));
+
+        const { data, error } = await this.client
+            .from('level_exits')
+            .insert(payload)
+            .select();
+
+        if (error) throw error;
+        return data;
+    }
+
+    async getExits(levelId) {
+        if (!this.client) throw new Error('Crucible not initialized');
+
+        const { data, error } = await this.client
+            .from('level_exits')
+            .select('*')
+            .eq('level_id', levelId);
+
+        if (error) throw error;
+        return data || [];
+    }
+
+    async configureExit(exitId, targetLevelId, targetSpawnName) {
+        if (!this.client) throw new Error('Crucible not initialized');
+
+        const { data, error } = await this.client
+            .from('level_exits')
+            .update({
+                target_level_id: targetLevelId,
+                target_spawn_name: targetSpawnName,
+                configured: true
+            })
+            .eq('id', exitId)
+            .select()
+            .single();
+
+        if (error) throw error;
+        return data;
+    }
+
+    async unconfigureExit(exitId) {
+        if (!this.client) throw new Error('Crucible not initialized');
+
+        const { data, error } = await this.client
+            .from('level_exits')
+            .update({
+                target_level_id: null,
+                target_spawn_name: null,
+                configured: false
+            })
+            .eq('id', exitId)
+            .select()
+            .single();
+
+        if (error) throw error;
+        return data;
+    }
+
+    // =============================================
+    // CONNECTION OPERATIONS (for Portals)
+    // =============================================
+
+    async createConnection(projectId, sourceExitId, targetSpawnId, bidirectional = false, returnExitId = null) {
+        if (!this.client) throw new Error('Crucible not initialized');
+
+        const { data, error } = await this.client
+            .from('level_connections')
+            .insert({
+                project_id: projectId,
+                source_exit_id: sourceExitId,
+                target_spawn_id: targetSpawnId,
+                bidirectional: bidirectional,
+                return_exit_id: returnExitId
+            })
+            .select()
+            .single();
+
+        if (error) throw error;
+        return data;
+    }
+
+    async getProjectConnections(projectId) {
+        if (!this.client) throw new Error('Crucible not initialized');
+
+        const { data, error } = await this.client
+            .from('level_connections')
+            .select(`
+                *,
+                source_exit:level_exits!source_exit_id (
+                    *,
+                    level:levels!level_id (id, name, slug)
+                ),
+                target_spawn:level_spawns!target_spawn_id (
+                    *,
+                    level:levels!level_id (id, name, slug)
+                )
+            `)
+            .eq('project_id', projectId);
+
+        if (error) throw error;
+        return data || [];
+    }
+
+    async deleteConnection(connectionId) {
+        if (!this.client) throw new Error('Crucible not initialized');
+
+        const { error } = await this.client
+            .from('level_connections')
+            .delete()
+            .eq('id', connectionId);
+
+        if (error) throw error;
+    }
+
+    // =============================================
+    // ENHANCED LEVEL QUERY (with spawns/exits)
+    // =============================================
+
+    async getLevelWithPortals(levelId) {
+        if (!this.client) throw new Error('Crucible not initialized');
+
+        const { data, error } = await this.client
+            .from('levels')
+            .select(`
+                *,
+                level_grids (*),
+                level_backgrounds (*),
+                level_tiles (*),
+                level_spawns (*),
+                level_exits (*)
+            `)
+            .eq('id', levelId)
+            .single();
+
+        if (error) throw error;
+        return data;
+    }
+
+    async getProjectLevelsWithPortalCounts(projectId) {
+        if (!this.client) throw new Error('Crucible not initialized');
+
+        const { data, error } = await this.client
+            .from('levels')
+            .select(`
+                *,
+                level_spawns (id),
+                level_exits (id, configured)
+            `)
+            .eq('project_id', projectId)
+            .order('sort_order', { ascending: true });
+
+        if (error) throw error;
+
+        // Transform to include counts
+        return (data || []).map(level => ({
+            ...level,
+            spawnCount: level.level_spawns?.length || 0,
+            exitCount: level.level_exits?.length || 0,
+            unconfiguredExitCount: level.level_exits?.filter(e => !e.configured).length || 0
+        }));
+    }
 }
 
 // =============================================
