@@ -9,7 +9,7 @@
 // CONFIGURATION - UPDATE THESE VALUES
 // =============================================
 const SUPABASE_URL = 'https://qcubqjuhwqukjdjamczp.supabase.co';
-const SUPABASE_ANON_KEY = 'sb_secret_BzATRqVrMXg877QjbJI0-A_Pio7ai3p';
+const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFjdWJxanVod3F1a2pkamFtY3pwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njg0NTk1NzMsImV4cCI6MjA4NDAzNTU3M30.ljFdf-AtxQkT_RTf6bnMd7VFtxinUgDSJVA-iS1b0rg';
 
 // =============================================
 // CRUCIBLE CLIENT CLASS
