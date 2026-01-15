@@ -16,13 +16,21 @@ const LEVEL_FORGE_DOCS = [
             <div class="step">
                 <div class="step-num">1</div>
                 <div class="step-text">
+                    <strong>Select a Project</strong><br>
+                    Choose your project from the header dropdown. This loads the project's master spritesheet for the Tiles tab.
+                </div>
+            </div>
+
+            <div class="step">
+                <div class="step-num">2</div>
+                <div class="step-text">
                     <strong>Name Your Level</strong><br>
                     Enter a name in the "Level Name" field. This is required before placing portal markers (spawns, exits).
                 </div>
             </div>
 
             <div class="step">
-                <div class="step-num">2</div>
+                <div class="step-num">3</div>
                 <div class="step-text">
                     <strong>Set Grid Size</strong><br>
                     Adjust width and height in tiles. Default is 32x18 (768x432 pixels at 24px tiles).
@@ -30,7 +38,7 @@ const LEVEL_FORGE_DOCS = [
             </div>
 
             <div class="step">
-                <div class="step-num">3</div>
+                <div class="step-num">4</div>
                 <div class="step-text">
                     <strong>Define Collision Areas</strong><br>
                     Use the Grid tab to mark tiles as Open (walkable), Obstruction (solid), or place spawn/exit points.
@@ -38,7 +46,7 @@ const LEVEL_FORGE_DOCS = [
             </div>
 
             <div class="step">
-                <div class="step-num">4</div>
+                <div class="step-num">5</div>
                 <div class="step-text">
                     <strong>Add Backgrounds</strong><br>
                     Switch to the BG tab to upload and arrange background images. Use Pixelify to give them a retro look.
@@ -46,15 +54,15 @@ const LEVEL_FORGE_DOCS = [
             </div>
 
             <div class="step">
-                <div class="step-num">5</div>
+                <div class="step-num">6</div>
                 <div class="step-text">
                     <strong>Paint Visual Tiles</strong><br>
-                    Use the Tiles tab to paint sprites from your spritesheets onto the level grid.
+                    Use the Tiles tab to paint sprites from the project's master spritesheet onto the level grid.
                 </div>
             </div>
 
             <div class="step">
-                <div class="step-num">6</div>
+                <div class="step-num">7</div>
                 <div class="step-text">
                     <strong>Test & Export</strong><br>
                     Click "Play Demo" to test your level, then copy the JSON or send it to the Crucible.
@@ -444,11 +452,12 @@ const LEVEL_FORGE_DOCS = [
             <h2>Send to Crucible</h2>
             <p>The Crucible of Code integration lets you save levels directly to your project:</p>
             <ol>
+                <li>Select your project from the header dropdown (required first)</li>
                 <li>Click the "Send to Crucible" button</li>
-                <li>Select your project from the dropdown</li>
-                <li>Choose an existing level to update or create new</li>
+                <li>Choose an existing level to update</li>
                 <li>Click "Send Data" to save</li>
             </ol>
+            <p>The project must be selected before sending because visual tiles reference sprites from that project's master spritesheet.</p>
 
             <h2>Grid Encoding</h2>
             <p>Tile states are encoded as numbers for compact storage:</p>

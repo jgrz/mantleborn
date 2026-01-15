@@ -125,6 +125,23 @@
             align-items: center;
         }
 
+        .header-select {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 12px;
+            padding: 8px 12px;
+            background: var(--bg-surface);
+            border: 1px solid var(--stone-dark);
+            border-radius: 4px;
+            color: var(--stone-light);
+            cursor: pointer;
+            min-width: 160px;
+        }
+
+        .header-select:focus {
+            outline: none;
+            border-color: var(--accent-ember);
+        }
+
         /* Buttons */
         .btn {
             font-family: 'JetBrains Mono', monospace;
@@ -1362,7 +1379,10 @@
             <span class="brand-text">MANTLEBORN / <span>LEVEL-FORGE</span></span>
         </div>
         <div class="header-actions">
-            <button class="btn btn-crucible" id="sendToCrucibleBtn" title="Send to Crucible">&#129516; Send to Crucible</button>
+            <select class="header-select" id="projectSelect">
+                <option value="">-- Select Project --</option>
+            </select>
+            <button class="btn btn-crucible" id="sendToCrucibleBtn" title="Send to Crucible" disabled>&#129516; Send to Crucible</button>
             <button class="btn btn-play" id="playDemoBtn">&#9658; Play Demo</button>
             <button class="btn" id="newLevelBtn">New Level</button>
         </div>
@@ -1720,14 +1740,12 @@
             <div class="modal-header">Send to Crucible</div>
             <div class="form-group">
                 <label class="form-label">Project</label>
-                <select class="form-input" id="crucibleProjectSelect">
-                    <option value="">Loading projects...</option>
-                </select>
+                <div class="form-input" id="crucibleProjectName" style="background: var(--bg-mid); cursor: default;">No project selected</div>
             </div>
             <div class="form-group">
                 <label class="form-label">Level</label>
                 <select class="form-input" id="crucibleLevelSelect" disabled>
-                    <option value="">Select a project first</option>
+                    <option value="">Select a level...</option>
                 </select>
             </div>
             <div class="crucible-status" id="crucibleStatus" style="margin-bottom: 16px; font-size: 11px; color: var(--stone-mid);"></div>
@@ -1817,6 +1835,10 @@
         // DOM Elements
         // ==========================================
         const elements = {
+            // Header
+            projectSelect: document.getElementById('projectSelect'),
+            sendToCrucibleBtn: document.getElementById('sendToCrucibleBtn'),
+
             // Grid editor
             grid: document.getElementById('grid'),
             selectionBox: document.getElementById('selectionBox'),
@@ -4283,84 +4305,92 @@
         elements.clearTilesBtn.addEventListener('click', clearVisualTiles);
 
         // ==========================================
-        // Crucible Integration
+        // Project Selection (Header)
+        // ==========================================
+        let allProjects = [];
+        let selectedProject = null;
+
+        async function loadProjects() {
+            try {
+                const crucible = await getCrucible();
+                if (!crucible.isConfigured()) {
+                    console.warn('Crucible not configured');
+                    return;
+                }
+
+                allProjects = await crucible.getProjects();
+
+                elements.projectSelect.innerHTML = '<option value="">-- Select Project --</option>';
+                allProjects.forEach(p => {
+                    const opt = document.createElement('option');
+                    opt.value = p.id;
+                    opt.textContent = p.name;
+                    elements.projectSelect.appendChild(opt);
+                });
+
+                // Restore last selected project
+                const lastProject = localStorage.getItem('levelforge_project');
+                if (lastProject && allProjects.find(p => p.id === lastProject)) {
+                    elements.projectSelect.value = lastProject;
+                    await selectProject(lastProject);
+                }
+            } catch (err) {
+                console.error('Failed to load projects:', err);
+            }
+        }
+
+        async function selectProject(projectId) {
+            if (!projectId) {
+                selectedProject = null;
+                elements.sendToCrucibleBtn.disabled = true;
+                state.masterSheetAtlas = null;
+                state.masterSheetImage = null;
+                state.currentProjectId = null;
+                populateSpriteSheetSelect();
+                return;
+            }
+
+            selectedProject = allProjects.find(p => p.id === projectId);
+            localStorage.setItem('levelforge_project', projectId);
+            elements.sendToCrucibleBtn.disabled = false;
+
+            // Load master sheet for this project
+            await loadMasterSheet(projectId);
+        }
+
+        elements.projectSelect.addEventListener('change', (e) => {
+            selectProject(e.target.value);
+        });
+
+        // ==========================================
+        // Crucible Integration (Send Modal)
         // ==========================================
         const crucibleElements = {
             modal: document.getElementById('crucibleModal'),
-            projectSelect: document.getElementById('crucibleProjectSelect'),
+            projectName: document.getElementById('crucibleProjectName'),
             levelSelect: document.getElementById('crucibleLevelSelect'),
             status: document.getElementById('crucibleStatus'),
             confirmBtn: document.getElementById('confirmCrucibleBtn'),
-            cancelBtn: document.getElementById('cancelCrucibleBtn'),
-            sendBtn: document.getElementById('sendToCrucibleBtn')
+            cancelBtn: document.getElementById('cancelCrucibleBtn')
         };
 
-        let crucibleProjects = [];
         let crucibleLevels = [];
-        let selectedCrucibleProject = null;
         let selectedCrucibleLevel = null;
 
         async function openCrucibleModal() {
+            if (!selectedProject) {
+                showToast('Select a project first');
+                return;
+            }
+
             crucibleElements.modal.classList.add('active');
-            crucibleElements.status.textContent = 'Loading projects...';
+            crucibleElements.projectName.textContent = selectedProject.name;
+            crucibleElements.status.textContent = 'Loading levels...';
             crucibleElements.confirmBtn.disabled = true;
 
             try {
                 const crucible = await getCrucible();
-                if (!crucible.isConfigured()) {
-                    crucibleElements.status.textContent = 'Crucible not configured. Edit supabase-client.js first.';
-                    return;
-                }
-
-                crucibleProjects = await crucible.getProjects();
-
-                if (crucibleProjects.length === 0) {
-                    crucibleElements.projectSelect.innerHTML = '<option value="">No projects - create one in Crucible first</option>';
-                    crucibleElements.status.textContent = 'Create a project in Crucible first.';
-                    return;
-                }
-
-                crucibleElements.projectSelect.innerHTML = '<option value="">Select a project...</option>' +
-                    crucibleProjects.map(p => `<option value="${p.id}">${p.name}</option>`).join('');
-
-                // Check if we have a saved context
-                const ctx = crucible.getContext();
-                if (ctx.projectId) {
-                    crucibleElements.projectSelect.value = ctx.projectId;
-                    await loadCrucibleLevels(ctx.projectId);
-                    await loadMasterSheet(ctx.projectId);
-                    if (ctx.levelSlug) {
-                        const level = crucibleLevels.find(l => l.slug === ctx.levelSlug);
-                        if (level) {
-                            crucibleElements.levelSelect.value = level.id;
-                            selectedCrucibleLevel = level;
-                            crucibleElements.confirmBtn.disabled = false;
-                        }
-                    }
-                }
-
-                crucibleElements.status.textContent = '';
-            } catch (err) {
-                console.error('Failed to load Crucible data:', err);
-                crucibleElements.status.textContent = 'Failed to load: ' + err.message;
-            }
-        }
-
-        async function loadCrucibleLevels(projectId) {
-            if (!projectId) {
-                crucibleElements.levelSelect.disabled = true;
-                crucibleElements.levelSelect.innerHTML = '<option value="">Select a project first</option>';
-                crucibleLevels = [];
-                selectedCrucibleProject = null;
-                selectedCrucibleLevel = null;
-                crucibleElements.confirmBtn.disabled = true;
-                return;
-            }
-
-            try {
-                const crucible = await getCrucible();
-                crucibleLevels = await crucible.getLevels(projectId);
-                selectedCrucibleProject = crucibleProjects.find(p => p.id === projectId);
+                crucibleLevels = await crucible.getLevels(selectedProject.id);
 
                 if (crucibleLevels.length === 0) {
                     crucibleElements.levelSelect.innerHTML = '<option value="">No levels - create one in Crucible first</option>';
@@ -4372,15 +4402,27 @@
                 crucibleElements.levelSelect.disabled = false;
                 crucibleElements.levelSelect.innerHTML = '<option value="">Select a level...</option>' +
                     crucibleLevels.map(l => `<option value="${l.id}">${l.name} (${l.width}x${l.height})</option>`).join('');
+
+                // Check for saved context
+                const ctx = crucible.getContext();
+                if (ctx.projectId === selectedProject.id && ctx.levelSlug) {
+                    const level = crucibleLevels.find(l => l.slug === ctx.levelSlug);
+                    if (level) {
+                        crucibleElements.levelSelect.value = level.id;
+                        selectedCrucibleLevel = level;
+                        crucibleElements.confirmBtn.disabled = false;
+                    }
+                }
+
                 crucibleElements.status.textContent = '';
             } catch (err) {
-                console.error('Failed to load levels:', err);
-                crucibleElements.status.textContent = 'Failed to load levels: ' + err.message;
+                console.error('Failed to load Crucible data:', err);
+                crucibleElements.status.textContent = 'Failed to load: ' + err.message;
             }
         }
 
         async function sendToCrucible() {
-            if (!selectedCrucibleLevel) return;
+            if (!selectedProject || !selectedCrucibleLevel) return;
 
             crucibleElements.confirmBtn.disabled = true;
             crucibleElements.status.textContent = 'Sending data...';
@@ -4430,7 +4472,7 @@
                 }
 
                 // Update context
-                crucible.setContext(selectedCrucibleProject.id, levelId, selectedCrucibleLevel.slug);
+                crucible.setContext(selectedProject.id, levelId, selectedCrucibleLevel.slug);
 
                 crucibleElements.modal.classList.remove('active');
                 showToast('Level data sent to Crucible!');
@@ -4441,13 +4483,8 @@
             }
         }
 
-        // Crucible event listeners
-        crucibleElements.sendBtn.addEventListener('click', openCrucibleModal);
-
-        crucibleElements.projectSelect.addEventListener('change', (e) => {
-            loadCrucibleLevels(e.target.value);
-            loadMasterSheet(e.target.value);
-        });
+        // Crucible modal event listeners
+        elements.sendToCrucibleBtn.addEventListener('click', openCrucibleModal);
 
         crucibleElements.levelSelect.addEventListener('change', (e) => {
             selectedCrucibleLevel = crucibleLevels.find(l => l.id === e.target.value) || null;
@@ -4472,6 +4509,7 @@
         initGrid();
         initVisualTiles();
         loadSpriteIndex();
+        loadProjects();
 
         // Initialize help drawer
         if (typeof HelpDrawer !== 'undefined' && typeof LEVEL_FORGE_DOCS !== 'undefined') {
