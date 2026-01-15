@@ -2140,5 +2140,19 @@
         // ==========================================
         init();
     </script>
+
+    <!-- Help Drawer -->
+    <script src="../shared/help-drawer.js"></script>
+    <script src="../shared/docs/animation-station-docs.js"></script>
+    <script>
+        // Initialize help drawer with Animation-Station docs
+        HelpDrawer.init({
+            toolId: 'animation-station',
+            toolName: 'Animation-Station',
+            toolIcon: '&#127916;',
+            accentColor: '#e07020',
+            docs: ANIMATION_STATION_DOCS
+        });
+    </script>
 </body>
 </html>

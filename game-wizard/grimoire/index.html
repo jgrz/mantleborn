@@ -614,7 +614,7 @@
                         <a href="#animation-station" class="nav-link">
                             <span class="nav-icon">&#127916;</span>
                             Animation-Station
-                            <span class="nav-badge">Soon</span>
+                            <span class="nav-badge">6</span>
                         </a>
                     </li>
                     <li class="nav-item">
@@ -689,9 +689,9 @@
                         <div class="tool-card-icon">&#127916;</div>
                         <div class="tool-card-title">Animation-Station</div>
                         <div class="tool-card-desc">
-                            Create and preview sprite animations with frame control.
+                            Build frame-by-frame animations with timeline and playback controls.
                         </div>
-                        <div class="tool-card-count">Coming soon</div>
+                        <div class="tool-card-count">6 articles</div>
                     </a>
 
                     <a href="#level-forge" class="tool-card">
@@ -728,6 +728,7 @@
     <!-- Load documentation modules -->
     <script src="../shared/docs/tilesmith-docs.js"></script>
     <script src="../shared/docs/sprite-rite-docs.js"></script>
+    <script src="../shared/docs/animation-station-docs.js"></script>
 
     <script>
         // Simple client-side routing
@@ -852,6 +853,45 @@
             'Import and manage sprite assets. Define sprite regions, generate atlas JSON, and publish to the master spritesheet.',
             SPRITE_RITE_OVERVIEW,
             typeof SPRITE_RITE_DOCS !== 'undefined' ? SPRITE_RITE_DOCS : null);
+
+        const ANIMATION_STATION_OVERVIEW = `
+            <p>Animation-Station brings your sprites to life. Build frame-by-frame animations, control timing, and preview playback in real-time.</p>
+            <div class="feature-grid">
+                <div class="feature-item">
+                    <span class="feature-icon">&#127902;</span>
+                    <div class="feature-text">
+                        <strong>Timeline Editor</strong>
+                        <span>Arrange frames, set durations, and reorder with drag-and-drop.</span>
+                    </div>
+                </div>
+                <div class="feature-item">
+                    <span class="feature-icon">&#9654;</span>
+                    <div class="feature-text">
+                        <strong>Real-Time Preview</strong>
+                        <span>Play animations at various speeds. Step frame-by-frame.</span>
+                    </div>
+                </div>
+                <div class="feature-item">
+                    <span class="feature-icon">&#128260;</span>
+                    <div class="feature-text">
+                        <strong>Tweening</strong>
+                        <span>Optional crossfade transitions between frames for smooth motion.</span>
+                    </div>
+                </div>
+                <div class="feature-item">
+                    <span class="feature-icon">&#128230;</span>
+                    <div class="feature-text">
+                        <strong>Master Sheet Integration</strong>
+                        <span>Use sprites from Tilesmith and Sprite-Rite automatically.</span>
+                    </div>
+                </div>
+            </div>
+        `;
+
+        buildToolDocs('animation-station', 'Animation-Station',
+            'Create and preview sprite animations. Build frame sequences, control timing, and export for your game engine.',
+            ANIMATION_STATION_OVERVIEW,
+            typeof ANIMATION_STATION_DOCS !== 'undefined' ? ANIMATION_STATION_DOCS : null);
 
         function navigateTo(hash) {
             const page = hash.replace('#', '') || 'welcome';
