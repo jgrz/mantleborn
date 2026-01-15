@@ -1743,6 +1743,7 @@
 
     <!-- Supabase Client -->
     <script src="../shared/supabase-client.js"></script>
+    <script src="../shared/master-sheet.js"></script>
 
     <script>
         /* ============================================
@@ -1789,6 +1790,9 @@
             spriteSheets: {},  // Loaded sprite sheet data
             spriteImages: {},  // Loaded sprite sheet images
             selectedSpriteSheet: '',
+            masterSheetAtlas: null,  // Master sheet atlas data
+            masterSheetImage: null,  // Master sheet image
+            currentProjectId: null,  // Currently selected project for master sheet
             tileMouseDown: false,
 
             // Background drag state
@@ -3057,7 +3061,9 @@
                     for (let x = 0; x < state.gridWidth; x++) {
                         const vTile = state.visualTiles[y]?.[x];
                         if (vTile) {
-                            const sheetImage = state.spriteImages[vTile.spriteSheet];
+                            const sheetImage = vTile.spriteSheet === '__master__'
+                                ? state.masterSheetImage
+                                : state.spriteImages[vTile.spriteSheet];
                             if (sheetImage) {
                                 ctx.drawImage(
                                     sheetImage,
@@ -3792,27 +3798,104 @@
                 if (response.ok) {
                     const data = await response.json();
                     state.spriteSheets = data;
-                    populateSpriteSheetSelect();
                 }
             } catch (e) {
                 console.warn('Could not load sprite index:', e);
-                elements.paletteGrid.innerHTML = '<div class="no-sprites-message">No sprite sheets found. Create some with Tilesmith!</div>';
+            }
+            populateSpriteSheetSelect();
+        }
+
+        async function loadMasterSheet(projectId) {
+            if (!projectId) {
+                state.masterSheetAtlas = null;
+                state.masterSheetImage = null;
+                state.currentProjectId = null;
+                populateSpriteSheetSelect();
+                return;
+            }
+
+            try {
+                if (!crucibleClient.getMasterSheet) {
+                    console.warn('Master sheet feature not available');
+                    return;
+                }
+
+                const masterSheet = await crucibleClient.getMasterSheet(projectId);
+
+                if (masterSheet.png && masterSheet.atlas && Object.keys(masterSheet.atlas.sprites).length > 0) {
+                    // Load the master sheet image
+                    const img = new Image();
+                    await new Promise((resolve, reject) => {
+                        img.onload = resolve;
+                        img.onerror = reject;
+                        img.src = masterSheet.png;
+                    });
+
+                    state.masterSheetAtlas = masterSheet.atlas;
+                    state.masterSheetImage = img;
+                    state.currentProjectId = projectId;
+                } else {
+                    state.masterSheetAtlas = null;
+                    state.masterSheetImage = null;
+                    state.currentProjectId = projectId;
+                }
+
+                populateSpriteSheetSelect();
+
+                // Auto-select master sheet if it has sprites
+                if (state.masterSheetAtlas && Object.keys(state.masterSheetAtlas.sprites).length > 0) {
+                    elements.spriteSheetSelect.value = '__master__';
+                    loadSpriteSheet('__master__');
+                }
+            } catch (err) {
+                console.error('Failed to load master sheet:', err);
+                state.masterSheetAtlas = null;
+                state.masterSheetImage = null;
             }
         }
 
         function populateSpriteSheetSelect() {
             const sheetNames = Object.keys(state.spriteSheets);
-            if (sheetNames.length === 0) {
-                elements.spriteSheetSelect.innerHTML = '<option value="">No sheets available</option>';
-                return;
+            const hasMasterSheet = state.masterSheetAtlas &&
+                Object.keys(state.masterSheetAtlas.sprites).length > 0;
+
+            let options = '<option value="">-- Select Sheet --</option>';
+
+            // Add master sheet option if available
+            if (hasMasterSheet) {
+                const spriteCount = Object.keys(state.masterSheetAtlas.sprites).length;
+                options += `<option value="__master__">Master Sheet (${spriteCount} sprites)</option>`;
             }
 
-            elements.spriteSheetSelect.innerHTML = '<option value="">-- Select Sheet --</option>' +
-                sheetNames.map(name => `<option value="${name}">${name}</option>`).join('');
+            // Add other sheets
+            options += sheetNames.map(name => `<option value="${name}">${name}</option>`).join('');
+
+            if (!hasMasterSheet && sheetNames.length === 0) {
+                options = '<option value="">No sheets available - publish tiles in Tilesmith</option>';
+            }
+
+            elements.spriteSheetSelect.innerHTML = options;
         }
 
         async function loadSpriteSheet(sheetName) {
-            if (!sheetName || !state.spriteSheets[sheetName]) {
+            if (!sheetName) {
+                elements.paletteGrid.innerHTML = '<div class="no-sprites-message">Select a sprite sheet to load sprites</div>';
+                return;
+            }
+
+            // Handle master sheet
+            if (sheetName === '__master__') {
+                if (!state.masterSheetAtlas || !state.masterSheetImage) {
+                    elements.paletteGrid.innerHTML = '<div class="no-sprites-message">Master sheet not loaded</div>';
+                    return;
+                }
+                state.selectedSpriteSheet = '__master__';
+                renderSpritePalette();
+                return;
+            }
+
+            // Handle regular sprite sheets
+            if (!state.spriteSheets[sheetName]) {
                 elements.paletteGrid.innerHTML = '<div class="no-sprites-message">Select a sprite sheet to load sprites</div>';
                 return;
             }
@@ -3842,6 +3925,13 @@
 
         function renderSpritePalette() {
             const sheetName = state.selectedSpriteSheet;
+
+            // Handle master sheet
+            if (sheetName === '__master__') {
+                renderMasterSheetPalette();
+                return;
+            }
+
             if (!sheetName || !state.spriteSheets[sheetName]) {
                 elements.paletteGrid.innerHTML = '<div class="no-sprites-message">Select a sprite sheet</div>';
                 return;
@@ -3892,6 +3982,66 @@
             });
         }
 
+        function renderMasterSheetPalette() {
+            if (!state.masterSheetAtlas || !state.masterSheetImage) {
+                elements.paletteGrid.innerHTML = '<div class="no-sprites-message">No master sheet loaded</div>';
+                return;
+            }
+
+            const sprites = state.masterSheetAtlas.sprites;
+            const spriteNames = Object.keys(sprites);
+
+            if (spriteNames.length === 0) {
+                elements.paletteGrid.innerHTML = '<div class="no-sprites-message">No sprites in master sheet</div>';
+                return;
+            }
+
+            elements.paletteGrid.innerHTML = spriteNames.map(name => {
+                const sprite = sprites[name];
+                const isSelected = state.selectedSprite &&
+                    state.selectedSprite.sheetName === '__master__' &&
+                    state.selectedSprite.name === name;
+                return `<div class="palette-sprite ${isSelected ? 'selected' : ''}"
+                            data-sheet="__master__"
+                            data-sprite="${name}"
+                            title="${name} (${sprite.source})"></div>`;
+            }).join('');
+
+            // Draw sprite thumbnails
+            elements.paletteGrid.querySelectorAll('.palette-sprite').forEach((el) => {
+                const spriteName = el.dataset.sprite;
+                const spriteDef = sprites[spriteName];
+
+                const canvas = document.createElement('canvas');
+                const size = 36;
+                const scale = Math.min(size / spriteDef.w, size / spriteDef.h, 2);
+                canvas.width = Math.floor(spriteDef.w * scale);
+                canvas.height = Math.floor(spriteDef.h * scale);
+
+                const ctx = canvas.getContext('2d');
+                ctx.imageSmoothingEnabled = false;
+                ctx.drawImage(
+                    state.masterSheetImage,
+                    spriteDef.x, spriteDef.y, spriteDef.w, spriteDef.h,
+                    0, 0, canvas.width, canvas.height
+                );
+
+                const img = document.createElement('img');
+                img.src = canvas.toDataURL();
+                el.appendChild(img);
+
+                // Convert master sheet sprite format to standard format for selection
+                el.addEventListener('click', () => selectSprite('__master__', {
+                    name: spriteName,
+                    x: spriteDef.x,
+                    y: spriteDef.y,
+                    width: spriteDef.w,
+                    height: spriteDef.h,
+                    source: spriteDef.source
+                }));
+            });
+        }
+
         function selectSprite(sheetName, sprite) {
             state.selectedSprite = { sheetName, ...sprite };
 
@@ -3913,7 +4063,9 @@
             }
 
             const sprite = state.selectedSprite;
-            const sheetImage = state.spriteImages[sprite.sheetName];
+            const sheetImage = sprite.sheetName === '__master__'
+                ? state.masterSheetImage
+                : state.spriteImages[sprite.sheetName];
             if (!sheetImage) return;
 
             const canvas = document.createElement('canvas');
@@ -4043,7 +4195,9 @@
                     const tile = state.visualTiles[y]?.[x];
                     if (!tile) continue;
 
-                    const sheetImage = state.spriteImages[tile.spriteSheet];
+                    const sheetImage = tile.spriteSheet === '__master__'
+                        ? state.masterSheetImage
+                        : state.spriteImages[tile.spriteSheet];
                     if (!sheetImage) continue;
 
                     ctx.drawImage(
@@ -4172,6 +4326,7 @@
                 if (ctx.projectId) {
                     crucibleElements.projectSelect.value = ctx.projectId;
                     await loadCrucibleLevels(ctx.projectId);
+                    await loadMasterSheet(ctx.projectId);
                     if (ctx.levelSlug) {
                         const level = crucibleLevels.find(l => l.slug === ctx.levelSlug);
                         if (level) {
@@ -4289,6 +4444,7 @@
 
         crucibleElements.projectSelect.addEventListener('change', (e) => {
             loadCrucibleLevels(e.target.value);
+            loadMasterSheet(e.target.value);
         });
 
         crucibleElements.levelSelect.addEventListener('change', (e) => {

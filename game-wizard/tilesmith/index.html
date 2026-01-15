@@ -977,7 +977,11 @@
                 <div class="export-actions">
                     <button class="btn" id="saveTileBtn">Save Tile</button>
                     <button class="btn" id="downloadPngBtn">Download PNG</button>
+                    <button class="btn btn-primary" id="publishMasterBtn" title="Add to project's master spritesheet">
+                        Publish to Master
+                    </button>
                 </div>
+                <div class="master-sheet-status" id="masterSheetStatus" style="margin-top: 8px; font-size: 10px; color: var(--stone-mid);"></div>
             </div>
         </div>
     </main>
@@ -1080,6 +1084,7 @@
     <div class="toast" id="toast"></div>
 
     <script src="../shared/supabase-client.js"></script>
+    <script src="../shared/master-sheet.js"></script>
     <script>
         /* ============================================
            TILESMITH - JavaScript
@@ -1202,6 +1207,8 @@
             aiModalGenerate: document.getElementById('aiModalGenerate'),
             saveTileBtn: document.getElementById('saveTileBtn'),
             downloadPngBtn: document.getElementById('downloadPngBtn'),
+            publishMasterBtn: document.getElementById('publishMasterBtn'),
+            masterSheetStatus: document.getElementById('masterSheetStatus'),
             toast: document.getElementById('toast')
         };
 
@@ -2174,6 +2181,86 @@
             link.click();
         }
 
+        async function publishToMaster() {
+            if (!state.currentProjectId) {
+                showToast('Please select a project first', true);
+                return;
+            }
+
+            const tileName = elements.tileName.value.trim();
+            if (!tileName) {
+                showToast('Please enter a tile name', true);
+                return;
+            }
+
+            // Check if crucibleClient has master sheet methods
+            if (!crucibleClient.publishToMasterSheet) {
+                showToast('Master sheet feature not available', true);
+                return;
+            }
+
+            try {
+                elements.masterSheetStatus.textContent = 'Publishing...';
+                elements.publishMasterBtn.disabled = true;
+
+                // Create image from current pixels
+                const totalWidth = getTotalWidth();
+                const totalHeight = getTotalHeight();
+
+                const tempCanvas = document.createElement('canvas');
+                tempCanvas.width = totalWidth;
+                tempCanvas.height = totalHeight;
+                const tempCtx = tempCanvas.getContext('2d');
+                tempCtx.putImageData(state.pixels, 0, 0);
+
+                // If multi-tile, publish each tile separately
+                if (state.gridCols > 1 || state.gridRows > 1) {
+                    let publishedCount = 0;
+                    for (let row = 0; row < state.gridRows; row++) {
+                        for (let col = 0; col < state.gridCols; col++) {
+                            const tileX = col * state.width;
+                            const tileY = row * state.height;
+                            const tileImageData = tempCtx.getImageData(tileX, tileY, state.width, state.height);
+
+                            // Generate unique name for each tile in the set
+                            const subName = `${tileName}_${row}_${col}`;
+
+                            await crucibleClient.publishToMasterSheet(
+                                state.currentProjectId,
+                                subName,
+                                tileImageData,
+                                state.width,
+                                state.height,
+                                'tilesmith'
+                            );
+                            publishedCount++;
+                            elements.masterSheetStatus.textContent = `Publishing tile ${publishedCount}/${state.gridCols * state.gridRows}...`;
+                        }
+                    }
+                    elements.masterSheetStatus.textContent = `Published ${publishedCount} tiles`;
+                    showToast(`Published ${publishedCount} tiles to master sheet`);
+                } else {
+                    // Single tile
+                    await crucibleClient.publishToMasterSheet(
+                        state.currentProjectId,
+                        tileName,
+                        state.pixels,
+                        state.width,
+                        state.height,
+                        'tilesmith'
+                    );
+                    elements.masterSheetStatus.textContent = 'Published to master sheet';
+                    showToast('Published to master sheet');
+                }
+            } catch (err) {
+                console.error('Failed to publish to master sheet:', err);
+                elements.masterSheetStatus.textContent = 'Failed to publish';
+                showToast('Failed to publish: ' + err.message, true);
+            } finally {
+                elements.publishMasterBtn.disabled = false;
+            }
+        }
+
         // ==========================================
         // UTILITIES
         // ==========================================
@@ -2284,6 +2371,7 @@
             // Export
             elements.saveTileBtn.addEventListener('click', saveTile);
             elements.downloadPngBtn.addEventListener('click', downloadPng);
+            elements.publishMasterBtn.addEventListener('click', publishToMaster);
 
             // Keyboard shortcuts
             window.addEventListener('keydown', (e) => {

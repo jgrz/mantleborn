@@ -1006,6 +1006,7 @@
     <div class="toast" id="toast"></div>
 
     <script src="../shared/supabase-client.js"></script>
+    <script src="../shared/master-sheet.js"></script>
     <script>
         /* ============================================
            ANIMATION-STATION - JavaScript
@@ -1033,7 +1034,9 @@
             tweenDuration: 0,
             tweenProgress: 0,
             saveTimeout: null,
-            isDirty: false
+            isDirty: false,
+            masterSheetAtlas: null,
+            masterSheetImage: null
         };
 
         let animationLoop = null;
@@ -1149,6 +1152,8 @@
             state.sprites = [];
             state.animations = [];
             state.currentAnimationId = null;
+            state.masterSheetAtlas = null;
+            state.masterSheetImage = null;
 
             localStorage.setItem('animstation_project', projectId);
 
@@ -1162,6 +1167,32 @@
             }
 
             try {
+                // Load master sheet for this project
+                if (crucibleClient.getMasterSheet) {
+                    try {
+                        const masterSheet = await crucibleClient.getMasterSheet(projectId);
+                        if (masterSheet.png && masterSheet.atlas && Object.keys(masterSheet.atlas.sprites).length > 0) {
+                            const img = new Image();
+                            await new Promise((resolve, reject) => {
+                                img.onload = resolve;
+                                img.onerror = reject;
+                                img.src = masterSheet.png;
+                            });
+                            state.masterSheetAtlas = masterSheet.atlas;
+                            state.masterSheetImage = img;
+
+                            // Add master sheet as first option
+                            const spriteCount = Object.keys(masterSheet.atlas.sprites).length;
+                            const masterOpt = document.createElement('option');
+                            masterOpt.value = '__master__';
+                            masterOpt.textContent = `Master Sheet (${spriteCount} sprites)`;
+                            elements.spritesheetSelect.appendChild(masterOpt);
+                        }
+                    } catch (err) {
+                        console.warn('Could not load master sheet:', err);
+                    }
+                }
+
                 const spritesheets = await crucibleClient.getSpritesheets(projectId);
 
                 spritesheets.forEach(s => {
@@ -1171,11 +1202,18 @@
                     elements.spritesheetSelect.appendChild(opt);
                 });
 
-                // Restore last selected spritesheet
+                // Restore last selected spritesheet or auto-select master sheet
                 const lastSheet = localStorage.getItem('animstation_spritesheet');
-                if (lastSheet && spritesheets.find(s => s.id === lastSheet)) {
+                if (lastSheet === '__master__' && state.masterSheetAtlas) {
+                    elements.spritesheetSelect.value = '__master__';
+                    await selectSpritesheet('__master__');
+                } else if (lastSheet && spritesheets.find(s => s.id === lastSheet)) {
                     elements.spritesheetSelect.value = lastSheet;
                     await selectSpritesheet(lastSheet);
+                } else if (state.masterSheetAtlas) {
+                    // Auto-select master sheet if available
+                    elements.spritesheetSelect.value = '__master__';
+                    await selectSpritesheet('__master__');
                 }
             } catch (err) {
                 console.error('Failed to load spritesheets:', err);
@@ -1199,6 +1237,34 @@
                 renderSpritePalette();
                 renderTimeline();
                 renderAnimationList();
+                return;
+            }
+
+            // Handle master sheet
+            if (spritesheetId === '__master__') {
+                if (!state.masterSheetAtlas || !state.masterSheetImage) {
+                    showToast('Master sheet not loaded');
+                    return;
+                }
+
+                // Convert master sheet atlas to sprites array format
+                state.spriteSheetImage = state.masterSheetImage;
+                state.sprites = Object.entries(state.masterSheetAtlas.sprites).map(([name, def]) => ({
+                    name,
+                    x: def.x,
+                    y: def.y,
+                    width: def.w,
+                    height: def.h,
+                    source: def.source
+                }));
+                state.animations = []; // Master sheet doesn't store animations directly
+
+                renderSpritePalette();
+                renderAnimationList();
+                renderTimeline();
+                updateJsonOutput();
+
+                showToast(`Loaded ${state.sprites.length} sprites from master sheet`);
                 return;
             }
 
