@@ -396,30 +396,120 @@
             margin-bottom: 12px;
         }
 
-        /* Tools */
-        .tools-grid {
-            display: grid;
-            grid-template-columns: repeat(4, 1fr);
+        /* Toolbar (Level Forge style) */
+        .toolbar {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 12px 16px;
+            background: var(--bg-mid);
+            border-bottom: 1px solid var(--stone-dark);
+            flex-wrap: wrap;
+        }
+
+        .toolbar-group {
+            display: flex;
+            align-items: center;
             gap: 4px;
         }
 
+        .toolbar-label {
+            font-size: 10px;
+            color: var(--stone-mid);
+            text-transform: uppercase;
+            margin-right: 8px;
+            font-weight: 500;
+        }
+
+        .toolbar-divider {
+            width: 1px;
+            height: 28px;
+            background: var(--stone-dark);
+        }
+
         .tool-btn {
-            padding: 10px;
+            width: 36px;
+            height: 36px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
             font-size: 16px;
-            background: var(--bg-surface);
-            border: 1px solid var(--stone-dark);
+            padding: 0;
             border-radius: 4px;
+            background: var(--bg-surface);
+            border: 2px solid var(--stone-dark);
+            color: var(--stone-light);
             cursor: pointer;
             transition: all 0.15s;
         }
 
         .tool-btn:hover {
+            border-color: var(--stone-mid);
             background: var(--stone-dark);
         }
 
         .tool-btn.active {
-            background: var(--accent-dark);
             border-color: var(--accent-green);
+            background: var(--accent-dark);
+            color: var(--accent-green);
+        }
+
+        /* Tileset controls */
+        .tileset-input {
+            width: 40px;
+            padding: 6px 4px;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 12px;
+            text-align: center;
+            background: var(--bg-deep);
+            border: 2px solid var(--stone-dark);
+            border-radius: 4px;
+            color: var(--stone-bright);
+        }
+
+        .tileset-input:focus {
+            outline: none;
+            border-color: var(--accent-green);
+        }
+
+        .tileset-x {
+            color: var(--stone-mid);
+            font-size: 12px;
+            margin: 0 2px;
+        }
+
+        /* Tile selector grid */
+        .tile-selector {
+            display: grid;
+            gap: 2px;
+            background: var(--stone-dark);
+            padding: 2px;
+            border-radius: 4px;
+        }
+
+        .tile-selector-cell {
+            width: 24px;
+            height: 24px;
+            background: var(--bg-surface);
+            border: 2px solid transparent;
+            border-radius: 2px;
+            cursor: pointer;
+            transition: all 0.15s;
+            font-size: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--stone-mid);
+        }
+
+        .tile-selector-cell:hover {
+            background: var(--stone-dark);
+        }
+
+        .tile-selector-cell.active {
+            border-color: var(--accent-green);
+            background: var(--accent-dark);
+            color: var(--accent-green);
         }
 
         /* Palette */
@@ -711,7 +801,7 @@
     <!-- Header -->
     <header class="header">
         <div class="brand">
-            <a href="/game-wizard/" class="home-btn" title="Back to Game Wizard">&#127968;</a>
+            <a href="/game-wizard/" class="home-btn" title="Back to Game Wizard">&#128302;</a>
             <span class="brand-icon">&#129513;</span>
             <span class="brand-text">GAME WIZARD / <span>TILESMITH</span></span>
         </div>
@@ -731,6 +821,43 @@
     <main class="main">
         <!-- Left Panel - Canvas -->
         <div class="left-panel">
+            <!-- Toolbar -->
+            <div class="toolbar">
+                <div class="toolbar-group">
+                    <span class="toolbar-label">Tool</span>
+                    <button class="tool-btn active" data-tool="pencil" title="Pencil (P)">&#9998;</button>
+                    <button class="tool-btn" data-tool="eraser" title="Eraser (E)">&#9003;</button>
+                    <button class="tool-btn" data-tool="fill" title="Fill (F)">&#9699;</button>
+                    <button class="tool-btn" data-tool="picker" title="Color Picker (I)">&#128371;</button>
+                    <button class="tool-btn" data-tool="line" title="Line (L)">&#9585;</button>
+                    <button class="tool-btn" data-tool="rect" title="Rectangle (R)">&#9634;</button>
+                </div>
+
+                <div class="toolbar-divider"></div>
+
+                <div class="toolbar-group">
+                    <span class="toolbar-label">Grid</span>
+                    <input type="number" class="tileset-input" id="gridCols" value="1" min="1" max="8" title="Columns">
+                    <span class="tileset-x">&times;</span>
+                    <input type="number" class="tileset-input" id="gridRows" value="1" min="1" max="8" title="Rows">
+                </div>
+
+                <div class="toolbar-divider"></div>
+
+                <div class="toolbar-group">
+                    <span class="toolbar-label">Tile</span>
+                    <div class="tile-selector" id="tileSelector">
+                        <!-- Dynamically populated -->
+                    </div>
+                </div>
+
+                <div class="toolbar-divider"></div>
+
+                <div class="toolbar-group">
+                    <button class="tool-btn" data-tool="clear" title="Clear Current Tile">&#128465;</button>
+                </div>
+            </div>
+
             <div class="canvas-area">
                 <div class="canvas-wrapper" id="canvasWrapper">
                     <canvas id="mainCanvas"></canvas>
@@ -747,6 +874,10 @@
                     <label class="grid-toggle">
                         <input type="checkbox" id="gridToggle" checked>
                         Show Grid
+                    </label>
+                    <label class="grid-toggle">
+                        <input type="checkbox" id="tileBordersToggle" checked>
+                        Tile Borders
                     </label>
                 </div>
             </div>
@@ -765,20 +896,6 @@
 
         <!-- Right Panel -->
         <div class="right-panel">
-            <!-- Tools -->
-            <div class="panel-section">
-                <div class="section-header">Tools</div>
-                <div class="tools-grid">
-                    <button class="tool-btn active" data-tool="pencil" title="Pencil (P)">&#9998;</button>
-                    <button class="tool-btn" data-tool="eraser" title="Eraser (E)">&#128454;</button>
-                    <button class="tool-btn" data-tool="fill" title="Fill (F)">&#128167;</button>
-                    <button class="tool-btn" data-tool="picker" title="Color Picker (I)">&#128371;</button>
-                    <button class="tool-btn" data-tool="line" title="Line (L)">&#9585;</button>
-                    <button class="tool-btn" data-tool="rect" title="Rectangle (R)">&#9633;</button>
-                    <button class="tool-btn" data-tool="rectfill" title="Filled Rectangle (Shift+R)">&#9632;</button>
-                    <button class="tool-btn" data-tool="clear" title="Clear Canvas">&#128465;</button>
-                </div>
-            </div>
 
             <!-- Palette -->
             <div class="panel-section">
@@ -1012,17 +1129,24 @@
             tiles: [],
             currentTileId: null,
 
-            // Canvas
+            // Canvas - single tile dimensions
             width: 16,
             height: 16,
             zoom: 4,
             showGrid: true,
+            showTileBorders: true,
+
+            // Tileset grid (multiple tiles)
+            gridCols: 1,
+            gridRows: 1,
+            selectedTileX: 0,
+            selectedTileY: 0,
 
             // Drawing
             tool: 'pencil',
             currentColor: '#40d080',
             palette: [...PALETTES.pico8],
-            pixels: null, // ImageData
+            pixels: null, // ImageData for entire tileset
 
             // Drawing state
             isDrawing: false,
@@ -1054,6 +1178,10 @@
             gridCanvas: document.getElementById('gridCanvas'),
             canvasWrapper: document.getElementById('canvasWrapper'),
             gridToggle: document.getElementById('gridToggle'),
+            tileBordersToggle: document.getElementById('tileBordersToggle'),
+            gridCols: document.getElementById('gridCols'),
+            gridRows: document.getElementById('gridRows'),
+            tileSelector: document.getElementById('tileSelector'),
             libraryGrid: document.getElementById('libraryGrid'),
             newTileBtn: document.getElementById('newTileBtn'),
             colorPicker: document.getElementById('colorPicker'),
@@ -1090,6 +1218,7 @@
             state.user = await crucibleClient.getUser();
             updateAuthIndicator();
 
+            renderTileSelector();
             initializeCanvas();
             renderPalette();
             setupEventListeners();
@@ -1097,6 +1226,82 @@
             if (state.user) {
                 await loadProjects();
             }
+        }
+
+        // ==========================================
+        // TILE SELECTOR
+        // ==========================================
+        function renderTileSelector() {
+            const selector = elements.tileSelector;
+            selector.innerHTML = '';
+            selector.style.gridTemplateColumns = `repeat(${state.gridCols}, 1fr)`;
+
+            for (let y = 0; y < state.gridRows; y++) {
+                for (let x = 0; x < state.gridCols; x++) {
+                    const cell = document.createElement('div');
+                    cell.className = 'tile-selector-cell';
+                    if (x === state.selectedTileX && y === state.selectedTileY) {
+                        cell.classList.add('active');
+                    }
+                    cell.dataset.x = x;
+                    cell.dataset.y = y;
+                    cell.textContent = y * state.gridCols + x + 1;
+                    cell.addEventListener('click', () => selectTile(x, y));
+                    selector.appendChild(cell);
+                }
+            }
+        }
+
+        function selectTile(x, y) {
+            state.selectedTileX = x;
+            state.selectedTileY = y;
+            renderTileSelector();
+            renderGrid(); // Re-render to highlight selected tile
+        }
+
+        function updateTilesetGrid() {
+            const oldCols = state.gridCols;
+            const oldRows = state.gridRows;
+            const newCols = parseInt(elements.gridCols.value) || 1;
+            const newRows = parseInt(elements.gridRows.value) || 1;
+
+            if (newCols === oldCols && newRows === oldRows) return;
+
+            // Save old pixel data
+            const oldPixels = state.pixels ? new Uint8ClampedArray(state.pixels.data) : null;
+            const oldTotalWidth = state.width * oldCols;
+            const oldTotalHeight = state.height * oldRows;
+
+            // Update grid dimensions
+            state.gridCols = newCols;
+            state.gridRows = newRows;
+
+            // Ensure selected tile is within bounds
+            if (state.selectedTileX >= newCols) state.selectedTileX = newCols - 1;
+            if (state.selectedTileY >= newRows) state.selectedTileY = newRows - 1;
+
+            // Create new pixel data for entire tileset
+            const totalWidth = state.width * newCols;
+            const totalHeight = state.height * newRows;
+            state.pixels = ctx.createImageData(totalWidth, totalHeight);
+
+            // Copy old data if exists
+            if (oldPixels) {
+                for (let y = 0; y < Math.min(oldTotalHeight, totalHeight); y++) {
+                    for (let x = 0; x < Math.min(oldTotalWidth, totalWidth); x++) {
+                        const oldIdx = (y * oldTotalWidth + x) * 4;
+                        const newIdx = (y * totalWidth + x) * 4;
+                        state.pixels.data[newIdx] = oldPixels[oldIdx];
+                        state.pixels.data[newIdx + 1] = oldPixels[oldIdx + 1];
+                        state.pixels.data[newIdx + 2] = oldPixels[oldIdx + 2];
+                        state.pixels.data[newIdx + 3] = oldPixels[oldIdx + 3];
+                    }
+                }
+            }
+
+            renderTileSelector();
+            updateCanvasSize();
+            markDirty();
         }
 
         function updateAuthIndicator() {
@@ -1116,12 +1321,23 @@
         // ==========================================
         // CANVAS
         // ==========================================
+        function getTotalWidth() {
+            return state.width * state.gridCols;
+        }
+
+        function getTotalHeight() {
+            return state.height * state.gridRows;
+        }
+
         function initializeCanvas() {
             state.width = parseInt(elements.tileWidth.value) || 16;
             state.height = parseInt(elements.tileHeight.value) || 16;
 
-            // Create pixel data
-            state.pixels = ctx.createImageData(state.width, state.height);
+            const totalWidth = getTotalWidth();
+            const totalHeight = getTotalHeight();
+
+            // Create pixel data for entire tileset
+            state.pixels = ctx.createImageData(totalWidth, totalHeight);
 
             // Fill with transparent
             for (let i = 0; i < state.pixels.data.length; i += 4) {
@@ -1136,8 +1352,10 @@
         }
 
         function updateCanvasSize() {
-            const displayWidth = state.width * state.zoom;
-            const displayHeight = state.height * state.zoom;
+            const totalWidth = getTotalWidth();
+            const totalHeight = getTotalHeight();
+            const displayWidth = totalWidth * state.zoom;
+            const displayHeight = totalHeight * state.zoom;
 
             elements.mainCanvas.width = displayWidth;
             elements.mainCanvas.height = displayHeight;
@@ -1151,44 +1369,87 @@
         }
 
         function render() {
+            const totalWidth = getTotalWidth();
+            const totalHeight = getTotalHeight();
+
             // Clear
             ctx.clearRect(0, 0, elements.mainCanvas.width, elements.mainCanvas.height);
 
             // Draw pixels scaled up
             const tempCanvas = document.createElement('canvas');
-            tempCanvas.width = state.width;
-            tempCanvas.height = state.height;
+            tempCanvas.width = totalWidth;
+            tempCanvas.height = totalHeight;
             const tempCtx = tempCanvas.getContext('2d');
             tempCtx.putImageData(state.pixels, 0, 0);
 
             ctx.imageSmoothingEnabled = false;
-            ctx.drawImage(tempCanvas, 0, 0, state.width * state.zoom, state.height * state.zoom);
+            ctx.drawImage(tempCanvas, 0, 0, totalWidth * state.zoom, totalHeight * state.zoom);
 
             renderGrid();
         }
 
         function renderGrid() {
+            const totalWidth = getTotalWidth();
+            const totalHeight = getTotalHeight();
+
             gridCtx.clearRect(0, 0, elements.gridCanvas.width, elements.gridCanvas.height);
 
-            if (!state.showGrid) return;
+            // Draw pixel grid
+            if (state.showGrid) {
+                gridCtx.strokeStyle = 'rgba(255, 255, 255, 0.12)';
+                gridCtx.lineWidth = 1;
 
-            gridCtx.strokeStyle = 'rgba(255, 255, 255, 0.15)';
-            gridCtx.lineWidth = 1;
+                // Vertical pixel lines
+                for (let x = 0; x <= totalWidth; x++) {
+                    gridCtx.beginPath();
+                    gridCtx.moveTo(x * state.zoom + 0.5, 0);
+                    gridCtx.lineTo(x * state.zoom + 0.5, totalHeight * state.zoom);
+                    gridCtx.stroke();
+                }
 
-            // Vertical lines
-            for (let x = 0; x <= state.width; x++) {
-                gridCtx.beginPath();
-                gridCtx.moveTo(x * state.zoom + 0.5, 0);
-                gridCtx.lineTo(x * state.zoom + 0.5, state.height * state.zoom);
-                gridCtx.stroke();
+                // Horizontal pixel lines
+                for (let y = 0; y <= totalHeight; y++) {
+                    gridCtx.beginPath();
+                    gridCtx.moveTo(0, y * state.zoom + 0.5);
+                    gridCtx.lineTo(totalWidth * state.zoom, y * state.zoom + 0.5);
+                    gridCtx.stroke();
+                }
             }
 
-            // Horizontal lines
-            for (let y = 0; y <= state.height; y++) {
-                gridCtx.beginPath();
-                gridCtx.moveTo(0, y * state.zoom + 0.5);
-                gridCtx.lineTo(state.width * state.zoom, y * state.zoom + 0.5);
-                gridCtx.stroke();
+            // Draw tile boundaries (thicker lines)
+            if (state.showTileBorders && (state.gridCols > 1 || state.gridRows > 1)) {
+                gridCtx.strokeStyle = 'rgba(255, 165, 0, 0.6)'; // Orange for tile borders
+                gridCtx.lineWidth = 2;
+
+                // Vertical tile boundaries
+                for (let col = 0; col <= state.gridCols; col++) {
+                    const x = col * state.width * state.zoom;
+                    gridCtx.beginPath();
+                    gridCtx.moveTo(x, 0);
+                    gridCtx.lineTo(x, totalHeight * state.zoom);
+                    gridCtx.stroke();
+                }
+
+                // Horizontal tile boundaries
+                for (let row = 0; row <= state.gridRows; row++) {
+                    const y = row * state.height * state.zoom;
+                    gridCtx.beginPath();
+                    gridCtx.moveTo(0, y);
+                    gridCtx.lineTo(totalWidth * state.zoom, y);
+                    gridCtx.stroke();
+                }
+            }
+
+            // Highlight selected tile
+            if (state.gridCols > 1 || state.gridRows > 1) {
+                const tileX = state.selectedTileX * state.width * state.zoom;
+                const tileY = state.selectedTileY * state.height * state.zoom;
+                const tileW = state.width * state.zoom;
+                const tileH = state.height * state.zoom;
+
+                gridCtx.strokeStyle = 'rgba(64, 208, 128, 0.9)'; // Green for selected
+                gridCtx.lineWidth = 3;
+                gridCtx.strokeRect(tileX + 1.5, tileY + 1.5, tileW - 3, tileH - 3);
             }
         }
 
@@ -1203,7 +1464,8 @@
         }
 
         function getPixelIndex(x, y) {
-            return (y * state.width + x) * 4;
+            const totalWidth = getTotalWidth();
+            return (y * totalWidth + x) * 4;
         }
 
         function hexToRgb(hex) {
@@ -1220,7 +1482,9 @@
         }
 
         function setPixel(x, y, color, alpha = 255) {
-            if (x < 0 || x >= state.width || y < 0 || y >= state.height) return;
+            const totalWidth = getTotalWidth();
+            const totalHeight = getTotalHeight();
+            if (x < 0 || x >= totalWidth || y < 0 || y >= totalHeight) return;
 
             const idx = getPixelIndex(x, y);
             const rgb = hexToRgb(color);
@@ -1232,7 +1496,9 @@
         }
 
         function getPixel(x, y) {
-            if (x < 0 || x >= state.width || y < 0 || y >= state.height) return null;
+            const totalWidth = getTotalWidth();
+            const totalHeight = getTotalHeight();
+            if (x < 0 || x >= totalWidth || y < 0 || y >= totalHeight) return null;
 
             const idx = getPixelIndex(x, y);
             return {
@@ -1299,6 +1565,9 @@
         }
 
         function floodFill(startX, startY, fillColor) {
+            const totalWidth = getTotalWidth();
+            const totalHeight = getTotalHeight();
+
             const targetPixel = getPixel(startX, startY);
             if (!targetPixel) return;
 
@@ -1315,7 +1584,7 @@
                 const key = `${x},${y}`;
 
                 if (visited.has(key)) continue;
-                if (x < 0 || x >= state.width || y < 0 || y >= state.height) continue;
+                if (x < 0 || x >= totalWidth || y < 0 || y >= totalHeight) continue;
 
                 const pixel = getPixel(x, y);
                 const pixelColor = rgbToHex(pixel.r, pixel.g, pixel.b);
@@ -1333,6 +1602,23 @@
         }
 
         function clearCanvas() {
+            // Clear only the selected tile
+            saveUndoState();
+
+            const startX = state.selectedTileX * state.width;
+            const startY = state.selectedTileY * state.height;
+
+            for (let y = startY; y < startY + state.height; y++) {
+                for (let x = startX; x < startX + state.width; x++) {
+                    setPixel(x, y, '#000000', 0);
+                }
+            }
+
+            render();
+            markDirty();
+        }
+
+        function clearAllTiles() {
             saveUndoState();
             for (let i = 0; i < state.pixels.data.length; i += 4) {
                 state.pixels.data[i] = 0;
@@ -1496,12 +1782,30 @@
 
         async function loadTile(tile) {
             state.currentTileId = tile.id;
-            state.width = tile.width;
-            state.height = tile.height;
+
+            // Load tileset metadata if available
+            const meta = tile.metadata || {};
+            if (meta.tileWidth && meta.tileHeight && meta.gridCols && meta.gridRows) {
+                state.width = meta.tileWidth;
+                state.height = meta.tileHeight;
+                state.gridCols = meta.gridCols;
+                state.gridRows = meta.gridRows;
+            } else {
+                // Fallback: treat as single tile
+                state.width = tile.width;
+                state.height = tile.height;
+                state.gridCols = 1;
+                state.gridRows = 1;
+            }
+
+            state.selectedTileX = 0;
+            state.selectedTileY = 0;
 
             elements.tileName.value = tile.name;
-            elements.tileWidth.value = tile.width;
-            elements.tileHeight.value = tile.height;
+            elements.tileWidth.value = state.width;
+            elements.tileHeight.value = state.height;
+            elements.gridCols.value = state.gridCols;
+            elements.gridRows.value = state.gridRows;
             elements.tileType.value = tile.tile_type || '';
 
             if (tile.palette && tile.palette.length > 0) {
@@ -1510,8 +1814,10 @@
                 renderPalette();
             }
 
-            // Create new pixel data
-            state.pixels = ctx.createImageData(tile.width, tile.height);
+            // Create new pixel data for full tileset
+            const totalWidth = getTotalWidth();
+            const totalHeight = getTotalHeight();
+            state.pixels = ctx.createImageData(totalWidth, totalHeight);
 
             // Load from data URL
             if (tile.pixel_data) {
@@ -1524,18 +1830,19 @@
                     });
 
                     const tempCanvas = document.createElement('canvas');
-                    tempCanvas.width = tile.width;
-                    tempCanvas.height = tile.height;
+                    tempCanvas.width = img.width;
+                    tempCanvas.height = img.height;
                     const tempCtx = tempCanvas.getContext('2d');
                     tempCtx.drawImage(img, 0, 0);
 
-                    const imgData = tempCtx.getImageData(0, 0, tile.width, tile.height);
+                    const imgData = tempCtx.getImageData(0, 0, img.width, img.height);
                     state.pixels.data.set(imgData.data);
                 } catch (e) {
                     console.warn('Failed to load tile pixel data');
                 }
             }
 
+            renderTileSelector();
             updateCanvasSize();
             renderTileLibrary();
             state.undoStack = [];
@@ -1547,9 +1854,18 @@
             state.width = parseInt(elements.tileWidth.value) || 16;
             state.height = parseInt(elements.tileHeight.value) || 16;
 
+            // Reset grid to 1x1
+            state.gridCols = 1;
+            state.gridRows = 1;
+            state.selectedTileX = 0;
+            state.selectedTileY = 0;
+            elements.gridCols.value = 1;
+            elements.gridRows.value = 1;
+
             elements.tileName.value = '';
             elements.tileType.value = '';
 
+            renderTileSelector();
             initializeCanvas();
             renderTileLibrary();
             state.undoStack = [];
@@ -1573,22 +1889,30 @@
                 return;
             }
 
-            // Convert pixels to data URL
+            // Convert pixels to data URL (full tileset)
+            const totalWidth = getTotalWidth();
+            const totalHeight = getTotalHeight();
             const tempCanvas = document.createElement('canvas');
-            tempCanvas.width = state.width;
-            tempCanvas.height = state.height;
+            tempCanvas.width = totalWidth;
+            tempCanvas.height = totalHeight;
             const tempCtx = tempCanvas.getContext('2d');
             tempCtx.putImageData(state.pixels, 0, 0);
             const pixelData = tempCanvas.toDataURL('image/png');
 
             const tileData = {
                 name: name,
-                width: state.width,
-                height: state.height,
+                width: totalWidth,
+                height: totalHeight,
                 pixelData: pixelData,
                 palette: state.palette.map(hex => ({ hex })),
                 tileType: elements.tileType.value || null,
-                specId: state.currentSpec?.id || null
+                specId: state.currentSpec?.id || null,
+                metadata: {
+                    tileWidth: state.width,
+                    tileHeight: state.height,
+                    gridCols: state.gridCols,
+                    gridRows: state.gridRows
+                }
             };
 
             elements.saveIndicator.textContent = 'Saving...';
@@ -1774,35 +2098,43 @@
             }
 
             const pixels = state.currentSpec.pixels;
-            const height = pixels.length;
-            const width = pixels[0]?.length || 0;
+            const genHeight = pixels.length;
+            const genWidth = pixels[0]?.length || 0;
 
-            if (!width || !height) {
+            if (!genWidth || !genHeight) {
                 showToast('Invalid pixel data', true);
                 return;
             }
 
-            // Update canvas size if needed
-            if (width !== state.width || height !== state.height) {
-                state.width = width;
-                state.height = height;
-                elements.tileWidth.value = width;
-                elements.tileHeight.value = height;
-                state.pixels = ctx.createImageData(width, height);
+            // If generated size doesn't match tile size, update tile dimensions
+            if (genWidth !== state.width || genHeight !== state.height) {
+                state.width = genWidth;
+                state.height = genHeight;
+                elements.tileWidth.value = genWidth;
+                elements.tileHeight.value = genHeight;
+
+                // Recreate pixel data with new dimensions
+                const totalWidth = state.width * state.gridCols;
+                const totalHeight = state.height * state.gridRows;
+                state.pixels = ctx.createImageData(totalWidth, totalHeight);
                 updateCanvasSize();
             }
 
             // Save undo state
             saveUndoState();
 
-            // Apply pixels
-            for (let y = 0; y < height; y++) {
-                for (let x = 0; x < width; x++) {
+            // Calculate offset for selected tile
+            const offsetX = state.selectedTileX * state.width;
+            const offsetY = state.selectedTileY * state.height;
+
+            // Apply pixels to the selected tile position
+            for (let y = 0; y < genHeight; y++) {
+                for (let x = 0; x < genWidth; x++) {
                     const hex = pixels[y]?.[x];
                     if (hex === '#00000000' || !hex) {
-                        setPixel(x, y, '#000000', 0); // Transparent
+                        setPixel(offsetX + x, offsetY + y, '#000000', 0); // Transparent
                     } else {
-                        setPixel(x, y, hex, 255);
+                        setPixel(offsetX + x, offsetY + y, hex, 255);
                     }
                 }
             }
@@ -1825,15 +2157,19 @@
         // EXPORT
         // ==========================================
         function downloadPng() {
+            const totalWidth = getTotalWidth();
+            const totalHeight = getTotalHeight();
+
             const tempCanvas = document.createElement('canvas');
-            tempCanvas.width = state.width;
-            tempCanvas.height = state.height;
+            tempCanvas.width = totalWidth;
+            tempCanvas.height = totalHeight;
             const tempCtx = tempCanvas.getContext('2d');
             tempCtx.putImageData(state.pixels, 0, 0);
 
             const link = document.createElement('a');
-            const name = elements.tileName.value || 'tile';
-            link.download = `${name}.png`;
+            const name = elements.tileName.value || 'tileset';
+            const suffix = (state.gridCols > 1 || state.gridRows > 1) ? `_${state.gridCols}x${state.gridRows}` : '';
+            link.download = `${name}${suffix}.png`;
             link.href = tempCanvas.toDataURL('image/png');
             link.click();
         }
@@ -1879,14 +2215,26 @@
                 renderGrid();
             });
 
+            // Tile borders toggle
+            elements.tileBordersToggle.addEventListener('change', (e) => {
+                state.showTileBorders = e.target.checked;
+                renderGrid();
+            });
+
+            // Tileset grid controls
+            elements.gridCols.addEventListener('change', updateTilesetGrid);
+            elements.gridRows.addEventListener('change', updateTilesetGrid);
+
             // Tool buttons
             document.querySelectorAll('.tool-btn').forEach(btn => {
                 btn.addEventListener('click', () => {
                     if (btn.dataset.tool === 'clear') {
-                        if (confirm('Clear the canvas?')) clearCanvas();
+                        if (confirm('Clear current tile?')) clearCanvas();
                         return;
                     }
-                    document.querySelectorAll('.tool-btn').forEach(b => b.classList.remove('active'));
+                    document.querySelectorAll('.tool-btn[data-tool]').forEach(b => {
+                        if (b.dataset.tool !== 'clear') b.classList.remove('active');
+                    });
                     btn.classList.add('active');
                     state.tool = btn.dataset.tool;
                 });
@@ -1958,8 +2306,10 @@
 
         function selectTool(tool) {
             state.tool = tool;
-            document.querySelectorAll('.tool-btn').forEach(b => {
-                b.classList.toggle('active', b.dataset.tool === tool);
+            document.querySelectorAll('.tool-btn[data-tool]').forEach(b => {
+                if (b.dataset.tool !== 'clear') {
+                    b.classList.toggle('active', b.dataset.tool === tool);
+                }
             });
         }
 
