@@ -2428,5 +2428,19 @@
         // ==========================================
         init();
     </script>
+
+    <!-- Help Drawer -->
+    <script src="../shared/help-drawer.js"></script>
+    <script src="../shared/docs/tilesmith-docs.js"></script>
+    <script>
+        // Initialize help drawer with Tilesmith docs
+        HelpDrawer.init({
+            toolId: 'tilesmith',
+            toolName: 'Tilesmith',
+            toolIcon: '&#129513;',
+            accentColor: '#40d080',
+            docs: TILESMITH_DOCS
+        });
+    </script>
 </body>
 </html>
