@@ -631,6 +631,13 @@
                             <span class="nav-badge">8</span>
                         </a>
                     </li>
+                    <li class="nav-item">
+                        <a href="#portals" class="nav-link">
+                            <span class="nav-icon">&#128279;</span>
+                            Portals
+                            <span class="nav-badge">6</span>
+                        </a>
+                    </li>
                 </ul>
             </div>
 
@@ -712,6 +719,15 @@
                         <div class="tool-card-count">8 articles</div>
                     </a>
 
+                    <a href="#portals" class="tool-card">
+                        <div class="tool-card-icon">&#128279;</div>
+                        <div class="tool-card-title">Portals</div>
+                        <div class="tool-card-desc">
+                            Connect levels together. Link exits to spawns for level transitions.
+                        </div>
+                        <div class="tool-card-count">6 articles</div>
+                    </a>
+
                     <a href="#shortcuts" class="tool-card">
                         <div class="tool-card-icon">&#9000;</div>
                         <div class="tool-card-title">Keyboard Shortcuts</div>
@@ -731,6 +747,7 @@
     <script src="../shared/docs/animation-station-docs.js"></script>
     <script src="../shared/docs/level-forge-docs.js"></script>
     <script src="../shared/docs/crucible-docs.js"></script>
+    <script src="../shared/docs/portals-docs.js"></script>
 
     <script>
         // Simple client-side routing
@@ -972,6 +989,45 @@
             'Your project command center. Create projects, manage levels, and compile data from all Game Wizard tools into exportable JSON.',
             CRUCIBLE_OVERVIEW,
             typeof CRUCIBLE_DOCS !== 'undefined' ? CRUCIBLE_DOCS : null);
+
+        const PORTALS_OVERVIEW = `
+            <p>Portals connects your game's levels together. Visualize level flow, link exits to spawn points, and validate your connections.</p>
+            <div class="feature-grid">
+                <div class="feature-item">
+                    <span class="feature-icon">&#128506;</span>
+                    <div class="feature-text">
+                        <strong>Node Mapper</strong>
+                        <span>Visual canvas with draggable level nodes and pathway lines.</span>
+                    </div>
+                </div>
+                <div class="feature-item">
+                    <span class="feature-icon">&#128279;</span>
+                    <div class="feature-text">
+                        <strong>Level Connections</strong>
+                        <span>Link exit points to spawn points in other levels.</span>
+                    </div>
+                </div>
+                <div class="feature-item">
+                    <span class="feature-icon">&#8644;</span>
+                    <div class="feature-text">
+                        <strong>Bidirectional</strong>
+                        <span>Create two-way connections for backtracking and exploration.</span>
+                    </div>
+                </div>
+                <div class="feature-item">
+                    <span class="feature-icon">&#10003;</span>
+                    <div class="feature-text">
+                        <strong>Validation</strong>
+                        <span>Check for unconfigured exits and missing spawn points.</span>
+                    </div>
+                </div>
+            </div>
+        `;
+
+        buildToolDocs('portals', 'Portals',
+            'Connect your game levels together. Link exits to spawns, create bidirectional paths, and validate your level flow.',
+            PORTALS_OVERVIEW,
+            typeof PORTALS_DOCS !== 'undefined' ? PORTALS_DOCS : null);
 
         function navigateTo(hash) {
             const page = hash.replace('#', '') || 'welcome';

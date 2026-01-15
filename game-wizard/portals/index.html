@@ -624,6 +624,11 @@
     <!-- Toast -->
     <div class="toast" id="toast"></div>
 
+    <!-- Help Drawer -->
+    <link rel="stylesheet" href="../shared/help-drawer.css">
+    <script src="../shared/help-drawer.js"></script>
+    <script src="../shared/docs/portals-docs.js"></script>
+
     <!-- Supabase Client -->
     <script src="../shared/supabase-client.js"></script>
 
@@ -1166,6 +1171,17 @@
         // Initialize
         // ==========================================
         loadProjects();
+
+        // Initialize Help Drawer
+        if (typeof HelpDrawer !== 'undefined' && typeof PORTALS_DOCS !== 'undefined') {
+            HelpDrawer.init({
+                toolId: 'portals',
+                toolName: 'Portals',
+                toolIcon: '&#128279;',
+                accentColor: '#bf60ff',
+                docs: PORTALS_DOCS
+            });
+        }
     </script>
 </body>
 </html>
