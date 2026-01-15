@@ -905,6 +905,8 @@
 
     <!-- Load Supabase Client -->
     <script src="../shared/supabase-client.js"></script>
+    <script src="../shared/help-drawer.js"></script>
+    <script src="../shared/docs/crucible-docs.js"></script>
 
     <script>
         /* ============================================
@@ -1445,6 +1447,17 @@
         }
 
         init();
+
+        // Initialize help drawer
+        if (typeof HelpDrawer !== 'undefined' && typeof CRUCIBLE_DOCS !== 'undefined') {
+            HelpDrawer.init({
+                toolId: 'crucible',
+                toolName: 'Crucible of Code',
+                toolIcon: '&#129514;',
+                accentColor: '#ffa500',
+                docs: CRUCIBLE_DOCS
+            });
+        }
     </script>
 </body>
 </html>

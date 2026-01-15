@@ -628,7 +628,7 @@
                         <a href="#crucible" class="nav-link">
                             <span class="nav-icon">&#129514;</span>
                             Crucible of Code
-                            <span class="nav-badge">Soon</span>
+                            <span class="nav-badge">8</span>
                         </a>
                     </li>
                 </ul>
@@ -707,9 +707,9 @@
                         <div class="tool-card-icon">&#129514;</div>
                         <div class="tool-card-title">Crucible of Code</div>
                         <div class="tool-card-desc">
-                            Create and manage your game projects.
+                            Project command center. Manage levels and export game-ready JSON.
                         </div>
-                        <div class="tool-card-count">Coming soon</div>
+                        <div class="tool-card-count">8 articles</div>
                     </a>
 
                     <a href="#shortcuts" class="tool-card">
@@ -730,6 +730,7 @@
     <script src="../shared/docs/sprite-rite-docs.js"></script>
     <script src="../shared/docs/animation-station-docs.js"></script>
     <script src="../shared/docs/level-forge-docs.js"></script>
+    <script src="../shared/docs/crucible-docs.js"></script>
 
     <script>
         // Simple client-side routing
@@ -932,6 +933,45 @@
             'Design complete game levels with collision editing, background art, visual tiles, and integrated demo testing.',
             LEVEL_FORGE_OVERVIEW,
             typeof LEVEL_FORGE_DOCS !== 'undefined' ? LEVEL_FORGE_DOCS : null);
+
+        const CRUCIBLE_OVERVIEW = `
+            <p>The Crucible of Code is your project command center. Create projects, manage levels, and compile all your game data into exportable JSON.</p>
+            <div class="feature-grid">
+                <div class="feature-item">
+                    <span class="feature-icon">&#128193;</span>
+                    <div class="feature-text">
+                        <strong>Project Management</strong>
+                        <span>Organize levels into projects with independent spritesheets.</span>
+                    </div>
+                </div>
+                <div class="feature-item">
+                    <span class="feature-icon">&#128202;</span>
+                    <div class="feature-text">
+                        <strong>Level Dashboard</strong>
+                        <span>Track completion with status cards for grid, backgrounds, tiles, and spawns.</span>
+                    </div>
+                </div>
+                <div class="feature-item">
+                    <span class="feature-icon">&#128279;</span>
+                    <div class="feature-text">
+                        <strong>Tool Integration</strong>
+                        <span>Connects Tilesmith, Sprite-Rite, Animation-Station, and Level Forge.</span>
+                    </div>
+                </div>
+                <div class="feature-item">
+                    <span class="feature-icon">&#128230;</span>
+                    <div class="feature-text">
+                        <strong>JSON Export</strong>
+                        <span>Compile and export game-ready level data for your engine.</span>
+                    </div>
+                </div>
+            </div>
+        `;
+
+        buildToolDocs('crucible', 'Crucible of Code',
+            'Your project command center. Create projects, manage levels, and compile data from all Game Wizard tools into exportable JSON.',
+            CRUCIBLE_OVERVIEW,
+            typeof CRUCIBLE_DOCS !== 'undefined' ? CRUCIBLE_DOCS : null);
 
         function navigateTo(hash) {
             const page = hash.replace('#', '') || 'welcome';
