@@ -1103,6 +1103,109 @@ class CrucibleClient {
         const allTags = data.flatMap(d => d.tags || []);
         return [...new Set(allTags)].sort();
     }
+
+    // =============================================
+    // ANIMATIONS
+    // =============================================
+
+    async createAnimation(spritesheetId, name, frames = [], options = {}) {
+        if (!this.client) throw new Error('Crucible not initialized');
+
+        const user = await this.getUser();
+
+        const { data, error } = await this.client
+            .from('animations')
+            .insert({
+                spritesheet_id: spritesheetId,
+                user_id: user?.id || null,
+                name: name,
+                frames: frames,
+                fps: options.fps || 12,
+                loop: options.loop !== undefined ? options.loop : true
+            })
+            .select()
+            .single();
+
+        if (error) throw error;
+        return data;
+    }
+
+    async getAnimations(spritesheetId) {
+        if (!this.client) throw new Error('Crucible not initialized');
+
+        const { data, error } = await this.client
+            .from('animations')
+            .select('*')
+            .eq('spritesheet_id', spritesheetId)
+            .order('created_at', { ascending: true });
+
+        if (error) throw error;
+        return data || [];
+    }
+
+    async getAnimation(animationId) {
+        if (!this.client) throw new Error('Crucible not initialized');
+
+        const { data, error } = await this.client
+            .from('animations')
+            .select('*')
+            .eq('id', animationId)
+            .single();
+
+        if (error) throw error;
+        return data;
+    }
+
+    async updateAnimation(animationId, updates) {
+        if (!this.client) throw new Error('Crucible not initialized');
+
+        const updateData = {};
+        if (updates.name !== undefined) updateData.name = updates.name;
+        if (updates.frames !== undefined) updateData.frames = updates.frames;
+        if (updates.fps !== undefined) updateData.fps = updates.fps;
+        if (updates.loop !== undefined) updateData.loop = updates.loop;
+
+        const { data, error } = await this.client
+            .from('animations')
+            .update(updateData)
+            .eq('id', animationId)
+            .select()
+            .single();
+
+        if (error) throw error;
+        return data;
+    }
+
+    async deleteAnimation(animationId) {
+        if (!this.client) throw new Error('Crucible not initialized');
+
+        const { error } = await this.client
+            .from('animations')
+            .delete()
+            .eq('id', animationId);
+
+        if (error) throw error;
+        return true;
+    }
+
+    async getSpritesheetWithAnimations(spritesheetId) {
+        if (!this.client) throw new Error('Crucible not initialized');
+
+        const { data, error } = await this.client
+            .from('spritesheets')
+            .select(`
+                *,
+                animations (*)
+            `)
+            .eq('id', spritesheetId)
+            .single();
+
+        if (error) throw error;
+        return {
+            ...data,
+            publicUrl: this.client.storage.from('spritesheets').getPublicUrl(data.file_path).data.publicUrl
+        };
+    }
 }
 
 // =============================================

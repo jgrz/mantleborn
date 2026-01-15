@@ -3,11 +3,11 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Animation Station | Mantleborn Dev Tools</title>
+    <title>Animation Station | Game Wizard</title>
     <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
     <style>
         /* ============================================
-           MANTLEBORN ANIMATION-STATION - CSS
+           ANIMATION-STATION - CSS
            ============================================ */
 
         :root {
@@ -117,7 +117,7 @@
             align-items: center;
         }
 
-        .sprite-select {
+        .header-select {
             font-family: 'JetBrains Mono', monospace;
             font-size: 12px;
             padding: 8px 12px;
@@ -126,12 +126,55 @@
             border-radius: 4px;
             color: var(--stone-light);
             cursor: pointer;
-            min-width: 200px;
+            min-width: 160px;
         }
 
-        .sprite-select:focus {
+        .header-select:focus {
             outline: none;
             border-color: var(--mystic-glow);
+        }
+
+        .auth-indicator {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            padding: 6px 12px;
+            background: var(--bg-surface);
+            border: 1px solid var(--stone-dark);
+            border-radius: 4px;
+            font-size: 11px;
+            color: var(--stone-mid);
+        }
+
+        .auth-indicator.logged-in {
+            border-color: var(--mystic-glow);
+            color: var(--stone-light);
+        }
+
+        .auth-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: var(--stone-dark);
+        }
+
+        .auth-indicator.logged-in .auth-dot {
+            background: #4ade80;
+        }
+
+        .save-indicator {
+            font-size: 10px;
+            color: var(--stone-mid);
+            min-width: 60px;
+            text-align: right;
+        }
+
+        .save-indicator.saving {
+            color: var(--accent-ember);
+        }
+
+        .save-indicator.saved {
+            color: #4ade80;
         }
 
         /* Buttons */
@@ -463,26 +506,6 @@
             opacity: 0.5;
         }
 
-        .add-frame-btn {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            width: 48px;
-            height: 76px;
-            background: transparent;
-            border: 2px dashed var(--stone-dark);
-            border-radius: 4px;
-            color: var(--stone-mid);
-            font-size: 20px;
-            cursor: pointer;
-            transition: all 0.15s;
-        }
-
-        .add-frame-btn:hover {
-            border-color: var(--accent-ember);
-            color: var(--accent-ember);
-        }
-
         /* Right Panel - Preview & Settings */
         .right-panel {
             display: flex;
@@ -638,6 +661,77 @@
             margin-bottom: 12px;
         }
 
+        /* Animation List */
+        .animation-list-section {
+            padding: 16px;
+            border-bottom: 1px solid var(--stone-dark);
+            max-height: 200px;
+            overflow-y: auto;
+        }
+
+        .animation-list-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 8px;
+        }
+
+        .animation-list {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+
+        .animation-item {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 8px 10px;
+            background: var(--bg-surface);
+            border: 1px solid var(--stone-dark);
+            border-radius: 4px;
+            cursor: pointer;
+            transition: all 0.15s;
+        }
+
+        .animation-item:hover {
+            border-color: var(--stone-mid);
+        }
+
+        .animation-item.active {
+            border-color: var(--mystic-glow);
+            background: var(--mystic-deep);
+        }
+
+        .animation-item-name {
+            font-size: 11px;
+            color: var(--stone-light);
+        }
+
+        .animation-item-info {
+            font-size: 9px;
+            color: var(--stone-mid);
+        }
+
+        .animation-item-delete {
+            background: none;
+            border: none;
+            color: var(--stone-mid);
+            cursor: pointer;
+            font-size: 14px;
+            padding: 2px 6px;
+            opacity: 0;
+            transition: opacity 0.15s;
+        }
+
+        .animation-item:hover .animation-item-delete {
+            opacity: 1;
+        }
+
+        .animation-item-delete:hover {
+            color: var(--accent-magma);
+        }
+
         /* Export Section */
         .export-section {
             flex: 1;
@@ -658,19 +752,6 @@
             flex: 1;
         }
 
-        .export-hint {
-            font-size: 10px;
-            color: var(--stone-mid);
-            margin-bottom: 8px;
-        }
-
-        .export-hint code {
-            color: var(--accent-ember);
-            background: var(--bg-surface);
-            padding: 2px 4px;
-            border-radius: 2px;
-        }
-
         .json-preview {
             flex: 1;
             display: flex;
@@ -685,7 +766,6 @@
             font-size: 10px;
             color: var(--stone-mid);
             text-transform: uppercase;
-            cursor: pointer;
             flex-shrink: 0;
         }
 
@@ -759,16 +839,6 @@
             font-size: 10px;
             color: var(--stone-dark);
         }
-
-        /* Drag indicator */
-        .drag-indicator {
-            position: absolute;
-            width: 2px;
-            height: 80px;
-            background: var(--accent-ember);
-            pointer-events: none;
-            display: none;
-        }
     </style>
 </head>
 <body>
@@ -777,12 +847,20 @@
         <div class="brand">
             <a href="/game-wizard/" class="home-btn" title="Back to Game Wizard">&#127968;</a>
             <span class="brand-icon">&#128293;</span>
-            <span class="brand-text">MANTLEBORN / <span>ANIMATION-STATION</span></span>
+            <span class="brand-text">GAME WIZARD / <span>ANIMATION-STATION</span></span>
         </div>
         <div class="header-actions">
-            <select class="sprite-select" id="spriteSheetSelect">
-                <option value="">-- Select Sprite Sheet --</option>
+            <select class="header-select" id="projectSelect">
+                <option value="">-- Select Project --</option>
             </select>
+            <select class="header-select" id="spritesheetSelect" disabled>
+                <option value="">-- Select Spritesheet --</option>
+            </select>
+            <span class="save-indicator" id="saveIndicator"></span>
+            <div class="auth-indicator" id="authIndicator">
+                <span class="auth-dot"></span>
+                <span class="auth-text">Guest</span>
+            </div>
         </div>
     </header>
 
@@ -794,8 +872,8 @@
             <div class="sprite-palette" id="spritePalette">
                 <div class="empty-state" id="paletteEmpty">
                     <div class="empty-state-icon">&#127912;</div>
-                    <div class="empty-state-text">Select a sprite sheet to begin</div>
-                    <div class="empty-state-hint">Sprites will appear here for you to add to your animation</div>
+                    <div class="empty-state-text">Select a project and spritesheet</div>
+                    <div class="empty-state-hint">Sprites defined in Sprite-Rite will appear here</div>
                 </div>
                 <div id="paletteContent" style="display: none;">
                     <div class="section-header">Available Sprites</div>
@@ -844,6 +922,19 @@
                 </div>
             </div>
 
+            <!-- Animation List -->
+            <div class="animation-list-section">
+                <div class="animation-list-header">
+                    <span class="section-header" style="margin-bottom: 0;">Animations</span>
+                    <button class="btn btn-small btn-primary" id="newAnimationBtn">+ New</button>
+                </div>
+                <div class="animation-list" id="animationList">
+                    <div class="empty-state-hint" style="padding: 12px; text-align: center;">
+                        No animations yet
+                    </div>
+                </div>
+            </div>
+
             <!-- Animation Settings -->
             <div class="settings-section">
                 <div class="section-header">Animation Settings</div>
@@ -859,7 +950,7 @@
                     <div class="form-group">
                         <div class="checkbox-group" style="margin-top: 20px;">
                             <input type="checkbox" id="uniformDuration" checked>
-                            <label for="uniformDuration">Uniform duration</label>
+                            <label for="uniformDuration">Uniform</label>
                         </div>
                     </div>
                 </div>
@@ -871,9 +962,13 @@
                     <div class="form-group">
                         <div class="checkbox-group" style="margin-top: 20px;">
                             <input type="checkbox" id="enableTween">
-                            <label for="enableTween">Enable tweening</label>
+                            <label for="enableTween">Tween</label>
                         </div>
                     </div>
+                </div>
+                <div class="checkbox-group">
+                    <input type="checkbox" id="loopAnimation" checked>
+                    <label for="loopAnimation">Loop animation</label>
                 </div>
             </div>
 
@@ -896,11 +991,8 @@
             <!-- Export -->
             <div class="export-section">
                 <div class="export-actions">
-                    <button class="btn btn-primary" id="copyAnimationBtn">Copy Animation</button>
-                    <button class="btn" id="copyForIndexBtn">Copy for Index</button>
-                </div>
-                <div class="export-hint">
-                    Paste into <code>player.json</code> animations
+                    <button class="btn btn-primary" id="saveAnimationBtn">Save Animation</button>
+                    <button class="btn" id="copyJsonBtn">Copy JSON</button>
                 </div>
                 <div class="json-preview">
                     <div class="json-preview-header">JSON Output</div>
@@ -913,27 +1005,24 @@
     <!-- Toast -->
     <div class="toast" id="toast"></div>
 
+    <script src="../shared/supabase-client.js"></script>
     <script>
         /* ============================================
-           MANTLEBORN ANIMATION-STATION - JavaScript
+           ANIMATION-STATION - JavaScript
            ============================================ */
-
-        // ==========================================
-        // Configuration
-        // ==========================================
-        const SPRITE_INDEX_PATH = '/assets/sprites/sprite-index.json';
-        const PROJECT_SPRITE_SHEETS = [
-            { name: 'player.png', path: '/assets/sprites/player.png' }
-        ];
 
         // ==========================================
         // State
         // ==========================================
         const state = {
-            spriteSheet: null,
-            spriteSheetName: '',
-            spriteSheetPath: '',
+            user: null,
+            projectId: null,
+            spritesheetId: null,
+            spritesheet: null,
+            spriteSheetImage: null,
             sprites: [],
+            animations: [],
+            currentAnimationId: null,
             frames: [],
             selectedFrameIndex: -1,
             isPlaying: false,
@@ -942,10 +1031,11 @@
             speedMultiplier: 1,
             tweenEnabled: false,
             tweenDuration: 0,
-            tweenProgress: 0  // 0-1 progress through current tween
+            tweenProgress: 0,
+            saveTimeout: null,
+            isDirty: false
         };
 
-        let spriteIndex = null;
         let animationLoop = null;
         let lastTime = 0;
 
@@ -953,7 +1043,10 @@
         // DOM Elements
         // ==========================================
         const elements = {
-            spriteSheetSelect: document.getElementById('spriteSheetSelect'),
+            projectSelect: document.getElementById('projectSelect'),
+            spritesheetSelect: document.getElementById('spritesheetSelect'),
+            saveIndicator: document.getElementById('saveIndicator'),
+            authIndicator: document.getElementById('authIndicator'),
             paletteEmpty: document.getElementById('paletteEmpty'),
             paletteContent: document.getElementById('paletteContent'),
             spriteGrid: document.getElementById('spriteGrid'),
@@ -967,17 +1060,20 @@
             stepBtn: document.getElementById('stepBtn'),
             speedMultiplier: document.getElementById('speedMultiplier'),
             previewInfo: document.getElementById('previewInfo'),
+            animationList: document.getElementById('animationList'),
+            newAnimationBtn: document.getElementById('newAnimationBtn'),
             animationName: document.getElementById('animationName'),
             defaultDuration: document.getElementById('defaultDuration'),
             uniformDuration: document.getElementById('uniformDuration'),
             tweenDuration: document.getElementById('tweenDuration'),
             enableTween: document.getElementById('enableTween'),
+            loopAnimation: document.getElementById('loopAnimation'),
             frameEditor: document.getElementById('frameEditor'),
             frameSpriteName: document.getElementById('frameSpriteName'),
             frameDuration: document.getElementById('frameDuration'),
             removeFrameBtn: document.getElementById('removeFrameBtn'),
-            copyAnimationBtn: document.getElementById('copyAnimationBtn'),
-            copyForIndexBtn: document.getElementById('copyForIndexBtn'),
+            saveAnimationBtn: document.getElementById('saveAnimationBtn'),
+            copyJsonBtn: document.getElementById('copyJsonBtn'),
             jsonOutput: document.getElementById('jsonOutput'),
             toast: document.getElementById('toast')
         };
@@ -986,73 +1082,188 @@
         previewCtx.imageSmoothingEnabled = false;
 
         // ==========================================
-        // Utilities
+        // Initialization
         // ==========================================
-        function showToast(message) {
-            elements.toast.textContent = message;
-            elements.toast.classList.add('show');
-            setTimeout(() => elements.toast.classList.remove('show'), 2500);
-        }
+        async function init() {
+            await crucibleClient.init();
+            state.user = await crucibleClient.getUser();
+            updateAuthIndicator();
 
-        // ==========================================
-        // Sprite Loading
-        // ==========================================
-        function initSpriteSheetSelect() {
-            PROJECT_SPRITE_SHEETS.forEach(sheet => {
-                const option = document.createElement('option');
-                option.value = sheet.path;
-                option.textContent = sheet.name;
-                option.dataset.name = sheet.name;
-                elements.spriteSheetSelect.appendChild(option);
-            });
-        }
-
-        async function loadSpriteIndex() {
-            if (spriteIndex) return spriteIndex;
-            try {
-                const response = await fetch(SPRITE_INDEX_PATH);
-                if (response.ok) {
-                    spriteIndex = await response.json();
-                }
-            } catch (e) {
-                console.warn('Could not load sprite index:', e);
-            }
-            return spriteIndex;
-        }
-
-        async function loadSpriteSheet(name, path) {
-            // Load image
-            const img = new Image();
-            img.src = path;
-
-            await new Promise((resolve, reject) => {
-                img.onload = resolve;
-                img.onerror = reject;
-            });
-
-            state.spriteSheet = img;
-            state.spriteSheetName = name;
-            state.spriteSheetPath = path;
-
-            // Load sprites from index
-            const index = await loadSpriteIndex();
-            if (index && index[name]) {
-                state.sprites = index[name].sprites;
+            if (state.user) {
+                await loadProjects();
             } else {
-                state.sprites = [];
+                loadFromLocalStorage();
             }
 
-            // Clear current animation
+            setupEventListeners();
+            updateJsonOutput();
+            updatePreviewInfo();
+            updateTimelineInfo();
+        }
+
+        function updateAuthIndicator() {
+            const indicator = elements.authIndicator;
+            const textEl = indicator.querySelector('.auth-text');
+
+            if (state.user) {
+                indicator.classList.add('logged-in');
+                const name = state.user.user_metadata?.display_name || state.user.email?.split('@')[0] || 'User';
+                textEl.textContent = name;
+            } else {
+                indicator.classList.remove('logged-in');
+                textEl.textContent = 'Guest';
+            }
+        }
+
+        // ==========================================
+        // Project & Spritesheet Loading
+        // ==========================================
+        async function loadProjects() {
+            try {
+                const projects = await crucibleClient.getMyProjects();
+
+                elements.projectSelect.innerHTML = '<option value="">-- Select Project --</option>';
+                projects.forEach(p => {
+                    const opt = document.createElement('option');
+                    opt.value = p.id;
+                    opt.textContent = p.name;
+                    elements.projectSelect.appendChild(opt);
+                });
+
+                // Restore last selected project
+                const lastProject = localStorage.getItem('animstation_project');
+                if (lastProject && projects.find(p => p.id === lastProject)) {
+                    elements.projectSelect.value = lastProject;
+                    await selectProject(lastProject);
+                }
+            } catch (err) {
+                console.error('Failed to load projects:', err);
+                showToast('Failed to load projects');
+            }
+        }
+
+        async function selectProject(projectId) {
+            state.projectId = projectId;
+            state.spritesheetId = null;
+            state.spritesheet = null;
+            state.sprites = [];
+            state.animations = [];
+            state.currentAnimationId = null;
+
+            localStorage.setItem('animstation_project', projectId);
+
+            elements.spritesheetSelect.disabled = !projectId;
+            elements.spritesheetSelect.innerHTML = '<option value="">-- Select Spritesheet --</option>';
+
+            if (!projectId) {
+                renderSpritePalette();
+                renderAnimationList();
+                return;
+            }
+
+            try {
+                const spritesheets = await crucibleClient.getSpritesheets(projectId);
+
+                spritesheets.forEach(s => {
+                    const opt = document.createElement('option');
+                    opt.value = s.id;
+                    opt.textContent = s.name;
+                    elements.spritesheetSelect.appendChild(opt);
+                });
+
+                // Restore last selected spritesheet
+                const lastSheet = localStorage.getItem('animstation_spritesheet');
+                if (lastSheet && spritesheets.find(s => s.id === lastSheet)) {
+                    elements.spritesheetSelect.value = lastSheet;
+                    await selectSpritesheet(lastSheet);
+                }
+            } catch (err) {
+                console.error('Failed to load spritesheets:', err);
+                showToast('Failed to load spritesheets');
+            }
+        }
+
+        async function selectSpritesheet(spritesheetId) {
+            state.spritesheetId = spritesheetId;
+            state.spritesheet = null;
+            state.spriteSheetImage = null;
+            state.sprites = [];
             state.frames = [];
             state.selectedFrameIndex = -1;
+            state.currentAnimationId = null;
             stopPlayback();
 
-            // Update UI
-            renderSpritePalette();
-            renderTimeline();
-            updateJsonOutput();
+            localStorage.setItem('animstation_spritesheet', spritesheetId);
 
-            showToast(`Loaded ${state.sprites.length} sprites`);
+            if (!spritesheetId) {
+                renderSpritePalette();
+                renderTimeline();
+                renderAnimationList();
+                return;
+            }
+
+            try {
+                // Load spritesheet with animations
+                state.spritesheet = await crucibleClient.getSpritesheetWithAnimations(spritesheetId);
+                state.sprites = state.spritesheet.sprites || [];
+                state.animations = state.spritesheet.animations || [];
+
+                // Load the image
+                if (state.spritesheet.publicUrl) {
+                    state.spriteSheetImage = new Image();
+                    state.spriteSheetImage.crossOrigin = 'anonymous';
+                    await new Promise((resolve, reject) => {
+                        state.spriteSheetImage.onload = resolve;
+                        state.spriteSheetImage.onerror = reject;
+                        state.spriteSheetImage.src = state.spritesheet.publicUrl;
+                    });
+                }
+
+                renderSpritePalette();
+                renderAnimationList();
+                renderTimeline();
+                updateJsonOutput();
+
+                showToast(`Loaded ${state.sprites.length} sprites, ${state.animations.length} animations`);
+            } catch (err) {
+                console.error('Failed to load spritesheet:', err);
+                showToast('Failed to load spritesheet');
+            }
+        }
+
+        // ==========================================
+        // LocalStorage Fallback
+        // ==========================================
+        function loadFromLocalStorage() {
+            try {
+                const saved = localStorage.getItem('animstation_local_data');
+                if (saved) {
+                    const data = JSON.parse(saved);
+                    state.frames = data.frames || [];
+                    elements.animationName.value = data.name || '';
+                    elements.defaultDuration.value = data.defaultDuration || 0.5;
+                    state.tweenEnabled = data.tweenEnabled || false;
+                    state.tweenDuration = data.tweenDuration || 0;
+                    elements.enableTween.checked = state.tweenEnabled;
+                    elements.tweenDuration.value = state.tweenDuration;
+                }
+            } catch (e) {
+                console.warn('Could not load local data:', e);
+            }
+        }
+
+        function saveToLocalStorage() {
+            if (state.user) return;
+
+            const data = {
+                name: elements.animationName.value,
+                frames: state.frames,
+                defaultDuration: parseFloat(elements.defaultDuration.value),
+                tweenEnabled: state.tweenEnabled,
+                tweenDuration: state.tweenDuration
+            };
+
+            localStorage.setItem('animstation_local_data', JSON.stringify(data));
         }
 
         // ==========================================
@@ -1083,13 +1294,15 @@
                 canvas.width = Math.floor(sprite.width * scale);
                 canvas.height = Math.floor(sprite.height * scale);
 
-                const ctx = canvas.getContext('2d');
-                ctx.imageSmoothingEnabled = false;
-                ctx.drawImage(
-                    state.spriteSheet,
-                    sprite.x, sprite.y, sprite.width, sprite.height,
-                    0, 0, canvas.width, canvas.height
-                );
+                if (state.spriteSheetImage) {
+                    const ctx = canvas.getContext('2d');
+                    ctx.imageSmoothingEnabled = false;
+                    ctx.drawImage(
+                        state.spriteSheetImage,
+                        sprite.x, sprite.y, sprite.width, sprite.height,
+                        0, 0, canvas.width, canvas.height
+                    );
+                }
 
                 canvasWrapper.appendChild(canvas);
 
@@ -1101,29 +1314,140 @@
                 tile.appendChild(canvasWrapper);
                 tile.appendChild(nameLabel);
 
-                tile.addEventListener('click', () => addFrameToTimeline(sprite));
+                tile.addEventListener('click', () => addFrameToTimeline(sprite, index));
 
                 elements.spriteGrid.appendChild(tile);
             });
         }
 
         // ==========================================
+        // Animation List
+        // ==========================================
+        function renderAnimationList() {
+            elements.animationList.innerHTML = '';
+
+            if (state.animations.length === 0) {
+                elements.animationList.innerHTML = `
+                    <div class="empty-state-hint" style="padding: 12px; text-align: center;">
+                        No animations yet
+                    </div>
+                `;
+                return;
+            }
+
+            state.animations.forEach(anim => {
+                const item = document.createElement('div');
+                item.className = 'animation-item';
+                if (state.currentAnimationId === anim.id) {
+                    item.classList.add('active');
+                }
+
+                const frameCount = anim.frames?.length || 0;
+
+                item.innerHTML = `
+                    <div>
+                        <div class="animation-item-name">${anim.name}</div>
+                        <div class="animation-item-info">${frameCount} frames | ${anim.fps} fps</div>
+                    </div>
+                    <button class="animation-item-delete" title="Delete">&times;</button>
+                `;
+
+                item.querySelector('.animation-item-delete').addEventListener('click', async (e) => {
+                    e.stopPropagation();
+                    await deleteAnimation(anim.id);
+                });
+
+                item.addEventListener('click', () => loadAnimation(anim));
+
+                elements.animationList.appendChild(item);
+            });
+        }
+
+        async function loadAnimation(anim) {
+            state.currentAnimationId = anim.id;
+
+            // Convert stored frames back to editor format
+            state.frames = (anim.frames || []).map(f => {
+                const sprite = state.sprites[f.spriteIndex] || state.sprites.find(s => s.name === f.spriteName);
+                return {
+                    sprite: sprite?.name || 'unknown',
+                    duration: f.duration / 1000 || 0.5,
+                    spriteData: sprite || { x: 0, y: 0, width: 32, height: 32, name: 'unknown' },
+                    spriteIndex: f.spriteIndex
+                };
+            });
+
+            elements.animationName.value = anim.name;
+            elements.loopAnimation.checked = anim.loop !== false;
+
+            // Calculate default duration from first frame or fps
+            if (state.frames.length > 0) {
+                elements.defaultDuration.value = state.frames[0].duration;
+            } else {
+                elements.defaultDuration.value = (1 / anim.fps).toFixed(2);
+            }
+
+            state.selectedFrameIndex = -1;
+            stopPlayback();
+
+            renderTimeline();
+            renderAnimationList();
+            updateJsonOutput();
+            updateTimelineInfo();
+            updateFrameEditor();
+        }
+
+        function newAnimation() {
+            state.currentAnimationId = null;
+            state.frames = [];
+            state.selectedFrameIndex = -1;
+            elements.animationName.value = '';
+            stopPlayback();
+
+            renderTimeline();
+            renderAnimationList();
+            updateJsonOutput();
+            updateTimelineInfo();
+            updateFrameEditor();
+        }
+
+        async function deleteAnimation(animId) {
+            if (!confirm('Delete this animation?')) return;
+
+            try {
+                await crucibleClient.deleteAnimation(animId);
+                state.animations = state.animations.filter(a => a.id !== animId);
+
+                if (state.currentAnimationId === animId) {
+                    newAnimation();
+                }
+
+                renderAnimationList();
+                showToast('Animation deleted');
+            } catch (err) {
+                console.error('Failed to delete animation:', err);
+                showToast('Failed to delete');
+            }
+        }
+
+        // ==========================================
         // Timeline
         // ==========================================
-        function addFrameToTimeline(sprite) {
+        function addFrameToTimeline(sprite, spriteIndex) {
             const duration = parseFloat(elements.defaultDuration.value) || 0.5;
 
             state.frames.push({
                 sprite: sprite.name,
                 duration: duration,
-                spriteData: sprite
+                spriteData: sprite,
+                spriteIndex: spriteIndex
             });
 
             renderTimeline();
             updateJsonOutput();
             updateTimelineInfo();
+            scheduleAutoSave();
 
-            // Select the new frame
             selectFrame(state.frames.length - 1);
         }
 
@@ -1138,6 +1462,7 @@
             updateJsonOutput();
             updateTimelineInfo();
             updateFrameEditor();
+            scheduleAutoSave();
         }
 
         function selectFrame(index) {
@@ -1188,13 +1513,15 @@
                 canvas.width = Math.floor(sprite.width * scale);
                 canvas.height = Math.floor(sprite.height * scale);
 
-                const ctx = canvas.getContext('2d');
-                ctx.imageSmoothingEnabled = false;
-                ctx.drawImage(
-                    state.spriteSheet,
-                    sprite.x, sprite.y, sprite.width, sprite.height,
-                    0, 0, canvas.width, canvas.height
-                );
+                if (state.spriteSheetImage) {
+                    const ctx = canvas.getContext('2d');
+                    ctx.imageSmoothingEnabled = false;
+                    ctx.drawImage(
+                        state.spriteSheetImage,
+                        sprite.x, sprite.y, sprite.width, sprite.height,
+                        0, 0, canvas.width, canvas.height
+                    );
+                }
 
                 canvasWrapper.appendChild(canvas);
 
@@ -1224,7 +1551,6 @@
                 frameEl.appendChild(nameEl);
                 frameEl.appendChild(removeBtn);
 
-                // Click to select
                 frameEl.addEventListener('click', () => selectFrame(index));
 
                 // Drag and drop
@@ -1235,7 +1561,7 @@
 
                 elements.timelineTrack.appendChild(frameEl);
 
-                // Add tween connector after frame (except for last frame)
+                // Add tween connector
                 if (state.tweenEnabled && state.tweenDuration > 0 && index < state.frames.length - 1) {
                     const connector = document.createElement('div');
                     connector.className = 'timeline-tween-connector';
@@ -1270,11 +1596,9 @@
             const targetIndex = parseInt(e.target.closest('.timeline-frame').dataset.index);
 
             if (draggedIndex !== -1 && draggedIndex !== targetIndex) {
-                // Reorder frames
                 const frame = state.frames.splice(draggedIndex, 1)[0];
                 state.frames.splice(targetIndex, 0, frame);
 
-                // Update selection
                 if (state.selectedFrameIndex === draggedIndex) {
                     state.selectedFrameIndex = targetIndex;
                 } else if (state.selectedFrameIndex > draggedIndex && state.selectedFrameIndex <= targetIndex) {
@@ -1285,12 +1609,12 @@
 
                 renderTimeline();
                 updateJsonOutput();
+                scheduleAutoSave();
             }
         }
 
         function updateTimelineInfo() {
             const holdDuration = state.frames.reduce((sum, f) => sum + f.duration, 0);
-            // Add tween time between frames (n-1 tweens for n frames in a loop)
             const tweenTime = state.tweenEnabled && state.frames.length > 1
                 ? state.tweenDuration * state.frames.length
                 : 0;
@@ -1311,6 +1635,7 @@
             updateJsonOutput();
             updateTimelineInfo();
             updateFrameEditor();
+            scheduleAutoSave();
         }
 
         // ==========================================
@@ -1336,6 +1661,7 @@
             renderTimeline();
             updateJsonOutput();
             updateTimelineInfo();
+            scheduleAutoSave();
         }
 
         // ==========================================
@@ -1347,7 +1673,7 @@
             state.isPlaying = true;
             state.playbackFrame = 0;
             state.playbackTimer = 0;
-            elements.playBtn.textContent = '⏸';
+            elements.playBtn.textContent = '\u23f8';
 
             lastTime = performance.now();
             animationLoop = requestAnimationFrame(updatePlayback);
@@ -1357,7 +1683,7 @@
             state.isPlaying = false;
             state.playbackFrame = 0;
             state.playbackTimer = 0;
-            elements.playBtn.textContent = '▶';
+            elements.playBtn.textContent = '\u25b6';
 
             if (animationLoop) {
                 cancelAnimationFrame(animationLoop);
@@ -1372,7 +1698,7 @@
         function togglePlayback() {
             if (state.isPlaying) {
                 state.isPlaying = false;
-                elements.playBtn.textContent = '▶';
+                elements.playBtn.textContent = '\u25b6';
                 if (animationLoop) {
                     cancelAnimationFrame(animationLoop);
                     animationLoop = null;
@@ -1405,21 +1731,16 @@
                 return;
             }
 
-            // Calculate total frame time (hold + tween)
             const holdDuration = currentFrame.duration;
             const tweenDur = state.tweenEnabled ? state.tweenDuration : 0;
             const totalFrameTime = holdDuration + tweenDur;
 
-            // Determine if we're in hold phase or tween phase
             if (state.playbackTimer < holdDuration) {
-                // Hold phase - no tweening
                 state.tweenProgress = 0;
             } else if (tweenDur > 0) {
-                // Tween phase - calculate progress 0-1
                 state.tweenProgress = Math.min((state.playbackTimer - holdDuration) / tweenDur, 1);
             }
 
-            // Advance to next frame when total time exceeded
             if (state.playbackTimer >= totalFrameTime) {
                 state.playbackTimer = 0;
                 state.tweenProgress = 0;
@@ -1436,7 +1757,7 @@
         function renderPreview() {
             previewCtx.clearRect(0, 0, 128, 128);
 
-            if (state.frames.length === 0 || !state.spriteSheet) return;
+            if (state.frames.length === 0 || !state.spriteSheetImage) return;
 
             const currentFrame = state.frames[state.playbackFrame];
             if (!currentFrame) return;
@@ -1444,7 +1765,6 @@
             const nextFrameIndex = (state.playbackFrame + 1) % state.frames.length;
             const nextFrame = state.frames[nextFrameIndex];
 
-            // Helper to draw a sprite with given opacity
             function drawSprite(frame, alpha) {
                 const sprite = frame.spriteData;
                 const scale = Math.min(120 / sprite.width, 120 / sprite.height);
@@ -1455,30 +1775,22 @@
 
                 previewCtx.globalAlpha = alpha;
                 previewCtx.drawImage(
-                    state.spriteSheet,
+                    state.spriteSheetImage,
                     sprite.x, sprite.y, sprite.width, sprite.height,
                     destX, destY, destW, destH
                 );
             }
 
-            // If tweening and we have progress, crossfade between frames
             if (state.tweenEnabled && state.tweenProgress > 0 && state.tweenDuration > 0 && nextFrame) {
-                // Ease the tween progress for smoother transition
                 const easedProgress = easeInOutCubic(state.tweenProgress);
-
-                // Draw current frame fading out
                 drawSprite(currentFrame, 1 - easedProgress);
-                // Draw next frame fading in
                 drawSprite(nextFrame, easedProgress);
-
                 previewCtx.globalAlpha = 1;
             } else {
-                // No tween - draw current frame at full opacity
                 drawSprite(currentFrame, 1);
             }
         }
 
-        // Easing function for smooth tweens
         function easeInOutCubic(t) {
             return t < 0.5
                 ? 4 * t * t * t
@@ -1498,6 +1810,94 @@
         }
 
         // ==========================================
+        // Save / Auto-save
+        // ==========================================
+        function scheduleAutoSave() {
+            state.isDirty = true;
+
+            if (state.saveTimeout) {
+                clearTimeout(state.saveTimeout);
+            }
+
+            if (!state.user || !state.spritesheetId) {
+                saveToLocalStorage();
+                return;
+            }
+
+            elements.saveIndicator.textContent = 'Modified';
+            elements.saveIndicator.className = 'save-indicator';
+
+            state.saveTimeout = setTimeout(async () => {
+                await autoSaveAnimation();
+            }, 2000);
+        }
+
+        async function autoSaveAnimation() {
+            if (!state.user || !state.spritesheetId || state.frames.length === 0) return;
+
+            const name = elements.animationName.value.trim();
+            if (!name) return;
+
+            elements.saveIndicator.textContent = 'Saving...';
+            elements.saveIndicator.className = 'save-indicator saving';
+
+            try {
+                await saveAnimationToCloud();
+                elements.saveIndicator.textContent = 'Saved';
+                elements.saveIndicator.className = 'save-indicator saved';
+                state.isDirty = false;
+            } catch (err) {
+                console.error('Auto-save failed:', err);
+                elements.saveIndicator.textContent = 'Save failed';
+                elements.saveIndicator.className = 'save-indicator';
+            }
+        }
+
+        async function saveAnimationToCloud() {
+            const name = elements.animationName.value.trim();
+            if (!name) {
+                showToast('Please enter an animation name');
+                return;
+            }
+
+            const fps = Math.round(1 / (parseFloat(elements.defaultDuration.value) || 0.5));
+            const loop = elements.loopAnimation.checked;
+
+            // Convert frames to storage format
+            const frames = state.frames.map(f => ({
+                spriteIndex: f.spriteIndex,
+                spriteName: f.sprite,
+                duration: Math.round(f.duration * 1000),
+                offsetX: 0,
+                offsetY: 0
+            }));
+
+            if (state.currentAnimationId) {
+                // Update existing
+                await crucibleClient.updateAnimation(state.currentAnimationId, {
+                    name,
+                    frames,
+                    fps,
+                    loop
+                });
+
+                // Update local cache
+                const idx = state.animations.findIndex(a => a.id === state.currentAnimationId);
+                if (idx >= 0) {
+                    state.animations[idx] = { ...state.animations[idx], name, frames, fps, loop };
+                }
+            } else {
+                // Create new
+                const newAnim = await crucibleClient.createAnimation(state.spritesheetId, name, frames, { fps, loop });
+                state.currentAnimationId = newAnim.id;
+                state.animations.push(newAnim);
+            }
+
+            renderAnimationList();
+            showToast('Animation saved');
+        }
+
+        // ==========================================
         // JSON Output
         // ==========================================
         function updateJsonOutput() {
@@ -1507,14 +1907,12 @@
             let animData;
 
             if (useUniform) {
-                // Standard format: uniform duration for all frames
                 const defaultDur = parseFloat(elements.defaultDuration.value) || 0.5;
                 animData = {
                     frames: state.frames.map(f => f.sprite),
                     frameDuration: defaultDur
                 };
             } else {
-                // Extended format: per-frame durations
                 animData = {
                     frames: state.frames.map(f => ({
                         sprite: f.sprite,
@@ -1523,7 +1921,6 @@
                 };
             }
 
-            // Add tween data if enabled
             if (state.tweenEnabled && state.tweenDuration > 0) {
                 animData.tween = {
                     enabled: true,
@@ -1531,47 +1928,16 @@
                     easing: 'easeInOutCubic'
                 };
             }
+
+            animData.loop = elements.loopAnimation.checked;
 
             const output = { [animName]: animData };
             elements.jsonOutput.textContent = JSON.stringify(output, null, 2);
         }
 
-        function copyAnimation() {
+        function copyJson() {
             navigator.clipboard.writeText(elements.jsonOutput.textContent)
-                .then(() => showToast('Animation JSON copied!'))
-                .catch(() => showToast('Failed to copy'));
-        }
-
-        function copyForIndex() {
-            // Format for animation-index.json (similar to sprite-index)
-            const animName = elements.animationName.value || 'untitled';
-            const useUniform = elements.uniformDuration.checked;
-            const defaultDur = parseFloat(elements.defaultDuration.value) || 0.5;
-
-            const animData = {
-                frames: state.frames.map(f => f.sprite),
-                frameDuration: useUniform ? defaultDur : state.frames.map(f => f.duration)
-            };
-
-            // Add tween data if enabled
-            if (state.tweenEnabled && state.tweenDuration > 0) {
-                animData.tween = {
-                    enabled: true,
-                    duration: state.tweenDuration,
-                    easing: 'easeInOutCubic'
-                };
-            }
-
-            const indexEntry = {
-                [state.spriteSheetName]: {
-                    animations: {
-                        [animName]: animData
-                    }
-                }
-            };
-
-            navigator.clipboard.writeText(JSON.stringify(indexEntry, null, 2))
-                .then(() => showToast('Index entry copied!'))
+                .then(() => showToast('JSON copied!'))
                 .catch(() => showToast('Failed to copy'));
         }
 
@@ -1587,96 +1953,126 @@
             updateJsonOutput();
             updateTimelineInfo();
             updateFrameEditor();
+            scheduleAutoSave();
+        }
+
+        // ==========================================
+        // Utilities
+        // ==========================================
+        function showToast(message) {
+            elements.toast.textContent = message;
+            elements.toast.classList.add('show');
+            setTimeout(() => elements.toast.classList.remove('show'), 2500);
         }
 
         // ==========================================
         // Event Listeners
         // ==========================================
-        elements.spriteSheetSelect.addEventListener('change', (e) => {
-            const path = e.target.value;
-            if (path) {
-                const option = e.target.selectedOptions[0];
-                const name = option.dataset.name || option.textContent;
-                loadSpriteSheet(name, path);
-            }
-        });
+        function setupEventListeners() {
+            elements.projectSelect.addEventListener('change', (e) => {
+                selectProject(e.target.value);
+            });
 
-        elements.clearTimeline.addEventListener('click', clearTimeline);
+            elements.spritesheetSelect.addEventListener('change', (e) => {
+                selectSpritesheet(e.target.value);
+            });
 
-        elements.playBtn.addEventListener('click', togglePlayback);
-        elements.stopBtn.addEventListener('click', stopPlayback);
-        elements.stepBtn.addEventListener('click', stepFrame);
+            elements.newAnimationBtn.addEventListener('click', newAnimation);
+            elements.clearTimeline.addEventListener('click', clearTimeline);
 
-        elements.speedMultiplier.addEventListener('change', (e) => {
-            state.speedMultiplier = parseFloat(e.target.value) || 1;
-        });
+            elements.playBtn.addEventListener('click', togglePlayback);
+            elements.stopBtn.addEventListener('click', stopPlayback);
+            elements.stepBtn.addEventListener('click', stepFrame);
 
-        elements.animationName.addEventListener('input', updateJsonOutput);
+            elements.speedMultiplier.addEventListener('change', (e) => {
+                state.speedMultiplier = parseFloat(e.target.value) || 1;
+            });
 
-        elements.defaultDuration.addEventListener('change', () => {
-            applyUniformDuration();
-            updateJsonOutput();
-        });
+            elements.animationName.addEventListener('input', () => {
+                updateJsonOutput();
+                scheduleAutoSave();
+            });
 
-        elements.uniformDuration.addEventListener('change', () => {
-            applyUniformDuration();
-            updateJsonOutput();
-        });
+            elements.defaultDuration.addEventListener('change', () => {
+                applyUniformDuration();
+                updateJsonOutput();
+            });
 
-        elements.enableTween.addEventListener('change', (e) => {
-            state.tweenEnabled = e.target.checked;
-            if (state.tweenEnabled && state.tweenDuration === 0) {
-                state.tweenDuration = 0.15;
-                elements.tweenDuration.value = 0.15;
-            }
-            renderTimeline();
-            updateTimelineInfo();
-            updateJsonOutput();
-        });
+            elements.uniformDuration.addEventListener('change', () => {
+                applyUniformDuration();
+                updateJsonOutput();
+            });
 
-        elements.tweenDuration.addEventListener('change', (e) => {
-            state.tweenDuration = parseFloat(e.target.value) || 0;
-            if (state.tweenDuration > 0 && !state.tweenEnabled) {
-                state.tweenEnabled = true;
-                elements.enableTween.checked = true;
-            }
-            renderTimeline();
-            updateTimelineInfo();
-            updateJsonOutput();
-        });
+            elements.loopAnimation.addEventListener('change', () => {
+                updateJsonOutput();
+                scheduleAutoSave();
+            });
 
-        elements.frameDuration.addEventListener('change', (e) => {
-            const duration = parseFloat(e.target.value) || 0.5;
-            updateSelectedFrameDuration(duration);
-        });
+            elements.enableTween.addEventListener('change', (e) => {
+                state.tweenEnabled = e.target.checked;
+                if (state.tweenEnabled && state.tweenDuration === 0) {
+                    state.tweenDuration = 0.15;
+                    elements.tweenDuration.value = 0.15;
+                }
+                renderTimeline();
+                updateTimelineInfo();
+                updateJsonOutput();
+                scheduleAutoSave();
+            });
 
-        elements.removeFrameBtn.addEventListener('click', () => {
-            if (state.selectedFrameIndex >= 0) {
-                removeFrame(state.selectedFrameIndex);
-            }
-        });
+            elements.tweenDuration.addEventListener('change', (e) => {
+                state.tweenDuration = parseFloat(e.target.value) || 0;
+                if (state.tweenDuration > 0 && !state.tweenEnabled) {
+                    state.tweenEnabled = true;
+                    elements.enableTween.checked = true;
+                }
+                renderTimeline();
+                updateTimelineInfo();
+                updateJsonOutput();
+                scheduleAutoSave();
+            });
 
-        elements.copyAnimationBtn.addEventListener('click', copyAnimation);
-        elements.copyForIndexBtn.addEventListener('click', copyForIndex);
+            elements.frameDuration.addEventListener('change', (e) => {
+                const duration = parseFloat(e.target.value) || 0.5;
+                updateSelectedFrameDuration(duration);
+            });
 
-        // Keyboard shortcuts
-        window.addEventListener('keydown', (e) => {
-            if (e.key === ' ' && document.activeElement.tagName !== 'INPUT') {
-                e.preventDefault();
-                togglePlayback();
-            }
-            if (e.key === 'Delete' && state.selectedFrameIndex >= 0) {
-                removeFrame(state.selectedFrameIndex);
-            }
-        });
+            elements.removeFrameBtn.addEventListener('click', () => {
+                if (state.selectedFrameIndex >= 0) {
+                    removeFrame(state.selectedFrameIndex);
+                }
+            });
+
+            elements.saveAnimationBtn.addEventListener('click', async () => {
+                if (!state.user) {
+                    showToast('Sign in to save animations');
+                    return;
+                }
+                if (!state.spritesheetId) {
+                    showToast('Select a spritesheet first');
+                    return;
+                }
+                await saveAnimationToCloud();
+            });
+
+            elements.copyJsonBtn.addEventListener('click', copyJson);
+
+            // Keyboard shortcuts
+            window.addEventListener('keydown', (e) => {
+                if (e.key === ' ' && document.activeElement.tagName !== 'INPUT') {
+                    e.preventDefault();
+                    togglePlayback();
+                }
+                if (e.key === 'Delete' && state.selectedFrameIndex >= 0) {
+                    removeFrame(state.selectedFrameIndex);
+                }
+            });
+        }
 
         // ==========================================
         // Initialize
         // ==========================================
-        initSpriteSheetSelect();
-        updateJsonOutput();
-        updatePreviewInfo();
-        updateTimelineInfo();
+        init();
     </script>
 </body>
 </html>
