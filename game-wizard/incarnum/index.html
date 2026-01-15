@@ -382,6 +382,50 @@
             color: var(--stone-mid);
         }
 
+        .generation-preview {
+            display: none;
+            text-align: center;
+            padding: 20px;
+        }
+
+        .generation-preview.active {
+            display: block;
+        }
+
+        .preview-header {
+            font-size: 12px;
+            color: var(--accent-purple);
+            margin-bottom: 16px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .preview-canvas-wrapper {
+            background: var(--bg-deep);
+            border: 1px solid var(--stone-dark);
+            border-radius: 8px;
+            padding: 20px;
+            display: inline-block;
+            margin-bottom: 12px;
+        }
+
+        #previewCanvas {
+            image-rendering: pixelated;
+            image-rendering: crisp-edges;
+        }
+
+        .preview-info {
+            font-size: 10px;
+            color: var(--stone-mid);
+            margin-bottom: 16px;
+        }
+
+        .preview-actions {
+            display: flex;
+            gap: 12px;
+            justify-content: center;
+        }
+
         /* Main Layout */
         .main {
             display: grid;
@@ -1108,9 +1152,21 @@
                 <div class="generation-substatus" id="generationSubstatus">This may take 30-60 seconds</div>
             </div>
 
+            <div class="generation-preview" id="generationPreview">
+                <div class="preview-header">Preview - Idle Animation</div>
+                <div class="preview-canvas-wrapper">
+                    <canvas id="previewCanvas" width="96" height="96"></canvas>
+                </div>
+                <div class="preview-info" id="previewInfo">2 frames at 24x24</div>
+                <div class="preview-actions">
+                    <button class="btn" id="rejectPreview">Try Again</button>
+                    <button class="btn btn-ai" id="acceptPreview">&#10004; Accept & Generate All Poses</button>
+                </div>
+            </div>
+
             <div class="modal-footer" id="generateFooter">
                 <button class="btn" id="cancelGenerate">Cancel</button>
-                <button class="btn btn-ai" id="startGenerate">&#10024; Generate Character</button>
+                <button class="btn btn-ai" id="startGenerate">&#10024; Generate Preview</button>
             </div>
         </div>
     </div>
@@ -1138,7 +1194,11 @@
             properties: {},
             isDirty: false,
             saveTimeout: null,
-            user: null
+            user: null,
+            // Generation preview state
+            previewResult: null,
+            previewRequest: null,
+            previewAnimationFrame: null
         };
 
         // Predefined animation slots
@@ -1167,6 +1227,11 @@
             generationProgress: document.getElementById('generationProgress'),
             generationStatus: document.getElementById('generationStatus'),
             generationSubstatus: document.getElementById('generationSubstatus'),
+            generationPreview: document.getElementById('generationPreview'),
+            previewCanvas: document.getElementById('previewCanvas'),
+            previewInfo: document.getElementById('previewInfo'),
+            rejectPreview: document.getElementById('rejectPreview'),
+            acceptPreview: document.getElementById('acceptPreview'),
             genPrompt: document.getElementById('genPrompt'),
             genSize: document.getElementById('genSize'),
             genStyle: document.getElementById('genStyle'),
@@ -1891,7 +1956,15 @@
         }
 
         function closeGenerateModal() {
+            stopPreviewAnimation();
             elements.generateModal.classList.remove('active');
+            // Reset to initial state for next open
+            elements.generateForm.style.display = 'block';
+            elements.generateFooter.style.display = 'flex';
+            elements.generationProgress.classList.remove('active');
+            elements.generationPreview.classList.remove('active');
+            state.previewResult = null;
+            state.previewRequest = null;
         }
 
         function updateGenerationStatus(status, substatus = '') {
@@ -1899,6 +1972,7 @@
             elements.generationSubstatus.textContent = substatus;
         }
 
+        // Step 1: Generate preview (idle pose only)
         async function startGeneration() {
             if (!state.projectId) {
                 showToast('Select a project first', 'error');
@@ -1916,12 +1990,12 @@
             elements.generateForm.style.display = 'none';
             elements.generateFooter.style.display = 'none';
             elements.generationProgress.classList.add('active');
-            updateGenerationStatus('Generating character sprites...', 'This may take 30-60 seconds');
+            updateGenerationStatus('Generating preview...', 'Creating idle pose (2 frames)');
 
             try {
                 const crucible = await getCrucible();
 
-                // Prepare request
+                // Prepare request for IDLE ONLY
                 const request = {
                     prompt: prompt,
                     width: parseInt(elements.genSize.value),
@@ -1929,32 +2003,157 @@
                     artStyle: elements.genStyle.value,
                     perspective: elements.genPerspective.value,
                     paletteSize: parseInt(elements.genPalette.value),
-                    characterType: elements.genCharType.value
+                    characterType: elements.genCharType.value,
+                    poses: ['idle'] // Only generate idle for preview
                 };
 
                 // Call AI generation
-                updateGenerationStatus('Calling AI...', 'Generating 14 sprite frames');
                 const result = await crucible.generateCharacterSprites(request);
 
-                if (!result || !result.poses || !result.palette) {
+                if (!result || !result.poses || !result.palette || !result.poses.idle) {
                     throw new Error('Invalid response from AI');
                 }
 
-                // Process the generated sprites
+                // Store for later use
+                state.previewResult = result;
+                state.previewRequest = request;
+
+                // Show preview
+                elements.generationProgress.classList.remove('active');
+                showPreview(result, request.width, request.height);
+
+            } catch (err) {
+                console.error('Preview generation failed:', err);
+                showToast(err.message || 'Failed to generate preview', 'error');
+                resetGenerateModal();
+            }
+        }
+
+        function showPreview(result, width, height) {
+            const canvas = elements.previewCanvas;
+            const ctx = canvas.getContext('2d');
+            const scale = 4; // Scale up for visibility
+
+            // Set canvas size
+            canvas.width = width * scale;
+            canvas.height = height * scale;
+            ctx.imageSmoothingEnabled = false;
+
+            // Convert idle frames to image data
+            const frames = result.poses.idle;
+            const palette = result.palette;
+            const frameImages = [];
+
+            for (const framePixels of frames) {
+                const tempCanvas = document.createElement('canvas');
+                tempCanvas.width = width;
+                tempCanvas.height = height;
+                const tempCtx = tempCanvas.getContext('2d');
+                const imageData = tempCtx.createImageData(width, height);
+
+                for (let y = 0; y < height; y++) {
+                    const row = framePixels[y];
+                    if (!row) continue;
+                    for (let x = 0; x < width; x++) {
+                        const paletteIndex = row[x] || 0;
+                        const color = palette[paletteIndex] || '#00000000';
+                        const rgba = hexToRgba(color);
+                        const idx = (y * width + x) * 4;
+                        imageData.data[idx] = rgba.r;
+                        imageData.data[idx + 1] = rgba.g;
+                        imageData.data[idx + 2] = rgba.b;
+                        imageData.data[idx + 3] = rgba.a;
+                    }
+                }
+
+                tempCtx.putImageData(imageData, 0, 0);
+                frameImages.push(tempCanvas);
+            }
+
+            // Animate preview
+            let frameIndex = 0;
+            function animate() {
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+                ctx.drawImage(frameImages[frameIndex], 0, 0, canvas.width, canvas.height);
+                frameIndex = (frameIndex + 1) % frameImages.length;
+                state.previewAnimationFrame = setTimeout(animate, 400);
+            }
+            animate();
+
+            // Update info
+            elements.previewInfo.textContent = `${frames.length} frames at ${width}x${height} • ${palette.length} colors`;
+
+            // Show preview section
+            elements.generationPreview.classList.add('active');
+        }
+
+        function stopPreviewAnimation() {
+            if (state.previewAnimationFrame) {
+                clearTimeout(state.previewAnimationFrame);
+                state.previewAnimationFrame = null;
+            }
+        }
+
+        function resetGenerateModal() {
+            stopPreviewAnimation();
+            elements.generateForm.style.display = 'block';
+            elements.generateFooter.style.display = 'flex';
+            elements.generationProgress.classList.remove('active');
+            elements.generationPreview.classList.remove('active');
+            state.previewResult = null;
+            state.previewRequest = null;
+        }
+
+        // Step 2: Accept preview and generate remaining poses
+        async function acceptPreview() {
+            if (!state.previewResult || !state.previewRequest) return;
+
+            stopPreviewAnimation();
+            elements.generationPreview.classList.remove('active');
+            elements.generationProgress.classList.add('active');
+            updateGenerationStatus('Generating remaining poses...', 'walk, attack, hurt, death');
+
+            try {
+                const crucible = await getCrucible();
+                const baseRequest = state.previewRequest;
+                const previewResult = state.previewResult;
+
+                // Generate remaining poses using the same palette
+                const remainingRequest = {
+                    ...baseRequest,
+                    poses: ['walk', 'attack', 'hurt', 'death'],
+                    existingPalette: previewResult.palette
+                };
+
+                updateGenerationStatus('Generating poses...', '12 more frames');
+                const remainingResult = await crucible.generateCharacterSprites(remainingRequest);
+
+                // Merge results
+                const fullResult = {
+                    characterName: previewResult.characterName,
+                    description: previewResult.description,
+                    palette: previewResult.palette,
+                    poses: {
+                        idle: previewResult.poses.idle,
+                        ...remainingResult.poses
+                    }
+                };
+
+                // Process sprites
                 updateGenerationStatus('Processing sprites...', 'Publishing to master sheet');
-                const sprites = await processGeneratedSprites(result, request.width, request.height);
+                const sprites = await processGeneratedSprites(fullResult, baseRequest.width, baseRequest.height);
 
                 // Create animations
-                updateGenerationStatus('Creating animations...', 'Building animation sequences');
-                const animations = await createAnimationsFromSprites(sprites, result);
+                updateGenerationStatus('Creating animations...', 'Building sequences');
+                const animations = await createAnimationsFromSprites(sprites, fullResult);
 
                 // Create character
-                updateGenerationStatus('Creating character...', 'Linking everything together');
-                const characterName = result.characterName || 'Generated Character';
+                updateGenerationStatus('Creating character...', 'Linking together');
+                const characterName = fullResult.characterName || 'Generated Character';
                 const character = await crucible.createCharacter(
                     state.projectId,
                     characterName,
-                    elements.genCharType.value === 'humanoid' ? 'playable' : 'npc'
+                    baseRequest.characterType === 'humanoid' ? 'playable' : 'npc'
                 );
 
                 // Update character with animations and default sprite
@@ -1975,8 +2174,8 @@
                     animations: animationLinks,
                     properties: {
                         generated: true,
-                        prompt: prompt,
-                        palette: result.palette
+                        prompt: baseRequest.prompt,
+                        palette: fullResult.palette
                     }
                 });
 
@@ -1992,12 +2191,12 @@
             } catch (err) {
                 console.error('Generation failed:', err);
                 showToast(err.message || 'Failed to generate character', 'error');
-
-                // Reset modal
-                elements.generateForm.style.display = 'block';
-                elements.generateFooter.style.display = 'flex';
-                elements.generationProgress.classList.remove('active');
+                resetGenerateModal();
             }
+        }
+
+        function rejectPreview() {
+            resetGenerateModal();
         }
 
         async function processGeneratedSprites(result, width, height) {
@@ -2169,6 +2368,8 @@
             elements.closeGenerateModal.addEventListener('click', closeGenerateModal);
             elements.cancelGenerate.addEventListener('click', closeGenerateModal);
             elements.startGenerate.addEventListener('click', startGeneration);
+            elements.acceptPreview.addEventListener('click', acceptPreview);
+            elements.rejectPreview.addEventListener('click', rejectPreview);
             elements.generateModal.addEventListener('click', (e) => {
                 if (e.target === elements.generateModal) closeGenerateModal();
             });

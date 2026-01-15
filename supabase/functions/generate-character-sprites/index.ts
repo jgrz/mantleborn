@@ -18,14 +18,54 @@ interface CharacterRequest {
   characterType?: string;   // humanoid, creature, robot, etc.
   customColors?: string[];  // Optional base colors to use
   customInstructions?: string;
+  poses?: string[];         // Which poses to generate (default: all)
+  existingPalette?: string[]; // Reuse palette from previous generation
 }
+
+const POSE_CONFIG: Record<string, { frames: number; description: string }> = {
+  idle: { frames: 2, description: "subtle breathing/movement" },
+  walk: { frames: 4, description: "walk cycle" },
+  attack: { frames: 3, description: "attack animation" },
+  hurt: { frames: 2, description: "taking damage" },
+  death: { frames: 3, description: "death sequence" }
+};
 
 function buildPrompt(request: CharacterRequest): string {
   const width = request.width;
   const height = request.height;
   const paletteSize = request.paletteSize || 16;
+  const posesToGenerate = request.poses || Object.keys(POSE_CONFIG);
 
-  return `You are an expert pixel artist specializing in game character sprites. Generate a complete character sprite sheet with multiple poses.
+  // Calculate total frames
+  const totalFrames = posesToGenerate.reduce((sum, pose) =>
+    sum + (POSE_CONFIG[pose]?.frames || 2), 0);
+
+  // Build poses list
+  const posesList = posesToGenerate
+    .map((pose, i) => {
+      const config = POSE_CONFIG[pose];
+      if (!config) return null;
+      return `${i + 1}. **${pose}** - ${config.frames} frames (${config.description})`;
+    })
+    .filter(Boolean)
+    .join("\n");
+
+  // Build output structure example
+  const posesExample = posesToGenerate
+    .map(pose => {
+      const frames = POSE_CONFIG[pose]?.frames || 2;
+      const frameArrays = Array(frames).fill("[[...], [...], ...]").join(",\n      ");
+      return `    "${pose}": [\n      ${frameArrays}\n    ]`;
+    })
+    .join(",\n");
+
+  // Palette instruction
+  const paletteInstruction = request.existingPalette
+    ? `**USE THIS EXACT PALETTE:** ${JSON.stringify(request.existingPalette)}
+Do NOT create a new palette. Use these exact colors with these exact indices.`
+    : `**Max Palette Colors:** ${paletteSize}`;
+
+  return `You are an expert pixel artist specializing in game character sprites.
 
 ## CHARACTER SPECIFICATIONS
 
@@ -34,24 +74,20 @@ function buildPrompt(request: CharacterRequest): string {
 **Art Style:** ${(request.artStyle || "pixel_16bit").replace(/_/g, " ")}
 **Perspective:** ${(request.perspective || "side_view").replace(/_/g, " ")} (character facing RIGHT)
 **Character Type:** ${request.characterType || "humanoid"}
-**Max Palette Colors:** ${paletteSize}
+${paletteInstruction}
 ${request.customColors?.length ? `**Include these colors:** ${request.customColors.join(", ")}` : ""}
 ${request.customInstructions ? `**Special instructions:** ${request.customInstructions}` : ""}
 
 ## POSES TO GENERATE
 
 Generate these poses with the specified frame counts:
-1. **idle** - 2 frames (subtle breathing/movement)
-2. **walk** - 4 frames (walk cycle)
-3. **attack** - 3 frames (attack animation)
-4. **hurt** - 2 frames (taking damage)
-5. **death** - 3 frames (death sequence)
+${posesList}
 
-Total: 14 frames
+Total: ${totalFrames} frames
 
 ## IMPORTANT RULES
 
-1. Create ONE shared color palette used across ALL frames
+1. ${request.existingPalette ? "Use the EXACT palette provided above" : "Create ONE shared color palette used across ALL frames"}
 2. Use PALETTE INDICES (0, 1, 2, etc.) instead of hex colors in the pixel data
 3. Index 0 should ALWAYS be transparent
 4. Keep the character visually consistent across all poses
@@ -63,38 +99,15 @@ Return ONLY valid JSON with this exact structure:
 {
   "characterName": "descriptive_name",
   "description": "Brief character description",
-  "palette": ["#00000000", "#hex1", "#hex2", ...],
+  "palette": [${request.existingPalette ? '"...existing palette..."' : '"#00000000", "#hex1", "#hex2", ...'}],
   "poses": {
-    "idle": [
-      [[0,1,2,...], [0,1,2,...], ...],
-      [[0,1,2,...], [0,1,2,...], ...]
-    ],
-    "walk": [
-      [[...], [...], ...],
-      [[...], [...], ...],
-      [[...], [...], ...],
-      [[...], [...], ...]
-    ],
-    "attack": [
-      [[...], [...], ...],
-      [[...], [...], ...],
-      [[...], [...], ...]
-    ],
-    "hurt": [
-      [[...], [...], ...],
-      [[...], [...], ...]
-    ],
-    "death": [
-      [[...], [...], ...],
-      [[...], [...], ...],
-      [[...], [...], ...]
-    ]
+${posesExample}
   }
 }
 
 Each pose is an array of frames. Each frame is a 2D array of ${height} rows x ${width} palette indices.
 
-Generate the complete character sprite data now:`;
+Generate the sprite data now:`;
 }
 
 Deno.serve(async (req: Request) => {
@@ -179,15 +192,15 @@ Deno.serve(async (req: Request) => {
       throw new Error("Response missing poses object");
     }
 
-    // Validate each pose has frames
-    const requiredPoses = ["idle", "walk", "attack", "hurt", "death"];
-    for (const pose of requiredPoses) {
+    // Validate each requested pose has frames
+    const requestedPoses = request.poses || Object.keys(POSE_CONFIG);
+    for (const pose of requestedPoses) {
       if (!result.poses[pose] || !Array.isArray(result.poses[pose])) {
         console.warn(`Missing or invalid pose: ${pose}`);
       }
     }
 
-    console.log("Successfully generated character with", result.palette.length, "colors");
+    console.log("Successfully generated", requestedPoses.length, "poses with", result.palette.length, "colors");
 
     return new Response(JSON.stringify(result), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
