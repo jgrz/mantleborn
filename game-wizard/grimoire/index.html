@@ -667,12 +667,27 @@
                 <div class="content-header">
                     <h1 class="content-title">Welcome to the Grimoire</h1>
                     <p class="content-subtitle">
-                        Your comprehensive guide to Game Wizard's suite of game development tools.
-                        Whether you're creating pixel art, designing levels, or managing sprites,
-                        you'll find everything you need here.
+                        The internal knowledge base for Mantle's Game Wizard toolchain.
+                        Everything you need to build custom games for Mantle customers.
                     </p>
                 </div>
 
+                <div class="article">
+                    <h2>What is Game Wizard?</h2>
+                    <p>Game Wizard is Mantle's internal game development toolkit. It provides a browser-based suite of specialized tools for creating 2D pixel art games from scratch. Each tool handles a specific part of the development pipeline, and they all work together through a shared project system.</p>
+
+                    <p>This toolchain was built to streamline game creation for Mantle customers. Instead of juggling separate applications for sprites, animations, and level design, everything lives in one connected environment with data flowing seamlessly between tools.</p>
+
+                    <h2>The Grimoire</h2>
+                    <p>This documentation covers every tool in detail. Whether you're creating your first tile or exporting a complete game, you'll find step-by-step guides, feature explanations, and workflow tips here.</p>
+
+                    <div class="tip">
+                        <div class="tip-label">Getting Started</div>
+                        Read the <a href="#overview" style="color: var(--accent-purple);">Overview</a> to understand how all the tools connect, then dive into any tool's documentation from the sidebar.
+                    </div>
+                </div>
+
+                <h2 class="docs-section-title">Tools</h2>
                 <div class="tool-grid">
                     <a href="#tilesmith" class="tool-card">
                         <div class="tool-card-icon">&#129513;</div>
@@ -752,7 +767,108 @@
     <script>
         // Simple client-side routing
         const pages = {
-            welcome: document.getElementById('page-welcome').innerHTML
+            welcome: document.getElementById('page-welcome').innerHTML,
+            overview: `
+                <div class="content-header">
+                    <h1 class="content-title">Overview</h1>
+                    <p class="content-subtitle">How all the Game Wizard tools work together to create complete games.</p>
+                </div>
+                <div class="article">
+                    <h2>The Big Picture</h2>
+                    <p>Game Wizard is organized around a central concept: <strong>Projects</strong>. A project represents a complete game and contains all its assets—sprites, animations, levels, and connections between them.</p>
+
+                    <p>Each tool in Game Wizard specializes in one part of the game creation process, but they all share data through the project system. This means sprites you create in Tilesmith automatically appear in Animation-Station and Level Forge. Levels you design flow into the Crucible for export.</p>
+
+                    <h2>How Data Flows</h2>
+                    <p>Here's the typical workflow from start to finish:</p>
+
+                    <div class="feature-grid" style="margin: 20px 0;">
+                        <div class="feature-item">
+                            <span class="feature-icon">1️⃣</span>
+                            <div class="feature-text">
+                                <strong>Create a Project</strong>
+                                <span>Start in the <strong>Crucible of Code</strong>. Create a new project and define your levels. Each project gets its own master spritesheet.</span>
+                            </div>
+                        </div>
+                        <div class="feature-item">
+                            <span class="feature-icon">2️⃣</span>
+                            <div class="feature-text">
+                                <strong>Build Your Sprites</strong>
+                                <span>Use <strong>Tilesmith</strong> to draw original tiles or <strong>Sprite-Rite</strong> to import existing sprite assets. Both publish to the project's master sheet.</span>
+                            </div>
+                        </div>
+                        <div class="feature-item">
+                            <span class="feature-icon">3️⃣</span>
+                            <div class="feature-text">
+                                <strong>Create Animations</strong>
+                                <span>In <strong>Animation-Station</strong>, build frame sequences from your sprites. Define walk cycles, attacks, effects—anything that moves.</span>
+                            </div>
+                        </div>
+                        <div class="feature-item">
+                            <span class="feature-icon">4️⃣</span>
+                            <div class="feature-text">
+                                <strong>Design Levels</strong>
+                                <span><strong>Level Forge</strong> is where levels take shape. Paint collision grids, add backgrounds, place visual tiles, and test with built-in demo mode.</span>
+                            </div>
+                        </div>
+                        <div class="feature-item">
+                            <span class="feature-icon">5️⃣</span>
+                            <div class="feature-text">
+                                <strong>Connect Levels</strong>
+                                <span>Use <strong>Portals</strong> to link levels together. Define how exits lead to spawn points, creating your game's level flow.</span>
+                            </div>
+                        </div>
+                        <div class="feature-item">
+                            <span class="feature-icon">6️⃣</span>
+                            <div class="feature-text">
+                                <strong>Export</strong>
+                                <span>Back in the <strong>Crucible</strong>, compile everything and export game-ready JSON for your engine.</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <h2>The Master Spritesheet</h2>
+                    <p>Each project has a <strong>master spritesheet</strong>—a single combined image containing all sprites for that game. This is important for game performance and simplifies asset loading.</p>
+                    <ul>
+                        <li><strong>Tilesmith</strong> tiles publish directly to the master sheet</li>
+                        <li><strong>Sprite-Rite</strong> imported sprites publish to the master sheet</li>
+                        <li><strong>Animation-Station</strong> reads sprites from the master sheet</li>
+                        <li><strong>Level Forge</strong> paints with sprites from the master sheet</li>
+                    </ul>
+                    <p>When you select a project in any tool, that project's master spritesheet loads automatically.</p>
+
+                    <h2>Tool Responsibilities</h2>
+
+                    <h3>Crucible of Code</h3>
+                    <p>The command center. Create and manage projects, track level completion status, and export final game data. This is where you start and where you finish.</p>
+
+                    <h3>Tilesmith</h3>
+                    <p>Pixel art creation from scratch. Draw tiles manually or generate them with AI assistance. Supports single tiles and multi-tile grids (for larger assets like trees or buildings).</p>
+
+                    <h3>Sprite-Rite</h3>
+                    <p>Asset import and management. If you have existing spritesheets, bring them in here. Define sprite regions, name them, and publish to your project.</p>
+
+                    <h3>Animation-Station</h3>
+                    <p>Animation assembly. Take static sprites and arrange them into animated sequences. Control frame timing, preview playback, and define the animations your game will use.</p>
+
+                    <h3>Level Forge</h3>
+                    <p>Level design workspace with three editing modes:</p>
+                    <ul>
+                        <li><strong>Grid Tab</strong> - Define collision and gameplay logic (walkable, solid, spawn points, exits)</li>
+                        <li><strong>BG Tab</strong> - Add background layers with parallax scrolling</li>
+                        <li><strong>Tiles Tab</strong> - Paint visual sprites onto the level</li>
+                    </ul>
+                    <p>Includes a demo mode to playtest levels immediately.</p>
+
+                    <h3>Portals</h3>
+                    <p>Level flow visualization. See all your levels as nodes on a canvas and draw connections between them. Validate that all exits lead somewhere and all spawns are reachable.</p>
+
+                    <div class="tip">
+                        <div class="tip-label">Workflow Tip</div>
+                        Keep multiple tools open in browser tabs. Design sprites in one tab, paint levels in another, and refresh to see updates flow between them.
+                    </div>
+                </div>
+            `
         };
 
         // Helper to build tool documentation pages
@@ -771,13 +887,6 @@
                 <nav class="article-nav">
                     ${docs.map(doc => `<a href="#${toolId}/${doc.id}" class="article-nav-link">${doc.title}</a>`).join('')}
                 </nav>
-                <div class="article-list">
-                    ${docs.map(doc => `
-                        <div class="article-card" data-article="${toolId}/${doc.id}">
-                            <div class="article-card-title">${doc.title}</div>
-                        </div>
-                    `).join('')}
-                </div>
             `;
 
             docs.forEach(doc => {
@@ -1051,13 +1160,6 @@
             }
 
             document.getElementById('content').innerHTML = pages[page];
-
-            // Add click handlers for article cards
-            document.querySelectorAll('.article-card').forEach(card => {
-                card.addEventListener('click', () => {
-                    location.hash = card.dataset.article;
-                });
-            });
         }
 
         // Handle navigation
