@@ -142,6 +142,40 @@
             border-color: var(--accent-gold);
         }
 
+        .header-actions {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .auth-indicator {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            padding: 6px 12px;
+            background: var(--bg-surface);
+            border: 1px solid var(--stone-dark);
+            border-radius: 4px;
+            font-size: 11px;
+            color: var(--stone-mid);
+        }
+
+        .auth-indicator.logged-in {
+            border-color: var(--crucible-bronze);
+            color: var(--stone-light);
+        }
+
+        .auth-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: var(--stone-dark);
+        }
+
+        .auth-indicator.logged-in .auth-dot {
+            background: var(--success);
+        }
+
         /* Main Layout */
         .main-layout {
             display: flex;
@@ -682,6 +716,12 @@
             </select>
             <button class="btn btn-primary" id="newProjectBtn">+ New Project</button>
         </div>
+        <div class="header-actions" id="headerActions">
+            <div class="auth-indicator" id="authIndicator">
+                <span class="auth-dot"></span>
+                <span class="auth-text">Guest</span>
+            </div>
+        </div>
     </header>
 
     <!-- Main Layout -->
@@ -696,6 +736,10 @@
                 <button class="btn" id="exportProjectBtn" style="width: 100%; margin-top: 12px;" disabled>
                     &#128230; Export Project
                 </button>
+                <button class="btn" id="inviteBtn" style="width: 100%; margin-top: 8px;" disabled>
+                    &#128231; Invite Collaborator
+                </button>
+                <div id="membersList" style="margin-top: 12px; display: none;"></div>
             </div>
             <div class="sidebar-section">
                 <div class="sidebar-section-header">LEVELS</div>
@@ -903,11 +947,30 @@
         </div>
     </div>
 
+    <!-- Invite Collaborator Modal -->
+    <div class="modal-overlay" id="inviteModal">
+        <div class="modal">
+            <div class="modal-header">Invite Collaborator</div>
+            <div class="form-group">
+                <label class="form-label">Email or Display Name</label>
+                <input type="text" class="form-input" id="inviteIdentifier" placeholder="friend@email.com or DisplayName">
+            </div>
+            <p style="font-size: 11px; color: var(--stone-mid); margin-bottom: 16px;">
+                They'll receive a notification to join your project.
+            </p>
+            <div class="modal-actions">
+                <button class="btn" id="cancelInviteBtn">Cancel</button>
+                <button class="btn btn-primary" id="sendInviteBtn">Send Invite</button>
+            </div>
+        </div>
+    </div>
+
     <!-- Toast -->
     <div class="toast" id="toast"></div>
 
     <!-- Load Supabase Client -->
     <script src="../shared/supabase-client.js"></script>
+    <script src="../shared/notifications.js"></script>
     <script src="../shared/help-drawer.js"></script>
     <script src="../shared/docs/crucible-docs.js"></script>
 
@@ -955,7 +1018,14 @@
             newLevelName: document.getElementById('newLevelName'),
             newLevelType: document.getElementById('newLevelType'),
             newLevelWidth: document.getElementById('newLevelWidth'),
-            newLevelHeight: document.getElementById('newLevelHeight')
+            newLevelHeight: document.getElementById('newLevelHeight'),
+            // Invite
+            inviteBtn: document.getElementById('inviteBtn'),
+            inviteModal: document.getElementById('inviteModal'),
+            inviteIdentifier: document.getElementById('inviteIdentifier'),
+            membersList: document.getElementById('membersList'),
+            // Auth
+            authIndicator: document.getElementById('authIndicator')
         };
 
         // =============================================
@@ -1021,6 +1091,8 @@
                 renderLevelsList();
                 elements.newLevelBtn.disabled = true;
                 elements.exportProjectBtn.disabled = true;
+                elements.inviteBtn.disabled = true;
+                elements.membersList.style.display = 'none';
                 showEmptyState();
                 return;
             }
@@ -1040,6 +1112,11 @@
                 renderLevelsList();
                 elements.newLevelBtn.disabled = false;
                 elements.exportProjectBtn.disabled = false;
+
+                // Enable invite button if user is the owner
+                const user = await crucible.getUser();
+                const isOwner = user && state.currentProject.user_id === user.id;
+                elements.inviteBtn.disabled = !isOwner;
 
                 crucible.setContext(projectId, null, null);
 
@@ -1450,8 +1527,45 @@
             }
         });
 
+        // Invite collaborator
+        elements.inviteBtn.addEventListener('click', () => {
+            showModal(elements.inviteModal);
+            elements.inviteIdentifier.focus();
+        });
+
+        document.getElementById('cancelInviteBtn').addEventListener('click', () => {
+            hideModal(elements.inviteModal);
+            elements.inviteIdentifier.value = '';
+        });
+
+        document.getElementById('sendInviteBtn').addEventListener('click', async () => {
+            const identifier = elements.inviteIdentifier.value.trim();
+            if (!identifier) {
+                showToast('Please enter an email or display name', 'error');
+                return;
+            }
+
+            const btn = document.getElementById('sendInviteBtn');
+            btn.disabled = true;
+            btn.textContent = 'Sending...';
+
+            try {
+                const crucible = await getCrucible();
+                await crucible.inviteToProject(state.currentProject.id, identifier);
+                showToast('Invite sent!', 'success');
+                hideModal(elements.inviteModal);
+                elements.inviteIdentifier.value = '';
+            } catch (err) {
+                console.error('Failed to send invite:', err);
+                showToast(err.message || 'Failed to send invite', 'error');
+            } finally {
+                btn.disabled = false;
+                btn.textContent = 'Send Invite';
+            }
+        });
+
         // Close modals on overlay click
-        [elements.newProjectModal, elements.newLevelModal].forEach(modal => {
+        [elements.newProjectModal, elements.newLevelModal, elements.inviteModal].forEach(modal => {
             modal.addEventListener('click', (e) => {
                 if (e.target === modal) hideModal(modal);
             });
@@ -1462,6 +1576,7 @@
             if (e.key === 'Escape') {
                 hideModal(elements.newProjectModal);
                 hideModal(elements.newLevelModal);
+                hideModal(elements.inviteModal);
             }
         });
 
@@ -1477,7 +1592,32 @@
                 showToast('Supabase not configured - see instructions', 'error');
             }
 
+            // Listen for auth state changes
+            crucible.client?.auth.onAuthStateChange((event, session) => {
+                updateAuthIndicator(session?.user);
+            });
+
+            // Check initial auth state
+            const user = await crucible.getUser();
+            updateAuthIndicator(user);
+
+            // Initialize notifications
+            if (typeof initNotifications === 'function') {
+                await initNotifications('#headerActions');
+            }
+
             await loadProjects();
+        }
+
+        function updateAuthIndicator(user) {
+            if (user) {
+                const displayName = user.user_metadata?.display_name || user.email?.split('@')[0] || 'User';
+                elements.authIndicator.classList.add('logged-in');
+                elements.authIndicator.querySelector('.auth-text').textContent = displayName;
+            } else {
+                elements.authIndicator.classList.remove('logged-in');
+                elements.authIndicator.querySelector('.auth-text').textContent = 'Guest';
+            }
         }
 
         init();
