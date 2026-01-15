@@ -952,6 +952,33 @@ class CrucibleClient {
         return { ...data, publicUrl };
     }
 
+    async createSpritesheet(projectId, name, options = {}) {
+        if (!this.client) throw new Error('Crucible not initialized');
+
+        const user = await this.getUser();
+
+        const { data, error } = await this.client
+            .from('spritesheets')
+            .insert({
+                project_id: projectId,
+                user_id: user?.id || null,
+                name: name,
+                category: options.category || 'characters',
+                tags: options.tags || [],
+                frame_width: options.frameWidth || 32,
+                frame_height: options.frameHeight || 32,
+                columns: options.columns || 1,
+                rows: options.rows || 1,
+                sprites: options.sprites || [],
+                is_master: false
+            })
+            .select()
+            .single();
+
+        if (error) throw error;
+        return data;
+    }
+
     async getSpritesheets(projectId, filters = {}) {
         if (!this.client) throw new Error('Crucible not initialized');
 
@@ -1386,6 +1413,34 @@ class CrucibleClient {
 
         if (error) throw error;
         return true;
+    }
+
+    // =============================================
+    // CHARACTER SPRITE GENERATION (AI)
+    // =============================================
+
+    async generateCharacterSprites(request) {
+        if (!this.client) throw new Error('Crucible not initialized');
+
+        // Call the edge function
+        const response = await fetch(
+            `${SUPABASE_URL}/functions/v1/generate-character-sprites`,
+            {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(request)
+            }
+        );
+
+        if (!response.ok) {
+            const error = await response.json();
+            throw new Error(error.error || 'Failed to generate character sprites');
+        }
+
+        return response.json();
     }
 
     // =============================================

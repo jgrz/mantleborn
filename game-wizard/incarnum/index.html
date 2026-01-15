@@ -207,6 +207,181 @@
             color: white;
         }
 
+        .btn-ai {
+            background: linear-gradient(135deg, #4a2a6a, #6a3a8a);
+            border-color: var(--accent-purple);
+            color: var(--accent-purple);
+        }
+
+        .btn-ai:hover:not(:disabled) {
+            background: var(--accent-purple);
+            color: white;
+        }
+
+        /* AI Generation Modal */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.8);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+            opacity: 0;
+            visibility: hidden;
+            transition: all 0.2s;
+        }
+
+        .modal-overlay.active {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        .modal {
+            background: var(--bg-mid);
+            border: 1px solid var(--stone-dark);
+            border-radius: 12px;
+            width: 100%;
+            max-width: 520px;
+            max-height: 90vh;
+            overflow-y: auto;
+            transform: scale(0.9);
+            transition: transform 0.2s;
+        }
+
+        .modal-overlay.active .modal {
+            transform: scale(1);
+        }
+
+        .modal-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 20px;
+            border-bottom: 1px solid var(--stone-dark);
+        }
+
+        .modal-title {
+            font-family: 'Press Start 2P', cursive;
+            font-size: 12px;
+            color: var(--accent-purple);
+        }
+
+        .modal-close {
+            background: none;
+            border: none;
+            color: var(--stone-mid);
+            font-size: 24px;
+            cursor: pointer;
+            padding: 0;
+            line-height: 1;
+        }
+
+        .modal-close:hover {
+            color: var(--stone-bright);
+        }
+
+        .modal-body {
+            padding: 20px;
+        }
+
+        .form-group {
+            margin-bottom: 16px;
+        }
+
+        .form-label {
+            display: block;
+            font-size: 11px;
+            color: var(--stone-mid);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 6px;
+        }
+
+        .form-input,
+        .form-select,
+        .form-textarea {
+            width: 100%;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 12px;
+            padding: 10px 12px;
+            background: var(--bg-surface);
+            border: 1px solid var(--stone-dark);
+            border-radius: 4px;
+            color: var(--stone-bright);
+        }
+
+        .form-input:focus,
+        .form-select:focus,
+        .form-textarea:focus {
+            outline: none;
+            border-color: var(--accent-purple);
+        }
+
+        .form-textarea {
+            min-height: 80px;
+            resize: vertical;
+        }
+
+        .form-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+        }
+
+        .form-hint {
+            font-size: 10px;
+            color: var(--stone-dark);
+            margin-top: 4px;
+        }
+
+        .modal-footer {
+            display: flex;
+            justify-content: flex-end;
+            gap: 12px;
+            padding: 16px 20px;
+            border-top: 1px solid var(--stone-dark);
+            background: var(--bg-surface);
+        }
+
+        .generation-progress {
+            display: none;
+            text-align: center;
+            padding: 40px 20px;
+        }
+
+        .generation-progress.active {
+            display: block;
+        }
+
+        .generation-spinner {
+            width: 48px;
+            height: 48px;
+            border: 3px solid var(--stone-dark);
+            border-top-color: var(--accent-purple);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 16px;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        .generation-status {
+            font-size: 12px;
+            color: var(--stone-light);
+            margin-bottom: 8px;
+        }
+
+        .generation-substatus {
+            font-size: 10px;
+            color: var(--stone-mid);
+        }
+
         /* Main Layout */
         .main {
             display: grid;
@@ -730,7 +905,10 @@
             <div class="library-section">
                 <div class="library-header">
                     <span class="library-title">Characters</span>
-                    <button class="btn btn-primary" id="newCharacterBtn" disabled>+ New</button>
+                    <div style="display: flex; gap: 8px;">
+                        <button class="btn btn-ai" id="generateCharacterBtn" disabled>&#129302; Generate</button>
+                        <button class="btn btn-primary" id="newCharacterBtn" disabled>+ New</button>
+                    </div>
                 </div>
                 <div class="library-grid" id="characterLibrary">
                     <div class="library-empty">Select a project to see characters</div>
@@ -861,6 +1039,82 @@
 
     <!-- Help Drawer -->
     <link rel="stylesheet" href="../shared/help-drawer.css">
+    <!-- AI Generation Modal -->
+    <div class="modal-overlay" id="generateModal">
+        <div class="modal">
+            <div class="modal-header">
+                <span class="modal-title">&#129302; Generate Character</span>
+                <button class="modal-close" id="closeGenerateModal">&times;</button>
+            </div>
+            <div class="modal-body" id="generateForm">
+                <div class="form-group">
+                    <label class="form-label">Character Description</label>
+                    <textarea class="form-textarea" id="genPrompt" placeholder="A brave knight with silver armor, blue cape, and a glowing sword..."></textarea>
+                    <div class="form-hint">Describe your character's appearance, colors, and style</div>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label class="form-label">Sprite Size</label>
+                        <select class="form-select" id="genSize">
+                            <option value="16">16x16</option>
+                            <option value="24" selected>24x24</option>
+                            <option value="32">32x32</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Art Style</label>
+                        <select class="form-select" id="genStyle">
+                            <option value="pixel_8bit">8-bit Retro</option>
+                            <option value="pixel_16bit" selected>16-bit Classic</option>
+                            <option value="pixel_32bit">32-bit Detailed</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label class="form-label">Perspective</label>
+                        <select class="form-select" id="genPerspective">
+                            <option value="side_view" selected>Side View (Platformer)</option>
+                            <option value="top_down">Top Down (RPG)</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Palette Size</label>
+                        <select class="form-select" id="genPalette">
+                            <option value="8">8 Colors</option>
+                            <option value="16" selected>16 Colors</option>
+                            <option value="32">32 Colors</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">Character Type</label>
+                    <select class="form-select" id="genCharType">
+                        <option value="humanoid" selected>Humanoid</option>
+                        <option value="creature">Creature/Monster</option>
+                        <option value="robot">Robot/Mech</option>
+                        <option value="animal">Animal</option>
+                        <option value="fantasy">Fantasy Being</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="generation-progress" id="generationProgress">
+                <div class="generation-spinner"></div>
+                <div class="generation-status" id="generationStatus">Generating character sprites...</div>
+                <div class="generation-substatus" id="generationSubstatus">This may take 30-60 seconds</div>
+            </div>
+
+            <div class="modal-footer" id="generateFooter">
+                <button class="btn" id="cancelGenerate">Cancel</button>
+                <button class="btn btn-ai" id="startGenerate">&#10024; Generate Character</button>
+            </div>
+        </div>
+    </div>
+
     <script src="../shared/help-drawer.js"></script>
     <script src="../shared/docs/incarnum-docs.js"></script>
 
@@ -903,6 +1157,22 @@
             previewLabel: document.getElementById('previewLabel'),
             characterLibrary: document.getElementById('characterLibrary'),
             newCharacterBtn: document.getElementById('newCharacterBtn'),
+            generateCharacterBtn: document.getElementById('generateCharacterBtn'),
+            generateModal: document.getElementById('generateModal'),
+            closeGenerateModal: document.getElementById('closeGenerateModal'),
+            cancelGenerate: document.getElementById('cancelGenerate'),
+            startGenerate: document.getElementById('startGenerate'),
+            generateForm: document.getElementById('generateForm'),
+            generateFooter: document.getElementById('generateFooter'),
+            generationProgress: document.getElementById('generationProgress'),
+            generationStatus: document.getElementById('generationStatus'),
+            generationSubstatus: document.getElementById('generationSubstatus'),
+            genPrompt: document.getElementById('genPrompt'),
+            genSize: document.getElementById('genSize'),
+            genStyle: document.getElementById('genStyle'),
+            genPerspective: document.getElementById('genPerspective'),
+            genPalette: document.getElementById('genPalette'),
+            genCharType: document.getElementById('genCharType'),
             characterName: document.getElementById('characterName'),
             characterIdentifier: document.getElementById('characterIdentifier'),
             characterType: document.getElementById('characterType'),
@@ -992,6 +1262,7 @@
             }
 
             elements.newCharacterBtn.disabled = false;
+            elements.generateCharacterBtn.disabled = false;
 
             try {
                 const crucible = await getCrucible();
@@ -1058,6 +1329,7 @@
             elements.characterType.value = 'npc';
             elements.characterType.disabled = true;
             elements.newCharacterBtn.disabled = !state.projectId;
+            elements.generateCharacterBtn.disabled = !state.projectId;
             elements.saveCharacterBtn.disabled = true;
             elements.deleteCharacterBtn.disabled = true;
             elements.addAnimationBtn.disabled = true;
@@ -1608,6 +1880,281 @@
         }
 
         // ==========================================
+        // AI Character Generation
+        // ==========================================
+        function openGenerateModal() {
+            elements.generateModal.classList.add('active');
+            elements.generateForm.style.display = 'block';
+            elements.generateFooter.style.display = 'flex';
+            elements.generationProgress.classList.remove('active');
+            elements.genPrompt.focus();
+        }
+
+        function closeGenerateModal() {
+            elements.generateModal.classList.remove('active');
+        }
+
+        function updateGenerationStatus(status, substatus = '') {
+            elements.generationStatus.textContent = status;
+            elements.generationSubstatus.textContent = substatus;
+        }
+
+        async function startGeneration() {
+            if (!state.projectId) {
+                showToast('Select a project first', 'error');
+                return;
+            }
+
+            const prompt = elements.genPrompt.value.trim();
+            if (!prompt) {
+                showToast('Enter a character description', 'error');
+                elements.genPrompt.focus();
+                return;
+            }
+
+            // Show progress
+            elements.generateForm.style.display = 'none';
+            elements.generateFooter.style.display = 'none';
+            elements.generationProgress.classList.add('active');
+            updateGenerationStatus('Generating character sprites...', 'This may take 30-60 seconds');
+
+            try {
+                const crucible = await getCrucible();
+
+                // Prepare request
+                const request = {
+                    prompt: prompt,
+                    width: parseInt(elements.genSize.value),
+                    height: parseInt(elements.genSize.value),
+                    artStyle: elements.genStyle.value,
+                    perspective: elements.genPerspective.value,
+                    paletteSize: parseInt(elements.genPalette.value),
+                    characterType: elements.genCharType.value
+                };
+
+                // Call AI generation
+                updateGenerationStatus('Calling AI...', 'Generating 14 sprite frames');
+                const result = await crucible.generateCharacterSprites(request);
+
+                if (!result || !result.poses || !result.palette) {
+                    throw new Error('Invalid response from AI');
+                }
+
+                // Process the generated sprites
+                updateGenerationStatus('Processing sprites...', 'Publishing to master sheet');
+                const sprites = await processGeneratedSprites(result, request.width, request.height);
+
+                // Create animations
+                updateGenerationStatus('Creating animations...', 'Building animation sequences');
+                const animations = await createAnimationsFromSprites(sprites, result);
+
+                // Create character
+                updateGenerationStatus('Creating character...', 'Linking everything together');
+                const characterName = result.characterName || 'Generated Character';
+                const character = await crucible.createCharacter(
+                    state.projectId,
+                    characterName,
+                    elements.genCharType.value === 'humanoid' ? 'playable' : 'npc'
+                );
+
+                // Update character with animations and default sprite
+                const defaultSprite = sprites.idle?.[0] || sprites[Object.keys(sprites)[0]]?.[0];
+                const animationLinks = {};
+                for (const [pose, anim] of Object.entries(animations)) {
+                    if (anim) animationLinks[pose] = anim.id;
+                }
+
+                await crucible.updateCharacter(character.id, {
+                    default_sprite: defaultSprite ? {
+                        name: defaultSprite.name,
+                        x: defaultSprite.x,
+                        y: defaultSprite.y,
+                        width: defaultSprite.width,
+                        height: defaultSprite.height
+                    } : null,
+                    animations: animationLinks,
+                    properties: {
+                        generated: true,
+                        prompt: prompt,
+                        palette: result.palette
+                    }
+                });
+
+                // Reload data
+                state.characters = await crucible.getCharacters(state.projectId);
+                await loadMasterSheet(state.projectId);
+                renderCharacterLibrary();
+                loadCharacter(character.id);
+
+                closeGenerateModal();
+                showToast('Character generated successfully!', 'success');
+
+            } catch (err) {
+                console.error('Generation failed:', err);
+                showToast(err.message || 'Failed to generate character', 'error');
+
+                // Reset modal
+                elements.generateForm.style.display = 'block';
+                elements.generateFooter.style.display = 'flex';
+                elements.generationProgress.classList.remove('active');
+            }
+        }
+
+        async function processGeneratedSprites(result, width, height) {
+            const crucible = await getCrucible();
+            const sprites = {};
+            const palette = result.palette;
+
+            for (const [poseName, frames] of Object.entries(result.poses)) {
+                if (!frames || !Array.isArray(frames)) continue;
+
+                sprites[poseName] = [];
+
+                for (let i = 0; i < frames.length; i++) {
+                    const framePixels = frames[i];
+                    if (!framePixels || !Array.isArray(framePixels)) continue;
+
+                    // Convert palette indices to ImageData
+                    const canvas = document.createElement('canvas');
+                    canvas.width = width;
+                    canvas.height = height;
+                    const ctx = canvas.getContext('2d');
+                    const imageData = ctx.createImageData(width, height);
+
+                    for (let y = 0; y < height && y < framePixels.length; y++) {
+                        const row = framePixels[y];
+                        if (!row) continue;
+
+                        for (let x = 0; x < width && x < row.length; x++) {
+                            const colorIndex = row[x];
+                            const color = palette[colorIndex] || '#00000000';
+                            const rgba = hexToRgba(color);
+
+                            const pixelIndex = (y * width + x) * 4;
+                            imageData.data[pixelIndex] = rgba.r;
+                            imageData.data[pixelIndex + 1] = rgba.g;
+                            imageData.data[pixelIndex + 2] = rgba.b;
+                            imageData.data[pixelIndex + 3] = rgba.a;
+                        }
+                    }
+
+                    ctx.putImageData(imageData, 0, 0);
+
+                    // Publish to master sheet
+                    const spriteName = `${result.characterName || 'char'}_${poseName}_${i}`;
+                    const published = await crucible.publishToMasterSheet(
+                        state.projectId,
+                        spriteName,
+                        imageData,
+                        width,
+                        height,
+                        'incarnum'
+                    );
+
+                    // Get sprite position from atlas
+                    const spriteInfo = published.atlas.sprites[spriteName];
+                    sprites[poseName].push({
+                        name: spriteName,
+                        x: spriteInfo?.x || 0,
+                        y: spriteInfo?.y || 0,
+                        width: width,
+                        height: height
+                    });
+                }
+            }
+
+            return sprites;
+        }
+
+        async function createAnimationsFromSprites(sprites, result) {
+            const crucible = await getCrucible();
+            const animations = {};
+
+            // Get or create a spritesheet for this project's animations
+            let spritesheet = await getProjectSpritesheet();
+
+            for (const [poseName, poseSprites] of Object.entries(sprites)) {
+                if (!poseSprites || poseSprites.length === 0) continue;
+
+                // Build frames array
+                const frames = poseSprites.map((sprite, index) => ({
+                    spriteIndex: index,
+                    spriteName: sprite.name,
+                    duration: poseName === 'idle' ? 200 : 100, // Slower for idle
+                    offsetX: 0,
+                    offsetY: 0
+                }));
+
+                try {
+                    const animName = `${result.characterName || 'char'}_${poseName}`;
+                    const animation = await crucible.createAnimation(
+                        spritesheet.id,
+                        animName,
+                        frames,
+                        { fps: 10, loop: poseName !== 'death' }
+                    );
+                    animations[poseName] = animation;
+                } catch (err) {
+                    console.warn(`Failed to create animation for ${poseName}:`, err);
+                }
+            }
+
+            return animations;
+        }
+
+        async function getProjectSpritesheet() {
+            const crucible = await getCrucible();
+
+            // Try to find existing spritesheet for this project
+            const spritesheets = await crucible.getSpritesheets(state.projectId);
+            if (spritesheets.length > 0) {
+                return spritesheets[0];
+            }
+
+            // Create a new one
+            return await crucible.createSpritesheet(state.projectId, 'Generated Characters');
+        }
+
+        function hexToRgba(hex) {
+            // Handle transparent
+            if (hex === '#00000000' || hex === 'transparent') {
+                return { r: 0, g: 0, b: 0, a: 0 };
+            }
+
+            // Remove # if present
+            hex = hex.replace('#', '');
+
+            // Handle different formats
+            if (hex.length === 8) {
+                // #RRGGBBAA
+                return {
+                    r: parseInt(hex.substr(0, 2), 16),
+                    g: parseInt(hex.substr(2, 2), 16),
+                    b: parseInt(hex.substr(4, 2), 16),
+                    a: parseInt(hex.substr(6, 2), 16)
+                };
+            } else if (hex.length === 6) {
+                // #RRGGBB
+                return {
+                    r: parseInt(hex.substr(0, 2), 16),
+                    g: parseInt(hex.substr(2, 2), 16),
+                    b: parseInt(hex.substr(4, 2), 16),
+                    a: 255
+                };
+            } else if (hex.length === 3) {
+                // #RGB
+                return {
+                    r: parseInt(hex[0] + hex[0], 16),
+                    g: parseInt(hex[1] + hex[1], 16),
+                    b: parseInt(hex[2] + hex[2], 16),
+                    a: 255
+                };
+            }
+
+            return { r: 0, g: 0, b: 0, a: 255 };
+        }
+
+        // ==========================================
         // Event Listeners
         // ==========================================
         function setupEventListeners() {
@@ -1616,6 +2163,15 @@
             });
 
             elements.newCharacterBtn.addEventListener('click', createCharacter);
+
+            // AI Generation Modal
+            elements.generateCharacterBtn.addEventListener('click', openGenerateModal);
+            elements.closeGenerateModal.addEventListener('click', closeGenerateModal);
+            elements.cancelGenerate.addEventListener('click', closeGenerateModal);
+            elements.startGenerate.addEventListener('click', startGeneration);
+            elements.generateModal.addEventListener('click', (e) => {
+                if (e.target === elements.generateModal) closeGenerateModal();
+            });
 
             elements.characterName.addEventListener('input', () => {
                 if (!elements.characterIdentifier.value ||
