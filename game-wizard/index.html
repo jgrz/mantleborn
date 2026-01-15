@@ -303,6 +303,13 @@
             --cart-pattern: repeating-conic-gradient(transparent 0deg, transparent 10deg, rgba(48, 209, 88, 0.1) 10deg, rgba(48, 209, 88, 0.1) 20deg);
         }
 
+        .cartridge--impact-engine {
+            --cart-color: #6a2a3a;
+            --cart-accent: #ff453a;
+            --cart-glow: rgba(255, 69, 58, 0.5);
+            --cart-pattern: radial-gradient(circle at 30% 30%, rgba(255, 69, 58, 0.15) 0%, transparent 50%), radial-gradient(circle at 70% 70%, rgba(255, 69, 58, 0.1) 0%, transparent 40%);
+        }
+
         /* Coming soon overlay */
         .cartridge--coming-soon {
             pointer-events: none;
@@ -482,6 +489,32 @@
                         <div class="cart-tagline">Craft Your Terrain</div>
                         <div class="cart-desc">
                             Design tiles and terrain sets. Auto-tiling rules, seamless patterns, and tileset export.
+                        </div>
+                    </div>
+                    <div class="cart-label-light"></div>
+                </div>
+                <div class="cart-pins">
+                    <div class="cart-pin"></div>
+                    <div class="cart-pin"></div>
+                    <div class="cart-pin"></div>
+                    <div class="cart-pin"></div>
+                    <div class="cart-pin"></div>
+                </div>
+                <div class="cart-coming-soon">COMING SOON</div>
+            </div>
+        </div>
+
+        <!-- Impact Engine (Coming Soon) -->
+        <div class="cartridge cartridge--impact-engine cartridge--coming-soon">
+            <div class="cartridge-body">
+                <div class="cart-label">
+                    <div class="cart-rating">DEV</div>
+                    <div class="cart-label-content">
+                        <div class="cart-icon">&#128165;</div>
+                        <div class="cart-title">IMPACT ENGINE</div>
+                        <div class="cart-tagline">Physics Perfected</div>
+                        <div class="cart-desc">
+                            Define collision bodies and physics properties. Gravity, friction, restitution, and constraints.
                         </div>
                     </div>
                     <div class="cart-label-light"></div>
