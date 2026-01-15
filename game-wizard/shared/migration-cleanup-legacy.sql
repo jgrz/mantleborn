@@ -8,24 +8,23 @@
 -- DELETE LEGACY DATA (no user_id)
 -- =============================================
 
--- Delete in order of dependencies (children first)
+-- Delete projects with no owner - cascades to levels, level_grids, etc.
+-- Tables with direct user_id: projects, spritesheets, characters, animations, tiles
+-- Tables without user_id (cascade from project): levels, level_grids
 
--- Characters (depends on projects)
+-- Characters (has user_id)
 DELETE FROM characters WHERE user_id IS NULL;
 
--- Animations (depends on spritesheets)
+-- Animations (has user_id)
 DELETE FROM animations WHERE user_id IS NULL;
 
--- Tiles (depends on spritesheets)
+-- Tiles (has user_id)
 DELETE FROM tiles WHERE user_id IS NULL;
 
--- Levels (depends on projects)
-DELETE FROM levels WHERE user_id IS NULL;
-
--- Spritesheets (depends on projects)
+-- Spritesheets (has user_id)
 DELETE FROM spritesheets WHERE user_id IS NULL;
 
--- Projects (top level)
+-- Projects (has user_id) - cascades to levels, level_grids
 DELETE FROM projects WHERE user_id IS NULL;
 
 -- =============================================
@@ -192,33 +191,52 @@ CREATE POLICY "Users can delete own tiles" ON tiles
 -- =============================================
 -- UPDATE RLS POLICIES - LEVELS
 -- =============================================
+-- Levels inherit access through project_id (no user_id column)
 
 DROP POLICY IF EXISTS "Levels viewable by owner or public project" ON levels;
 DROP POLICY IF EXISTS "Authenticated can create levels" ON levels;
 DROP POLICY IF EXISTS "Users can update own levels" ON levels;
 DROP POLICY IF EXISTS "Users can delete own levels" ON levels;
+DROP POLICY IF EXISTS "Levels are publicly readable" ON levels;
+DROP POLICY IF EXISTS "Levels are insertable" ON levels;
+DROP POLICY IF EXISTS "Levels are updatable" ON levels;
+DROP POLICY IF EXISTS "Levels are deletable" ON levels;
 
-CREATE POLICY "Levels viewable by owner or public project" ON levels
+CREATE POLICY "Levels viewable by project owner or public" ON levels
   FOR SELECT USING (
-    user_id = auth.uid()
-    OR EXISTS (
+    EXISTS (
       SELECT 1 FROM projects
       WHERE projects.id = levels.project_id
-      AND projects.is_public = true
+      AND (projects.is_public = true OR projects.user_id = auth.uid())
     )
   );
 
-CREATE POLICY "Authenticated can create levels" ON levels
+CREATE POLICY "Authenticated can create levels in own projects" ON levels
   FOR INSERT WITH CHECK (
-    auth.uid() IS NOT NULL
-    AND user_id = auth.uid()
+    EXISTS (
+      SELECT 1 FROM projects
+      WHERE projects.id = project_id
+      AND projects.user_id = auth.uid()
+    )
   );
 
-CREATE POLICY "Users can update own levels" ON levels
-  FOR UPDATE USING (user_id = auth.uid());
+CREATE POLICY "Users can update levels in own projects" ON levels
+  FOR UPDATE USING (
+    EXISTS (
+      SELECT 1 FROM projects
+      WHERE projects.id = levels.project_id
+      AND projects.user_id = auth.uid()
+    )
+  );
 
-CREATE POLICY "Users can delete own levels" ON levels
-  FOR DELETE USING (user_id = auth.uid());
+CREATE POLICY "Users can delete levels in own projects" ON levels
+  FOR DELETE USING (
+    EXISTS (
+      SELECT 1 FROM projects
+      WHERE projects.id = levels.project_id
+      AND projects.user_id = auth.uid()
+    )
+  );
 
 -- =============================================
 -- DONE
