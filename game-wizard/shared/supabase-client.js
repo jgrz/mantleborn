@@ -1387,6 +1387,120 @@ class CrucibleClient {
         if (error) throw error;
         return true;
     }
+
+    // =============================================
+    // CHARACTERS (Character Forge)
+    // =============================================
+
+    async createCharacter(projectId, name, characterType = 'npc') {
+        if (!this.client) throw new Error('Crucible not initialized');
+
+        const user = await this.getUser();
+        const identifier = name.toLowerCase().replace(/[^a-z0-9]+/g, '_').replace(/^_|_$/g, '');
+
+        const { data, error } = await this.client
+            .from('characters')
+            .insert({
+                project_id: projectId,
+                user_id: user?.id || null,
+                name,
+                identifier,
+                character_type: characterType
+            })
+            .select()
+            .single();
+
+        if (error) throw error;
+        return data;
+    }
+
+    async getCharacters(projectId) {
+        if (!this.client) throw new Error('Crucible not initialized');
+
+        const { data, error } = await this.client
+            .from('characters')
+            .select('*')
+            .eq('project_id', projectId)
+            .order('name');
+
+        if (error) throw error;
+        return data || [];
+    }
+
+    async getCharacter(characterId) {
+        if (!this.client) throw new Error('Crucible not initialized');
+
+        const { data, error } = await this.client
+            .from('characters')
+            .select('*')
+            .eq('id', characterId)
+            .single();
+
+        if (error) throw error;
+        return data;
+    }
+
+    async updateCharacter(characterId, updates) {
+        if (!this.client) throw new Error('Crucible not initialized');
+
+        const { data, error } = await this.client
+            .from('characters')
+            .update(updates)
+            .eq('id', characterId)
+            .select()
+            .single();
+
+        if (error) throw error;
+        return data;
+    }
+
+    async deleteCharacter(characterId) {
+        if (!this.client) throw new Error('Crucible not initialized');
+
+        const { error } = await this.client
+            .from('characters')
+            .delete()
+            .eq('id', characterId);
+
+        if (error) throw error;
+        return true;
+    }
+
+    // =============================================
+    // PROJECT EXPORT (includes characters)
+    // =============================================
+
+    async compileProject(projectId) {
+        if (!this.client) throw new Error('Crucible not initialized');
+
+        const project = await this.getProject(projectId);
+        const levels = await this.getLevels(projectId);
+        const characters = await this.getCharacters(projectId);
+
+        // Compile each level
+        const compiledLevels = await Promise.all(
+            levels.map(l => this.compileLevel(l.id))
+        );
+
+        return {
+            name: project.name,
+            levels: compiledLevels,
+            characters: characters.map(c => ({
+                id: c.id,
+                name: c.name,
+                identifier: c.identifier,
+                type: c.character_type,
+                defaultSprite: c.default_sprite,
+                animations: c.animations,
+                tags: c.tags,
+                properties: c.properties
+            })),
+            meta: {
+                projectId,
+                exportedAt: new Date().toISOString()
+            }
+        };
+    }
 }
 
 // =============================================

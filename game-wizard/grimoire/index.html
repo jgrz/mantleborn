@@ -625,6 +625,13 @@
                         </a>
                     </li>
                     <li class="nav-item">
+                        <a href="#character-forge" class="nav-link">
+                            <span class="nav-icon">&#129497;</span>
+                            Character Forge
+                            <span class="nav-badge">8</span>
+                        </a>
+                    </li>
+                    <li class="nav-item">
                         <a href="#crucible" class="nav-link">
                             <span class="nav-icon">&#129514;</span>
                             Crucible of Code
@@ -725,6 +732,15 @@
                         <div class="tool-card-count">8 articles</div>
                     </a>
 
+                    <a href="#character-forge" class="tool-card">
+                        <div class="tool-card-icon">&#129497;</div>
+                        <div class="tool-card-title">Character Forge</div>
+                        <div class="tool-card-desc">
+                            Assemble characters from sprites and animations. Define types, tags, and properties.
+                        </div>
+                        <div class="tool-card-count">8 articles</div>
+                    </a>
+
                     <a href="#crucible" class="tool-card">
                         <div class="tool-card-icon">&#129514;</div>
                         <div class="tool-card-title">Crucible of Code</div>
@@ -761,6 +777,7 @@
     <script src="../shared/docs/sprite-rite-docs.js"></script>
     <script src="../shared/docs/animation-station-docs.js"></script>
     <script src="../shared/docs/level-forge-docs.js"></script>
+    <script src="../shared/docs/character-forge-docs.js"></script>
     <script src="../shared/docs/crucible-docs.js"></script>
     <script src="../shared/docs/portals-docs.js"></script>
 
@@ -807,19 +824,26 @@
                         <div class="feature-item">
                             <span class="feature-icon">4️⃣</span>
                             <div class="feature-text">
+                                <strong>Define Characters</strong>
+                                <span><strong>Character Forge</strong> assembles characters from sprites and animations. Set types, link behaviors, add tags and properties.</span>
+                            </div>
+                        </div>
+                        <div class="feature-item">
+                            <span class="feature-icon">5️⃣</span>
+                            <div class="feature-text">
                                 <strong>Design Levels</strong>
                                 <span><strong>Level Forge</strong> is where levels take shape. Paint collision grids, add backgrounds, place visual tiles, and test with built-in demo mode.</span>
                             </div>
                         </div>
                         <div class="feature-item">
-                            <span class="feature-icon">5️⃣</span>
+                            <span class="feature-icon">6️⃣</span>
                             <div class="feature-text">
                                 <strong>Connect Levels</strong>
                                 <span>Use <strong>Portals</strong> to link levels together. Define how exits lead to spawn points, creating your game's level flow.</span>
                             </div>
                         </div>
                         <div class="feature-item">
-                            <span class="feature-icon">6️⃣</span>
+                            <span class="feature-icon">7️⃣</span>
                             <div class="feature-text">
                                 <strong>Export</strong>
                                 <span>Back in the <strong>Crucible</strong>, compile everything and export game-ready JSON for your engine.</span>
@@ -850,6 +874,9 @@
 
                     <h3>Animation-Station</h3>
                     <p>Animation assembly. Take static sprites and arrange them into animated sequences. Control frame timing, preview playback, and define the animations your game will use.</p>
+
+                    <h3>Character Forge</h3>
+                    <p>Character definition and assembly. Combine sprites and animations into character templates with types (playable, NPC, enemy, object), tags for categorization, and custom properties for game data.</p>
 
                     <h3>Level Forge</h3>
                     <p>Level design workspace with three editing modes:</p>
@@ -1059,6 +1086,45 @@
             'Design complete game levels with collision editing, background art, visual tiles, and integrated demo testing.',
             LEVEL_FORGE_OVERVIEW,
             typeof LEVEL_FORGE_DOCS !== 'undefined' ? LEVEL_FORGE_DOCS : null);
+
+        const CHARACTER_FORGE_OVERVIEW = `
+            <p>Character Forge assembles characters from your sprite and animation libraries. Define character types, link animations to behaviors, and add custom properties.</p>
+            <div class="feature-grid">
+                <div class="feature-item">
+                    <span class="feature-icon">&#127912;</span>
+                    <div class="feature-text">
+                        <strong>Sprite Selection</strong>
+                        <span>Choose default sprites from your project's master spritesheet.</span>
+                    </div>
+                </div>
+                <div class="feature-item">
+                    <span class="feature-icon">&#127916;</span>
+                    <div class="feature-text">
+                        <strong>Animation Linking</strong>
+                        <span>Map animations to behaviors: idle, walk, attack, and custom actions.</span>
+                    </div>
+                </div>
+                <div class="feature-item">
+                    <span class="feature-icon">&#127991;</span>
+                    <div class="feature-text">
+                        <strong>Tags & Properties</strong>
+                        <span>Add metadata for filtering and game logic.</span>
+                    </div>
+                </div>
+                <div class="feature-item">
+                    <span class="feature-icon">&#128101;</span>
+                    <div class="feature-text">
+                        <strong>Character Library</strong>
+                        <span>Manage all characters with filtering by type.</span>
+                    </div>
+                </div>
+            </div>
+        `;
+
+        buildToolDocs('character-forge', 'Character Forge',
+            'Assemble characters from sprites and animations. Define types, behaviors, tags, and custom properties.',
+            CHARACTER_FORGE_OVERVIEW,
+            typeof CHARACTER_FORGE_DOCS !== 'undefined' ? CHARACTER_FORGE_DOCS : null);
 
         const CRUCIBLE_OVERVIEW = `
             <p>The Crucible of Code is your project command center. Create projects, manage levels, and compile all your game data into exportable JSON.</p>

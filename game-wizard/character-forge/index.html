@@ -1,0 +1,1671 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Character Forge | Game Wizard</title>
+    <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+    <style>
+        /* ============================================
+           CHARACTER FORGE - CSS
+           ============================================ */
+
+        :root {
+            /* Backgrounds */
+            --bg-deep: #0d0d14;
+            --bg-mid: #1a1a2e;
+            --bg-surface: #252542;
+
+            /* Accents - pink/purple */
+            --accent-pink: #ff6b9d;
+            --accent-pink-glow: #ff8fb3;
+            --accent-purple: #9b6dff;
+
+            /* Stone/neutral tones */
+            --stone-dark: #3a3a5c;
+            --stone-mid: #6a6a8e;
+            --stone-light: #9a9abe;
+            --stone-bright: #d0d0e8;
+
+            /* Status */
+            --success: #4ade80;
+            --warning: #fbbf24;
+            --error: #f87171;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'JetBrains Mono', monospace;
+            background: var(--bg-deep);
+            color: var(--stone-light);
+            min-height: 100vh;
+            overflow: hidden;
+        }
+
+        /* Header */
+        .header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 12px 20px;
+            background: var(--bg-mid);
+            border-bottom: 1px solid var(--stone-dark);
+        }
+
+        .brand {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .home-btn {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 32px;
+            height: 32px;
+            font-size: 18px;
+            text-decoration: none;
+            background: var(--bg-surface);
+            border: 1px solid var(--stone-dark);
+            border-radius: 4px;
+            transition: all 0.2s;
+        }
+
+        .home-btn:hover {
+            background: var(--stone-dark);
+            border-color: var(--accent-pink);
+        }
+
+        .brand-icon {
+            font-size: 20px;
+        }
+
+        .brand-text {
+            font-family: 'Press Start 2P', cursive;
+            font-size: 10px;
+            color: var(--stone-mid);
+        }
+
+        .brand-text span {
+            color: var(--accent-pink);
+            text-shadow: 0 0 10px rgba(255, 107, 157, 0.5);
+        }
+
+        .header-actions {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+
+        .header-select {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 12px;
+            padding: 8px 12px;
+            background: var(--bg-surface);
+            border: 1px solid var(--stone-dark);
+            border-radius: 4px;
+            color: var(--stone-light);
+            cursor: pointer;
+            min-width: 160px;
+        }
+
+        .header-select:focus {
+            outline: none;
+            border-color: var(--accent-pink);
+        }
+
+        .auth-indicator {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            padding: 6px 12px;
+            background: var(--bg-surface);
+            border: 1px solid var(--stone-dark);
+            border-radius: 4px;
+            font-size: 11px;
+            color: var(--stone-mid);
+        }
+
+        .auth-indicator.logged-in {
+            border-color: var(--accent-purple);
+            color: var(--stone-light);
+        }
+
+        .auth-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: var(--stone-dark);
+        }
+
+        .auth-indicator.logged-in .auth-dot {
+            background: var(--success);
+        }
+
+        .save-indicator {
+            font-size: 10px;
+            color: var(--stone-mid);
+            min-width: 60px;
+            text-align: right;
+        }
+
+        .save-indicator.saving {
+            color: var(--accent-pink);
+        }
+
+        .save-indicator.saved {
+            color: var(--success);
+        }
+
+        /* Buttons */
+        .btn {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 12px;
+            padding: 8px 16px;
+            border: 1px solid var(--stone-dark);
+            border-radius: 4px;
+            background: var(--bg-surface);
+            color: var(--stone-light);
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .btn:hover {
+            background: var(--stone-dark);
+            border-color: var(--stone-mid);
+        }
+
+        .btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #3a2a4a, #4a3a5a);
+            border-color: var(--accent-pink);
+            color: var(--accent-pink);
+        }
+
+        .btn-primary:hover:not(:disabled) {
+            background: var(--accent-pink);
+            color: white;
+        }
+
+        .btn-danger {
+            border-color: var(--error);
+            color: var(--error);
+        }
+
+        .btn-danger:hover {
+            background: var(--error);
+            color: white;
+        }
+
+        /* Main Layout */
+        .main {
+            display: grid;
+            grid-template-columns: 1fr 360px;
+            height: calc(100vh - 53px);
+            overflow: hidden;
+        }
+
+        /* Left Panel */
+        .left-panel {
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            padding: 20px;
+            gap: 20px;
+        }
+
+        /* Preview Area */
+        .preview-area {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            background: var(--bg-mid);
+            border: 1px solid var(--stone-dark);
+            border-radius: 8px;
+            min-height: 300px;
+        }
+
+        .preview-canvas-wrapper {
+            position: relative;
+            background:
+                repeating-conic-gradient(var(--bg-surface) 0% 25%, var(--bg-deep) 0% 50%)
+                50% / 16px 16px;
+            border-radius: 4px;
+            padding: 20px;
+        }
+
+        #previewCanvas {
+            display: block;
+            image-rendering: pixelated;
+        }
+
+        .preview-label {
+            margin-top: 16px;
+            font-size: 12px;
+            color: var(--stone-mid);
+        }
+
+        .preview-empty {
+            text-align: center;
+            color: var(--stone-dark);
+        }
+
+        .preview-empty-icon {
+            font-size: 64px;
+            margin-bottom: 16px;
+            opacity: 0.5;
+        }
+
+        /* Character Library */
+        .library-section {
+            background: var(--bg-mid);
+            border: 1px solid var(--stone-dark);
+            border-radius: 8px;
+            padding: 16px;
+        }
+
+        .library-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 12px;
+        }
+
+        .library-title {
+            font-family: 'Press Start 2P', cursive;
+            font-size: 10px;
+            color: var(--accent-pink);
+        }
+
+        .library-grid {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+            max-height: 120px;
+            overflow-y: auto;
+        }
+
+        .character-tile {
+            width: 56px;
+            height: 56px;
+            background: var(--bg-surface);
+            border: 2px solid var(--stone-dark);
+            border-radius: 4px;
+            cursor: pointer;
+            transition: all 0.15s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+            font-size: 24px;
+        }
+
+        .character-tile:hover {
+            border-color: var(--accent-pink);
+        }
+
+        .character-tile.active {
+            border-color: var(--accent-pink);
+            box-shadow: 0 0 10px rgba(255, 107, 157, 0.3);
+        }
+
+        .character-tile canvas {
+            image-rendering: pixelated;
+        }
+
+        .character-tile-delete {
+            position: absolute;
+            top: -6px;
+            right: -6px;
+            width: 18px;
+            height: 18px;
+            border-radius: 50%;
+            background: var(--error);
+            color: white;
+            border: none;
+            font-size: 12px;
+            cursor: pointer;
+            display: none;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .character-tile:hover .character-tile-delete {
+            display: flex;
+        }
+
+        .library-empty {
+            text-align: center;
+            padding: 20px;
+            color: var(--stone-dark);
+            font-size: 12px;
+        }
+
+        /* Right Panel */
+        .right-panel {
+            background: var(--bg-mid);
+            border-left: 1px solid var(--stone-dark);
+            overflow-y: auto;
+            padding: 20px;
+        }
+
+        .panel-section {
+            margin-bottom: 24px;
+        }
+
+        .panel-header {
+            font-family: 'Press Start 2P', cursive;
+            font-size: 10px;
+            color: var(--accent-pink);
+            margin-bottom: 12px;
+            padding-bottom: 8px;
+            border-bottom: 1px solid var(--stone-dark);
+        }
+
+        /* Form Elements */
+        .form-group {
+            margin-bottom: 12px;
+        }
+
+        .form-label {
+            display: block;
+            font-size: 10px;
+            color: var(--stone-mid);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 6px;
+        }
+
+        .form-input {
+            width: 100%;
+            padding: 8px 12px;
+            font-family: inherit;
+            font-size: 12px;
+            background: var(--bg-surface);
+            border: 1px solid var(--stone-dark);
+            color: var(--stone-light);
+            border-radius: 4px;
+        }
+
+        .form-input:focus {
+            outline: none;
+            border-color: var(--accent-pink);
+        }
+
+        .form-select {
+            width: 100%;
+            padding: 8px 12px;
+            font-family: inherit;
+            font-size: 12px;
+            background: var(--bg-surface);
+            border: 1px solid var(--stone-dark);
+            color: var(--stone-light);
+            border-radius: 4px;
+            cursor: pointer;
+        }
+
+        /* Sprite Grid */
+        .sprite-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(48px, 1fr));
+            gap: 6px;
+            max-height: 200px;
+            overflow-y: auto;
+            background: var(--bg-surface);
+            border-radius: 4px;
+            padding: 8px;
+        }
+
+        .sprite-tile {
+            width: 48px;
+            height: 48px;
+            background: var(--bg-deep);
+            border: 2px solid transparent;
+            border-radius: 4px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.15s;
+        }
+
+        .sprite-tile:hover {
+            border-color: var(--stone-mid);
+        }
+
+        .sprite-tile.selected {
+            border-color: var(--accent-pink);
+            box-shadow: 0 0 8px rgba(255, 107, 157, 0.4);
+        }
+
+        .sprite-tile canvas {
+            image-rendering: pixelated;
+        }
+
+        .sprite-empty {
+            grid-column: 1 / -1;
+            text-align: center;
+            padding: 20px;
+            color: var(--stone-dark);
+            font-size: 11px;
+        }
+
+        /* Animation Slots */
+        .animation-slot {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 8px;
+        }
+
+        .animation-slot-label {
+            width: 70px;
+            font-size: 11px;
+            color: var(--stone-light);
+            text-transform: capitalize;
+        }
+
+        .animation-slot-select {
+            flex: 1;
+            padding: 6px 10px;
+            font-family: inherit;
+            font-size: 11px;
+            background: var(--bg-surface);
+            border: 1px solid var(--stone-dark);
+            color: var(--stone-light);
+            border-radius: 4px;
+        }
+
+        .animation-slot-remove {
+            width: 24px;
+            height: 24px;
+            border: none;
+            background: transparent;
+            color: var(--stone-mid);
+            cursor: pointer;
+            font-size: 14px;
+            border-radius: 4px;
+        }
+
+        .animation-slot-remove:hover {
+            background: var(--error);
+            color: white;
+        }
+
+        .custom-slots {
+            margin-top: 12px;
+            padding-top: 12px;
+            border-top: 1px dashed var(--stone-dark);
+        }
+
+        .custom-slot {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 8px;
+        }
+
+        .custom-slot-name {
+            width: 80px;
+            padding: 6px 8px;
+            font-family: inherit;
+            font-size: 11px;
+            background: var(--bg-surface);
+            border: 1px solid var(--stone-dark);
+            color: var(--stone-light);
+            border-radius: 4px;
+        }
+
+        /* Tags */
+        .tags-container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px;
+            margin-bottom: 8px;
+        }
+
+        .tag {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            padding: 4px 8px;
+            background: var(--accent-purple);
+            color: white;
+            border-radius: 12px;
+            font-size: 10px;
+        }
+
+        .tag-remove {
+            background: none;
+            border: none;
+            color: white;
+            cursor: pointer;
+            font-size: 12px;
+            padding: 0;
+            line-height: 1;
+            opacity: 0.7;
+        }
+
+        .tag-remove:hover {
+            opacity: 1;
+        }
+
+        .tag-input-wrapper {
+            display: flex;
+            gap: 6px;
+        }
+
+        .tag-input {
+            flex: 1;
+            padding: 6px 10px;
+            font-family: inherit;
+            font-size: 11px;
+            background: var(--bg-surface);
+            border: 1px solid var(--stone-dark);
+            color: var(--stone-light);
+            border-radius: 4px;
+        }
+
+        .tag-add-btn {
+            padding: 6px 12px;
+            font-size: 11px;
+        }
+
+        /* Properties Table */
+        .properties-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        .properties-table th {
+            text-align: left;
+            font-size: 9px;
+            color: var(--stone-mid);
+            text-transform: uppercase;
+            padding: 6px 4px;
+            border-bottom: 1px solid var(--stone-dark);
+        }
+
+        .properties-table td {
+            padding: 4px;
+        }
+
+        .property-row input,
+        .property-row select {
+            width: 100%;
+            padding: 6px 8px;
+            font-family: inherit;
+            font-size: 11px;
+            background: var(--bg-surface);
+            border: 1px solid var(--stone-dark);
+            color: var(--stone-light);
+            border-radius: 4px;
+        }
+
+        .property-row .prop-key {
+            width: 80px;
+        }
+
+        .property-row .prop-type {
+            width: 70px;
+        }
+
+        .property-remove {
+            width: 24px;
+            height: 24px;
+            border: none;
+            background: transparent;
+            color: var(--stone-mid);
+            cursor: pointer;
+            font-size: 14px;
+        }
+
+        .property-remove:hover {
+            color: var(--error);
+        }
+
+        .add-property-btn {
+            width: 100%;
+            margin-top: 8px;
+            padding: 8px;
+            font-size: 11px;
+            border-style: dashed;
+        }
+
+        /* Toast */
+        .toast {
+            position: fixed;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%) translateY(100px);
+            padding: 12px 24px;
+            background: var(--bg-surface);
+            border: 1px solid var(--stone-dark);
+            border-radius: 8px;
+            font-size: 12px;
+            opacity: 0;
+            transition: all 0.3s;
+            z-index: 1000;
+        }
+
+        .toast.show {
+            transform: translateX(-50%) translateY(0);
+            opacity: 1;
+        }
+
+        .toast.error {
+            border-color: var(--error);
+            color: var(--error);
+        }
+
+        .toast.success {
+            border-color: var(--success);
+            color: var(--success);
+        }
+
+        /* Scrollbar */
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: var(--stone-dark);
+            border-radius: 4px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: var(--bg-deep);
+        }
+    </style>
+</head>
+<body>
+    <!-- Header -->
+    <header class="header">
+        <div class="brand">
+            <a href="/game-wizard/" class="home-btn" title="Back to Game Wizard">&#128302;</a>
+            <span class="brand-icon">&#129497;</span>
+            <span class="brand-text">GAME WIZARD / <span>CHARACTER FORGE</span></span>
+        </div>
+        <div class="header-actions">
+            <select class="header-select" id="projectSelect">
+                <option value="">-- Select Project --</option>
+            </select>
+            <span class="save-indicator" id="saveIndicator"></span>
+            <div class="auth-indicator" id="authIndicator">
+                <span class="auth-dot"></span>
+                <span class="auth-text">Guest</span>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="main">
+        <!-- Left Panel -->
+        <div class="left-panel">
+            <!-- Preview -->
+            <div class="preview-area">
+                <div class="preview-empty" id="previewEmpty">
+                    <div class="preview-empty-icon">&#129497;</div>
+                    <div>Select a project and create a character</div>
+                </div>
+                <div class="preview-canvas-wrapper" id="previewWrapper" style="display: none;">
+                    <canvas id="previewCanvas" width="128" height="128"></canvas>
+                </div>
+                <div class="preview-label" id="previewLabel"></div>
+            </div>
+
+            <!-- Character Library -->
+            <div class="library-section">
+                <div class="library-header">
+                    <span class="library-title">Characters</span>
+                    <button class="btn btn-primary" id="newCharacterBtn" disabled>+ New</button>
+                </div>
+                <div class="library-grid" id="characterLibrary">
+                    <div class="library-empty">Select a project to see characters</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Right Panel -->
+        <div class="right-panel">
+            <!-- Character Info -->
+            <div class="panel-section">
+                <div class="panel-header">Character Info</div>
+                <div class="form-group">
+                    <label class="form-label">Name</label>
+                    <input type="text" class="form-input" id="characterName" placeholder="Character name..." disabled>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Identifier</label>
+                    <input type="text" class="form-input" id="characterIdentifier" placeholder="Auto-generated..." disabled>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Type</label>
+                    <select class="form-select" id="characterType" disabled>
+                        <option value="playable">Playable</option>
+                        <option value="npc">NPC</option>
+                        <option value="enemy">Enemy</option>
+                        <option value="object">Object</option>
+                    </select>
+                </div>
+            </div>
+
+            <!-- Default Sprite -->
+            <div class="panel-section">
+                <div class="panel-header">Default Sprite</div>
+                <div class="sprite-grid" id="spriteGrid">
+                    <div class="sprite-empty">Select a project to load sprites</div>
+                </div>
+            </div>
+
+            <!-- Animations -->
+            <div class="panel-section">
+                <div class="panel-header">Animations</div>
+                <div id="animationSlots">
+                    <div class="animation-slot">
+                        <span class="animation-slot-label">Idle</span>
+                        <select class="animation-slot-select" data-slot="idle" disabled>
+                            <option value="">-- None --</option>
+                        </select>
+                    </div>
+                    <div class="animation-slot">
+                        <span class="animation-slot-label">Walk</span>
+                        <select class="animation-slot-select" data-slot="walk" disabled>
+                            <option value="">-- None --</option>
+                        </select>
+                    </div>
+                    <div class="animation-slot">
+                        <span class="animation-slot-label">Run</span>
+                        <select class="animation-slot-select" data-slot="run" disabled>
+                            <option value="">-- None --</option>
+                        </select>
+                    </div>
+                    <div class="animation-slot">
+                        <span class="animation-slot-label">Jump</span>
+                        <select class="animation-slot-select" data-slot="jump" disabled>
+                            <option value="">-- None --</option>
+                        </select>
+                    </div>
+                    <div class="animation-slot">
+                        <span class="animation-slot-label">Attack</span>
+                        <select class="animation-slot-select" data-slot="attack" disabled>
+                            <option value="">-- None --</option>
+                        </select>
+                    </div>
+                    <div class="animation-slot">
+                        <span class="animation-slot-label">Hurt</span>
+                        <select class="animation-slot-select" data-slot="hurt" disabled>
+                            <option value="">-- None --</option>
+                        </select>
+                    </div>
+                    <div class="animation-slot">
+                        <span class="animation-slot-label">Death</span>
+                        <select class="animation-slot-select" data-slot="death" disabled>
+                            <option value="">-- None --</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="custom-slots" id="customSlots"></div>
+                <button class="btn add-property-btn" id="addAnimationBtn" disabled>+ Add Custom Animation</button>
+            </div>
+
+            <!-- Tags -->
+            <div class="panel-section">
+                <div class="panel-header">Tags</div>
+                <div class="tags-container" id="tagsContainer"></div>
+                <div class="tag-input-wrapper">
+                    <input type="text" class="tag-input" id="tagInput" placeholder="Add tag..." disabled>
+                    <button class="btn tag-add-btn" id="addTagBtn" disabled>Add</button>
+                </div>
+            </div>
+
+            <!-- Properties -->
+            <div class="panel-section">
+                <div class="panel-header">Properties</div>
+                <table class="properties-table">
+                    <thead>
+                        <tr>
+                            <th>Key</th>
+                            <th>Type</th>
+                            <th>Value</th>
+                            <th></th>
+                        </tr>
+                    </thead>
+                    <tbody id="propertiesBody"></tbody>
+                </table>
+                <button class="btn add-property-btn" id="addPropertyBtn" disabled>+ Add Property</button>
+            </div>
+
+            <!-- Actions -->
+            <div class="panel-section">
+                <button class="btn btn-primary" id="saveCharacterBtn" style="width: 100%; margin-bottom: 8px;" disabled>Save Character</button>
+                <button class="btn btn-danger" id="deleteCharacterBtn" style="width: 100%;" disabled>Delete Character</button>
+            </div>
+        </div>
+    </main>
+
+    <!-- Toast -->
+    <div class="toast" id="toast"></div>
+
+    <!-- Help Drawer -->
+    <link rel="stylesheet" href="../shared/help-drawer.css">
+    <script src="../shared/help-drawer.js"></script>
+    <script src="../shared/docs/character-forge-docs.js"></script>
+
+    <!-- Supabase Client -->
+    <script src="../shared/supabase-client.js"></script>
+
+    <script>
+        // ==========================================
+        // State
+        // ==========================================
+        const state = {
+            projectId: null,
+            characters: [],
+            currentCharacterId: null,
+            sprites: [],
+            animations: [],
+            masterSheetImage: null,
+            selectedSprite: null,
+            customAnimationSlots: [],
+            tags: [],
+            properties: {},
+            isDirty: false,
+            saveTimeout: null,
+            user: null
+        };
+
+        // Predefined animation slots
+        const PREDEFINED_SLOTS = ['idle', 'walk', 'run', 'jump', 'attack', 'hurt', 'death'];
+
+        // ==========================================
+        // DOM Elements
+        // ==========================================
+        const elements = {
+            projectSelect: document.getElementById('projectSelect'),
+            saveIndicator: document.getElementById('saveIndicator'),
+            authIndicator: document.getElementById('authIndicator'),
+            previewEmpty: document.getElementById('previewEmpty'),
+            previewWrapper: document.getElementById('previewWrapper'),
+            previewCanvas: document.getElementById('previewCanvas'),
+            previewLabel: document.getElementById('previewLabel'),
+            characterLibrary: document.getElementById('characterLibrary'),
+            newCharacterBtn: document.getElementById('newCharacterBtn'),
+            characterName: document.getElementById('characterName'),
+            characterIdentifier: document.getElementById('characterIdentifier'),
+            characterType: document.getElementById('characterType'),
+            spriteGrid: document.getElementById('spriteGrid'),
+            animationSlots: document.getElementById('animationSlots'),
+            customSlots: document.getElementById('customSlots'),
+            addAnimationBtn: document.getElementById('addAnimationBtn'),
+            tagsContainer: document.getElementById('tagsContainer'),
+            tagInput: document.getElementById('tagInput'),
+            addTagBtn: document.getElementById('addTagBtn'),
+            propertiesBody: document.getElementById('propertiesBody'),
+            addPropertyBtn: document.getElementById('addPropertyBtn'),
+            saveCharacterBtn: document.getElementById('saveCharacterBtn'),
+            deleteCharacterBtn: document.getElementById('deleteCharacterBtn'),
+            toast: document.getElementById('toast')
+        };
+
+        // ==========================================
+        // Utilities
+        // ==========================================
+        function showToast(message, type = '') {
+            elements.toast.textContent = message;
+            elements.toast.className = 'toast show ' + type;
+            setTimeout(() => elements.toast.classList.remove('show'), 3000);
+        }
+
+        function generateIdentifier(name) {
+            return name.toLowerCase().replace(/[^a-z0-9]+/g, '_').replace(/^_|_$/g, '');
+        }
+
+        // ==========================================
+        // Initialization
+        // ==========================================
+        async function init() {
+            try {
+                const crucible = await getCrucible();
+                state.user = await crucible.getUser();
+                updateAuthIndicator();
+                await loadProjects();
+                setupEventListeners();
+            } catch (err) {
+                console.error('Failed to initialize:', err);
+                showToast('Failed to initialize', 'error');
+            }
+        }
+
+        function updateAuthIndicator() {
+            if (state.user) {
+                elements.authIndicator.classList.add('logged-in');
+                elements.authIndicator.querySelector('.auth-text').textContent =
+                    state.user.email?.split('@')[0] || 'Logged In';
+            }
+        }
+
+        async function loadProjects() {
+            try {
+                const crucible = await getCrucible();
+                const projects = await crucible.getProjects();
+
+                elements.projectSelect.innerHTML = '<option value="">-- Select Project --</option>';
+                projects.forEach(p => {
+                    const opt = document.createElement('option');
+                    opt.value = p.id;
+                    opt.textContent = p.name;
+                    elements.projectSelect.appendChild(opt);
+                });
+
+                // Restore last project
+                const lastProject = localStorage.getItem('character_forge_project');
+                if (lastProject && projects.find(p => p.id === lastProject)) {
+                    elements.projectSelect.value = lastProject;
+                    await selectProject(lastProject);
+                }
+            } catch (err) {
+                console.error('Failed to load projects:', err);
+            }
+        }
+
+        async function selectProject(projectId) {
+            state.projectId = projectId;
+            state.currentCharacterId = null;
+            localStorage.setItem('character_forge_project', projectId || '');
+
+            if (!projectId) {
+                clearEditor();
+                return;
+            }
+
+            elements.newCharacterBtn.disabled = false;
+
+            try {
+                const crucible = await getCrucible();
+
+                // Load characters
+                state.characters = await crucible.getCharacters(projectId);
+                renderCharacterLibrary();
+
+                // Load master spritesheet
+                const project = await crucible.getProject(projectId);
+                if (project.master_sheet_png && project.master_sheet_atlas) {
+                    await loadMasterSheet(project.master_sheet_png, project.master_sheet_atlas);
+                } else {
+                    state.sprites = [];
+                    state.masterSheetImage = null;
+                    renderSpriteGrid();
+                }
+
+                // Load animations from all spritesheets in project
+                const spritesheets = await crucible.getSpritesheets(projectId);
+                state.animations = [];
+                for (const sheet of spritesheets) {
+                    const anims = await crucible.getAnimations(sheet.id);
+                    state.animations.push(...anims.map(a => ({ ...a, sheetName: sheet.name })));
+                }
+                populateAnimationDropdowns();
+
+            } catch (err) {
+                console.error('Failed to load project:', err);
+                showToast('Failed to load project', 'error');
+            }
+        }
+
+        async function loadMasterSheet(pngData, atlasData) {
+            return new Promise((resolve) => {
+                const img = new Image();
+                img.onload = () => {
+                    state.masterSheetImage = img;
+                    state.sprites = atlasData.sprites || [];
+                    renderSpriteGrid();
+                    resolve();
+                };
+                img.onerror = () => {
+                    console.error('Failed to load master sheet image');
+                    state.sprites = [];
+                    renderSpriteGrid();
+                    resolve();
+                };
+                img.src = pngData;
+            });
+        }
+
+        function clearEditor() {
+            state.currentCharacterId = null;
+            state.selectedSprite = null;
+            state.customAnimationSlots = [];
+            state.tags = [];
+            state.properties = {};
+
+            elements.characterName.value = '';
+            elements.characterName.disabled = true;
+            elements.characterIdentifier.value = '';
+            elements.characterIdentifier.disabled = true;
+            elements.characterType.value = 'npc';
+            elements.characterType.disabled = true;
+            elements.newCharacterBtn.disabled = !state.projectId;
+            elements.saveCharacterBtn.disabled = true;
+            elements.deleteCharacterBtn.disabled = true;
+            elements.addAnimationBtn.disabled = true;
+            elements.tagInput.disabled = true;
+            elements.addTagBtn.disabled = true;
+            elements.addPropertyBtn.disabled = true;
+
+            // Clear animation slots
+            document.querySelectorAll('.animation-slot-select').forEach(sel => {
+                sel.value = '';
+                sel.disabled = true;
+            });
+
+            elements.customSlots.innerHTML = '';
+            elements.tagsContainer.innerHTML = '';
+            elements.propertiesBody.innerHTML = '';
+
+            // Clear preview
+            elements.previewEmpty.style.display = 'block';
+            elements.previewWrapper.style.display = 'none';
+            elements.previewLabel.textContent = '';
+
+            // Clear sprite selection
+            document.querySelectorAll('.sprite-tile.selected').forEach(el => el.classList.remove('selected'));
+
+            // Clear character library selection
+            document.querySelectorAll('.character-tile.active').forEach(el => el.classList.remove('active'));
+
+            renderCharacterLibrary();
+        }
+
+        // ==========================================
+        // Rendering
+        // ==========================================
+        function renderCharacterLibrary() {
+            if (!state.projectId || state.characters.length === 0) {
+                elements.characterLibrary.innerHTML = '<div class="library-empty">No characters yet</div>';
+                return;
+            }
+
+            elements.characterLibrary.innerHTML = state.characters.map(char => {
+                const isActive = char.id === state.currentCharacterId;
+                return `
+                    <div class="character-tile ${isActive ? 'active' : ''}" data-id="${char.id}" title="${char.name}">
+                        ${char.default_sprite ? '' : '&#129497;'}
+                        <button class="character-tile-delete" data-id="${char.id}">&times;</button>
+                    </div>
+                `;
+            }).join('');
+
+            // Render sprite thumbnails
+            state.characters.forEach(char => {
+                if (char.default_sprite && state.masterSheetImage) {
+                    const tile = elements.characterLibrary.querySelector(`[data-id="${char.id}"]`);
+                    if (tile) {
+                        const canvas = document.createElement('canvas');
+                        const sprite = char.default_sprite;
+                        const scale = Math.min(40 / sprite.width, 40 / sprite.height);
+                        canvas.width = Math.floor(sprite.width * scale);
+                        canvas.height = Math.floor(sprite.height * scale);
+                        const ctx = canvas.getContext('2d');
+                        ctx.imageSmoothingEnabled = false;
+                        ctx.drawImage(
+                            state.masterSheetImage,
+                            sprite.x, sprite.y, sprite.width, sprite.height,
+                            0, 0, canvas.width, canvas.height
+                        );
+                        tile.innerHTML = '';
+                        tile.appendChild(canvas);
+
+                        const deleteBtn = document.createElement('button');
+                        deleteBtn.className = 'character-tile-delete';
+                        deleteBtn.dataset.id = char.id;
+                        deleteBtn.innerHTML = '&times;';
+                        tile.appendChild(deleteBtn);
+                    }
+                }
+            });
+
+            // Event listeners
+            elements.characterLibrary.querySelectorAll('.character-tile').forEach(tile => {
+                tile.addEventListener('click', (e) => {
+                    if (!e.target.classList.contains('character-tile-delete')) {
+                        loadCharacter(tile.dataset.id);
+                    }
+                });
+            });
+
+            elements.characterLibrary.querySelectorAll('.character-tile-delete').forEach(btn => {
+                btn.addEventListener('click', async (e) => {
+                    e.stopPropagation();
+                    await deleteCharacter(btn.dataset.id);
+                });
+            });
+        }
+
+        function renderSpriteGrid() {
+            if (state.sprites.length === 0) {
+                elements.spriteGrid.innerHTML = '<div class="sprite-empty">No sprites in master sheet</div>';
+                return;
+            }
+
+            elements.spriteGrid.innerHTML = state.sprites.map((sprite, index) => {
+                const isSelected = state.selectedSprite &&
+                    state.selectedSprite.name === sprite.name;
+                return `<div class="sprite-tile ${isSelected ? 'selected' : ''}" data-index="${index}"></div>`;
+            }).join('');
+
+            // Render sprite thumbnails
+            state.sprites.forEach((sprite, index) => {
+                const tile = elements.spriteGrid.querySelector(`[data-index="${index}"]`);
+                if (tile && state.masterSheetImage) {
+                    const canvas = document.createElement('canvas');
+                    const scale = Math.min(40 / sprite.width, 40 / sprite.height);
+                    canvas.width = Math.floor(sprite.width * scale);
+                    canvas.height = Math.floor(sprite.height * scale);
+                    const ctx = canvas.getContext('2d');
+                    ctx.imageSmoothingEnabled = false;
+                    ctx.drawImage(
+                        state.masterSheetImage,
+                        sprite.x, sprite.y, sprite.width, sprite.height,
+                        0, 0, canvas.width, canvas.height
+                    );
+                    tile.appendChild(canvas);
+                }
+            });
+
+            // Event listeners
+            elements.spriteGrid.querySelectorAll('.sprite-tile').forEach(tile => {
+                tile.addEventListener('click', () => selectSprite(parseInt(tile.dataset.index)));
+            });
+        }
+
+        function selectSprite(index) {
+            if (!state.currentCharacterId) return;
+
+            const sprite = state.sprites[index];
+            state.selectedSprite = sprite;
+
+            // Update UI
+            document.querySelectorAll('.sprite-tile').forEach((el, i) => {
+                el.classList.toggle('selected', i === index);
+            });
+
+            // Update preview
+            renderPreview();
+            markDirty();
+        }
+
+        function renderPreview() {
+            if (!state.selectedSprite || !state.masterSheetImage) {
+                elements.previewEmpty.style.display = 'block';
+                elements.previewWrapper.style.display = 'none';
+                elements.previewLabel.textContent = '';
+                return;
+            }
+
+            elements.previewEmpty.style.display = 'none';
+            elements.previewWrapper.style.display = 'block';
+
+            const sprite = state.selectedSprite;
+            const canvas = elements.previewCanvas;
+            const scale = Math.min(128 / sprite.width, 128 / sprite.height, 4);
+            canvas.width = Math.floor(sprite.width * scale);
+            canvas.height = Math.floor(sprite.height * scale);
+
+            const ctx = canvas.getContext('2d');
+            ctx.imageSmoothingEnabled = false;
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            ctx.drawImage(
+                state.masterSheetImage,
+                sprite.x, sprite.y, sprite.width, sprite.height,
+                0, 0, canvas.width, canvas.height
+            );
+
+            elements.previewLabel.textContent = elements.characterName.value || 'Unnamed';
+        }
+
+        function populateAnimationDropdowns() {
+            const options = '<option value="">-- None --</option>' +
+                state.animations.map(a => `<option value="${a.id}">${a.name}</option>`).join('');
+
+            document.querySelectorAll('.animation-slot-select').forEach(sel => {
+                sel.innerHTML = options;
+            });
+        }
+
+        function renderTags() {
+            elements.tagsContainer.innerHTML = state.tags.map(tag => `
+                <span class="tag">
+                    ${tag}
+                    <button class="tag-remove" data-tag="${tag}">&times;</button>
+                </span>
+            `).join('');
+
+            elements.tagsContainer.querySelectorAll('.tag-remove').forEach(btn => {
+                btn.addEventListener('click', () => removeTag(btn.dataset.tag));
+            });
+        }
+
+        function renderProperties() {
+            const keys = Object.keys(state.properties);
+            if (keys.length === 0) {
+                elements.propertiesBody.innerHTML = '';
+                return;
+            }
+
+            elements.propertiesBody.innerHTML = keys.map(key => {
+                const value = state.properties[key];
+                const type = typeof value;
+                return `
+                    <tr class="property-row" data-key="${key}">
+                        <td><input type="text" class="prop-key" value="${key}" data-original="${key}"></td>
+                        <td>
+                            <select class="prop-type">
+                                <option value="number" ${type === 'number' ? 'selected' : ''}>number</option>
+                                <option value="string" ${type === 'string' ? 'selected' : ''}>string</option>
+                                <option value="boolean" ${type === 'boolean' ? 'selected' : ''}>boolean</option>
+                            </select>
+                        </td>
+                        <td>
+                            ${type === 'boolean'
+                                ? `<select class="prop-value"><option value="true" ${value ? 'selected' : ''}>true</option><option value="false" ${!value ? 'selected' : ''}>false</option></select>`
+                                : `<input type="${type === 'number' ? 'number' : 'text'}" class="prop-value" value="${value}">`
+                            }
+                        </td>
+                        <td><button class="property-remove" data-key="${key}">&times;</button></td>
+                    </tr>
+                `;
+            }).join('');
+
+            // Event listeners
+            elements.propertiesBody.querySelectorAll('.property-row').forEach(row => {
+                const keyInput = row.querySelector('.prop-key');
+                const typeSelect = row.querySelector('.prop-type');
+                const valueInput = row.querySelector('.prop-value');
+                const removeBtn = row.querySelector('.property-remove');
+
+                keyInput.addEventListener('change', () => {
+                    const oldKey = keyInput.dataset.original;
+                    const newKey = keyInput.value.trim();
+                    if (newKey && newKey !== oldKey) {
+                        state.properties[newKey] = state.properties[oldKey];
+                        delete state.properties[oldKey];
+                        keyInput.dataset.original = newKey;
+                        markDirty();
+                    }
+                });
+
+                typeSelect.addEventListener('change', () => {
+                    const key = keyInput.value;
+                    const newType = typeSelect.value;
+                    let value = state.properties[key];
+
+                    if (newType === 'number') value = parseFloat(value) || 0;
+                    else if (newType === 'boolean') value = value === 'true' || value === true;
+                    else value = String(value);
+
+                    state.properties[key] = value;
+                    renderProperties();
+                    markDirty();
+                });
+
+                valueInput.addEventListener('change', () => {
+                    const key = keyInput.value;
+                    const type = typeSelect.value;
+                    let value = valueInput.value;
+
+                    if (type === 'number') value = parseFloat(value) || 0;
+                    else if (type === 'boolean') value = value === 'true';
+
+                    state.properties[key] = value;
+                    markDirty();
+                });
+
+                removeBtn.addEventListener('click', () => {
+                    delete state.properties[removeBtn.dataset.key];
+                    renderProperties();
+                    markDirty();
+                });
+            });
+        }
+
+        function renderCustomAnimationSlots() {
+            elements.customSlots.innerHTML = state.customAnimationSlots.map((slot, index) => `
+                <div class="custom-slot" data-index="${index}">
+                    <input type="text" class="custom-slot-name" value="${slot.name}" placeholder="Slot name">
+                    <select class="animation-slot-select" data-custom="${index}">
+                        <option value="">-- None --</option>
+                        ${state.animations.map(a => `<option value="${a.id}" ${a.id === slot.animationId ? 'selected' : ''}>${a.name}</option>`).join('')}
+                    </select>
+                    <button class="animation-slot-remove" data-index="${index}">&times;</button>
+                </div>
+            `).join('');
+
+            elements.customSlots.querySelectorAll('.custom-slot').forEach(slot => {
+                const index = parseInt(slot.dataset.index);
+                const nameInput = slot.querySelector('.custom-slot-name');
+                const select = slot.querySelector('.animation-slot-select');
+                const removeBtn = slot.querySelector('.animation-slot-remove');
+
+                nameInput.addEventListener('change', () => {
+                    state.customAnimationSlots[index].name = nameInput.value;
+                    markDirty();
+                });
+
+                select.addEventListener('change', () => {
+                    state.customAnimationSlots[index].animationId = select.value || null;
+                    markDirty();
+                });
+
+                removeBtn.addEventListener('click', () => {
+                    state.customAnimationSlots.splice(index, 1);
+                    renderCustomAnimationSlots();
+                    markDirty();
+                });
+            });
+        }
+
+        // ==========================================
+        // Character Operations
+        // ==========================================
+        async function createCharacter() {
+            if (!state.projectId) return;
+
+            const name = 'New Character ' + (state.characters.length + 1);
+
+            try {
+                const crucible = await getCrucible();
+                const character = await crucible.createCharacter(state.projectId, name, 'npc');
+                state.characters.push(character);
+                renderCharacterLibrary();
+                loadCharacter(character.id);
+                showToast('Character created', 'success');
+            } catch (err) {
+                console.error('Failed to create character:', err);
+                showToast('Failed to create character', 'error');
+            }
+        }
+
+        async function loadCharacter(characterId) {
+            const character = state.characters.find(c => c.id === characterId);
+            if (!character) return;
+
+            state.currentCharacterId = characterId;
+
+            // Enable inputs
+            elements.characterName.disabled = false;
+            elements.characterIdentifier.disabled = false;
+            elements.characterType.disabled = false;
+            elements.saveCharacterBtn.disabled = false;
+            elements.deleteCharacterBtn.disabled = false;
+            elements.addAnimationBtn.disabled = false;
+            elements.tagInput.disabled = false;
+            elements.addTagBtn.disabled = false;
+            elements.addPropertyBtn.disabled = false;
+
+            document.querySelectorAll('.animation-slot-select').forEach(sel => {
+                sel.disabled = false;
+            });
+
+            // Load character data
+            elements.characterName.value = character.name;
+            elements.characterIdentifier.value = character.identifier || '';
+            elements.characterType.value = character.character_type || 'npc';
+
+            // Load sprite
+            state.selectedSprite = character.default_sprite;
+            renderSpriteGrid();
+            renderPreview();
+
+            // Load animations
+            const animations = character.animations || {};
+            PREDEFINED_SLOTS.forEach(slot => {
+                const select = document.querySelector(`[data-slot="${slot}"]`);
+                if (select) {
+                    select.value = animations[slot] || '';
+                }
+            });
+
+            // Load custom animation slots
+            state.customAnimationSlots = [];
+            Object.keys(animations).forEach(key => {
+                if (!PREDEFINED_SLOTS.includes(key)) {
+                    state.customAnimationSlots.push({
+                        name: key,
+                        animationId: animations[key]
+                    });
+                }
+            });
+            renderCustomAnimationSlots();
+
+            // Load tags
+            state.tags = character.tags || [];
+            renderTags();
+
+            // Load properties
+            state.properties = character.properties || {};
+            renderProperties();
+
+            // Update library selection
+            document.querySelectorAll('.character-tile').forEach(el => {
+                el.classList.toggle('active', el.dataset.id === characterId);
+            });
+
+            state.isDirty = false;
+            elements.saveIndicator.textContent = '';
+        }
+
+        async function saveCharacter() {
+            if (!state.currentCharacterId) return;
+
+            const name = elements.characterName.value.trim();
+            if (!name) {
+                showToast('Please enter a character name', 'error');
+                return;
+            }
+
+            // Collect animations
+            const animations = {};
+            PREDEFINED_SLOTS.forEach(slot => {
+                const select = document.querySelector(`[data-slot="${slot}"]`);
+                if (select && select.value) {
+                    animations[slot] = select.value;
+                }
+            });
+            state.customAnimationSlots.forEach(slot => {
+                if (slot.name && slot.animationId) {
+                    animations[slot.name] = slot.animationId;
+                }
+            });
+
+            elements.saveIndicator.textContent = 'Saving...';
+            elements.saveIndicator.className = 'save-indicator saving';
+
+            try {
+                const crucible = await getCrucible();
+                await crucible.updateCharacter(state.currentCharacterId, {
+                    name,
+                    identifier: elements.characterIdentifier.value || generateIdentifier(name),
+                    character_type: elements.characterType.value,
+                    default_sprite: state.selectedSprite,
+                    animations,
+                    tags: state.tags,
+                    properties: state.properties
+                });
+
+                // Update local state
+                const index = state.characters.findIndex(c => c.id === state.currentCharacterId);
+                if (index >= 0) {
+                    state.characters[index] = {
+                        ...state.characters[index],
+                        name,
+                        identifier: elements.characterIdentifier.value,
+                        character_type: elements.characterType.value,
+                        default_sprite: state.selectedSprite,
+                        animations,
+                        tags: state.tags,
+                        properties: state.properties
+                    };
+                }
+
+                renderCharacterLibrary();
+                elements.saveIndicator.textContent = 'Saved';
+                elements.saveIndicator.className = 'save-indicator saved';
+                state.isDirty = false;
+                showToast('Character saved', 'success');
+            } catch (err) {
+                console.error('Failed to save character:', err);
+                elements.saveIndicator.textContent = 'Error';
+                showToast('Failed to save character', 'error');
+            }
+        }
+
+        async function deleteCharacter(characterId) {
+            if (!confirm('Delete this character?')) return;
+
+            try {
+                const crucible = await getCrucible();
+                await crucible.deleteCharacter(characterId);
+                state.characters = state.characters.filter(c => c.id !== characterId);
+
+                if (state.currentCharacterId === characterId) {
+                    clearEditor();
+                }
+
+                renderCharacterLibrary();
+                showToast('Character deleted', 'success');
+            } catch (err) {
+                console.error('Failed to delete character:', err);
+                showToast('Failed to delete character', 'error');
+            }
+        }
+
+        // ==========================================
+        // Tags & Properties
+        // ==========================================
+        function addTag() {
+            const tag = elements.tagInput.value.trim().toLowerCase();
+            if (!tag || state.tags.includes(tag)) {
+                elements.tagInput.value = '';
+                return;
+            }
+
+            state.tags.push(tag);
+            elements.tagInput.value = '';
+            renderTags();
+            markDirty();
+        }
+
+        function removeTag(tag) {
+            state.tags = state.tags.filter(t => t !== tag);
+            renderTags();
+            markDirty();
+        }
+
+        function addProperty() {
+            const key = 'property_' + (Object.keys(state.properties).length + 1);
+            state.properties[key] = 0;
+            renderProperties();
+            markDirty();
+        }
+
+        function addCustomAnimationSlot() {
+            state.customAnimationSlots.push({
+                name: 'custom_' + (state.customAnimationSlots.length + 1),
+                animationId: null
+            });
+            renderCustomAnimationSlots();
+            markDirty();
+        }
+
+        // ==========================================
+        // Dirty State & Auto-save
+        // ==========================================
+        function markDirty() {
+            state.isDirty = true;
+            elements.saveIndicator.textContent = 'Modified';
+            elements.saveIndicator.className = 'save-indicator';
+
+            // Auto-save after 3 seconds
+            if (state.saveTimeout) clearTimeout(state.saveTimeout);
+            state.saveTimeout = setTimeout(() => {
+                if (state.isDirty && state.currentCharacterId) {
+                    saveCharacter();
+                }
+            }, 3000);
+        }
+
+        // ==========================================
+        // Event Listeners
+        // ==========================================
+        function setupEventListeners() {
+            elements.projectSelect.addEventListener('change', (e) => {
+                selectProject(e.target.value);
+            });
+
+            elements.newCharacterBtn.addEventListener('click', createCharacter);
+
+            elements.characterName.addEventListener('input', () => {
+                if (!elements.characterIdentifier.value ||
+                    elements.characterIdentifier.value === generateIdentifier(elements.characterName.dataset.lastValue || '')) {
+                    elements.characterIdentifier.value = generateIdentifier(elements.characterName.value);
+                }
+                elements.characterName.dataset.lastValue = elements.characterName.value;
+                renderPreview();
+                markDirty();
+            });
+
+            elements.characterIdentifier.addEventListener('input', markDirty);
+            elements.characterType.addEventListener('change', markDirty);
+
+            document.querySelectorAll('.animation-slot-select[data-slot]').forEach(sel => {
+                sel.addEventListener('change', markDirty);
+            });
+
+            elements.addAnimationBtn.addEventListener('click', addCustomAnimationSlot);
+
+            elements.addTagBtn.addEventListener('click', addTag);
+            elements.tagInput.addEventListener('keypress', (e) => {
+                if (e.key === 'Enter') addTag();
+            });
+
+            elements.addPropertyBtn.addEventListener('click', addProperty);
+
+            elements.saveCharacterBtn.addEventListener('click', saveCharacter);
+            elements.deleteCharacterBtn.addEventListener('click', () => {
+                if (state.currentCharacterId) {
+                    deleteCharacter(state.currentCharacterId);
+                }
+            });
+        }
+
+        // ==========================================
+        // Initialize
+        // ==========================================
+        init();
+
+        // Initialize Help Drawer
+        if (typeof HelpDrawer !== 'undefined' && typeof CHARACTER_FORGE_DOCS !== 'undefined') {
+            HelpDrawer.init({
+                toolId: 'character-forge',
+                toolName: 'Character Forge',
+                toolIcon: '&#129497;',
+                accentColor: '#ff6b9d',
+                docs: CHARACTER_FORGE_DOCS
+            });
+        }
+    </script>
+</body>
+</html>
