@@ -1015,6 +1015,7 @@ class CrucibleClient {
         if (updates.rows !== undefined) updateData.rows = updates.rows;
         if (updates.animations !== undefined) updateData.animations = updates.animations;
         if (updates.isMaster !== undefined) updateData.is_master = updates.isMaster;
+        if (updates.sprites !== undefined) updateData.sprites = updates.sprites;
 
         const { data, error } = await this.client
             .from('spritesheets')
