@@ -1,17 +1,17 @@
 /**
- * Character Forge Documentation
+ * Incarnum Documentation
  * Used by the Help Drawer component and Grimoire
  */
 
-const CHARACTER_FORGE_DOCS = [
+const INCARNUM_DOCS = [
     {
         id: 'quick-start',
         title: 'Quick Start',
         content: `
             <h1>Quick Start</h1>
-            <p>Character Forge is your character assembly tool. Define characters by pulling from your sprite library and linking animations. Characters are templates that can be placed in levels via Level Forge.</p>
+            <p>Incarnum is your character assembly tool. Define characters by pulling from your sprite library and linking animations. Characters are templates that can be placed in levels via Level Forge.</p>
 
-            <h2>What is Character Forge?</h2>
+            <h2>What is Incarnum?</h2>
             <p>Think of it as your character database:</p>
             <ul>
                 <li><strong>Assemble</strong> - Pull sprites and animations from your libraries</li>
@@ -58,21 +58,21 @@ const CHARACTER_FORGE_DOCS = [
                 <div class="step-num">5</div>
                 <div class="step-text">
                     <strong>Link Animations</strong><br>
-                    Assign animations from Animation-Station to behaviors like idle, walk, attack, etc.
+                    Assign animations from Animancer to behaviors like idle, walk, attack, etc.
                 </div>
             </div>
 
             <h2>Key Concept: Assembly, Not Creation</h2>
-            <p>Character Forge assembles existing assets:</p>
+            <p>Incarnum assembles existing assets:</p>
             <ul>
                 <li>Sprites come from <strong>Sprite-Rite</strong> or <strong>Tilesmith</strong></li>
-                <li>Animations come from <strong>Animation-Station</strong></li>
-                <li>Character Forge pulls them together into a coherent character definition</li>
+                <li>Animations come from <strong>Animancer</strong></li>
+                <li>Incarnum pulls them together into a coherent character definition</li>
             </ul>
 
             <div class="tip">
                 <div class="tip-label">Tip</div>
-                Create your sprites and animations first, then assemble characters. The Character Forge shows what's available in your project.
+                Create your sprites and animations first, then assemble characters. The Incarnum shows what's available in your project.
             </div>
         `
     },
@@ -188,7 +188,7 @@ const CHARACTER_FORGE_DOCS = [
             <ol>
                 <li>Find the animation slot you want to fill</li>
                 <li>Click the dropdown</li>
-                <li>Select an animation from Animation-Station</li>
+                <li>Select an animation from Animancer</li>
                 <li>The preview will play that animation</li>
             </ol>
 
@@ -212,7 +212,7 @@ const CHARACTER_FORGE_DOCS = [
 
             <div class="warning">
                 <div class="warning-label">Note</div>
-                Animations must exist in Animation-Station first. If you don't see an animation in the dropdown, create it there.
+                Animations must exist in Animancer first. If you don't see an animation in the dropdown, create it there.
             </div>
 
             <div class="tip">
@@ -396,14 +396,14 @@ if (defeatedEnemies.includes("boss_dragon")) {
             <h1>Recommended Workflow</h1>
             <p>Here's the typical workflow for creating characters in your game.</p>
 
-            <h2>Before Character Forge</h2>
+            <h2>Before Incarnum</h2>
             <ol>
                 <li><strong>Crucible</strong>: Create your project</li>
                 <li><strong>Tilesmith/Sprite-Rite</strong>: Create or import sprites</li>
-                <li><strong>Animation-Station</strong>: Create animations for characters</li>
+                <li><strong>Animancer</strong>: Create animations for characters</li>
             </ol>
 
-            <h2>In Character Forge</h2>
+            <h2>In Incarnum</h2>
             <ol>
                 <li>Select your project</li>
                 <li>Create a new character</li>
@@ -415,7 +415,7 @@ if (defeatedEnemies.includes("boss_dragon")) {
                 <li>Repeat for each character</li>
             </ol>
 
-            <h2>After Character Forge</h2>
+            <h2>After Incarnum</h2>
             <ol>
                 <li><strong>Level Forge</strong>: Place characters in levels (coming soon)</li>
                 <li><strong>Crucible</strong>: Export full project with characters</li>
@@ -548,7 +548,7 @@ const bosses = characters.filter(c =>
         title: 'Shortcuts',
         content: `
             <h1>Keyboard Shortcuts</h1>
-            <p>Work faster in Character Forge with these shortcuts.</p>
+            <p>Work faster in Incarnum with these shortcuts.</p>
 
             <h2>General</h2>
             <ul>
@@ -575,7 +575,7 @@ const bosses = characters.filter(c =>
             </ul>
 
             <h2>Auto-Save</h2>
-            <p>Character Forge auto-saves your changes after 3 seconds of inactivity. Look for the "Saved" indicator in the header.</p>
+            <p>Incarnum auto-saves your changes after 3 seconds of inactivity. Look for the "Saved" indicator in the header.</p>
             <ul>
                 <li><strong>Unsaved</strong> - Changes pending</li>
                 <li><strong>Saving...</strong> - Save in progress</li>
@@ -584,7 +584,7 @@ const bosses = characters.filter(c =>
 
             <div class="tip">
                 <div class="tip-label">Pro Tip</div>
-                Open Character Forge and Animation-Station in separate tabs. Create animations in one, refresh and link them in the other.
+                Open Incarnum and Animancer in separate tabs. Create animations in one, refresh and link them in the other.
             </div>
         `
     }
@@ -592,5 +592,5 @@ const bosses = characters.filter(c =>
 
 // Export for use
 if (typeof module !== 'undefined' && module.exports) {
-    module.exports = CHARACTER_FORGE_DOCS;
+    module.exports = INCARNUM_DOCS;
 }

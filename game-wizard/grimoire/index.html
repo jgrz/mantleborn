@@ -611,9 +611,9 @@
                         </a>
                     </li>
                     <li class="nav-item">
-                        <a href="#animation-station" class="nav-link">
+                        <a href="#animancer" class="nav-link">
                             <span class="nav-icon">&#127916;</span>
-                            Animation-Station
+                            Animancer
                             <span class="nav-badge">6</span>
                         </a>
                     </li>
@@ -625,9 +625,9 @@
                         </a>
                     </li>
                     <li class="nav-item">
-                        <a href="#character-forge" class="nav-link">
+                        <a href="#incarnum" class="nav-link">
                             <span class="nav-icon">&#129497;</span>
-                            Character Forge
+                            Incarnum
                             <span class="nav-badge">8</span>
                         </a>
                     </li>
@@ -714,9 +714,9 @@
                         <div class="tool-card-count">6 articles</div>
                     </a>
 
-                    <a href="#animation-station" class="tool-card">
+                    <a href="#animancer" class="tool-card">
                         <div class="tool-card-icon">&#127916;</div>
-                        <div class="tool-card-title">Animation-Station</div>
+                        <div class="tool-card-title">Animancer</div>
                         <div class="tool-card-desc">
                             Build frame-by-frame animations with timeline and playback controls.
                         </div>
@@ -732,9 +732,9 @@
                         <div class="tool-card-count">8 articles</div>
                     </a>
 
-                    <a href="#character-forge" class="tool-card">
+                    <a href="#incarnum" class="tool-card">
                         <div class="tool-card-icon">&#129497;</div>
-                        <div class="tool-card-title">Character Forge</div>
+                        <div class="tool-card-title">Incarnum</div>
                         <div class="tool-card-desc">
                             Assemble characters from sprites and animations. Define types, tags, and properties.
                         </div>
@@ -775,9 +775,9 @@
     <!-- Load documentation modules -->
     <script src="../shared/docs/tilesmith-docs.js"></script>
     <script src="../shared/docs/sprite-rite-docs.js"></script>
-    <script src="../shared/docs/animation-station-docs.js"></script>
+    <script src="../shared/docs/animancer-docs.js"></script>
     <script src="../shared/docs/level-forge-docs.js"></script>
-    <script src="../shared/docs/character-forge-docs.js"></script>
+    <script src="../shared/docs/incarnum-docs.js"></script>
     <script src="../shared/docs/crucible-docs.js"></script>
     <script src="../shared/docs/portals-docs.js"></script>
 
@@ -794,7 +794,7 @@
                     <h2>The Big Picture</h2>
                     <p>Game Wizard is organized around a central concept: <strong>Projects</strong>. A project represents a complete game and contains all its assets—sprites, animations, levels, and connections between them.</p>
 
-                    <p>Each tool in Game Wizard specializes in one part of the game creation process, but they all share data through the project system. This means sprites you create in Tilesmith automatically appear in Animation-Station and Level Forge. Levels you design flow into the Crucible for export.</p>
+                    <p>Each tool in Game Wizard specializes in one part of the game creation process, but they all share data through the project system. This means sprites you create in Tilesmith automatically appear in Animancer and Level Forge. Levels you design flow into the Crucible for export.</p>
 
                     <h2>How Data Flows</h2>
                     <p>Here's the typical workflow from start to finish:</p>
@@ -818,14 +818,14 @@
                             <span class="feature-icon">3️⃣</span>
                             <div class="feature-text">
                                 <strong>Create Animations</strong>
-                                <span>In <strong>Animation-Station</strong>, build frame sequences from your sprites. Define walk cycles, attacks, effects—anything that moves.</span>
+                                <span>In <strong>Animancer</strong>, build frame sequences from your sprites. Define walk cycles, attacks, effects—anything that moves.</span>
                             </div>
                         </div>
                         <div class="feature-item">
                             <span class="feature-icon">4️⃣</span>
                             <div class="feature-text">
                                 <strong>Define Characters</strong>
-                                <span><strong>Character Forge</strong> assembles characters from sprites and animations. Set types, link behaviors, add tags and properties.</span>
+                                <span><strong>Incarnum</strong> assembles characters from sprites and animations. Set types, link behaviors, add tags and properties.</span>
                             </div>
                         </div>
                         <div class="feature-item">
@@ -856,7 +856,7 @@
                     <ul>
                         <li><strong>Tilesmith</strong> tiles publish directly to the master sheet</li>
                         <li><strong>Sprite-Rite</strong> imported sprites publish to the master sheet</li>
-                        <li><strong>Animation-Station</strong> reads sprites from the master sheet</li>
+                        <li><strong>Animancer</strong> reads sprites from the master sheet</li>
                         <li><strong>Level Forge</strong> paints with sprites from the master sheet</li>
                     </ul>
                     <p>When you select a project in any tool, that project's master spritesheet loads automatically.</p>
@@ -872,10 +872,10 @@
                     <h3>Sprite-Rite</h3>
                     <p>Asset import and management. If you have existing spritesheets, bring them in here. Define sprite regions, name them, and publish to your project.</p>
 
-                    <h3>Animation-Station</h3>
+                    <h3>Animancer</h3>
                     <p>Animation assembly. Take static sprites and arrange them into animated sequences. Control frame timing, preview playback, and define the animations your game will use.</p>
 
-                    <h3>Character Forge</h3>
+                    <h3>Incarnum</h3>
                     <p>Character definition and assembly. Combine sprites and animations into character templates with types (playable, NPC, enemy, object), tags for categorization, and custom properties for game data.</p>
 
                     <h3>Level Forge</h3>
@@ -1009,8 +1009,8 @@
             SPRITE_RITE_OVERVIEW,
             typeof SPRITE_RITE_DOCS !== 'undefined' ? SPRITE_RITE_DOCS : null);
 
-        const ANIMATION_STATION_OVERVIEW = `
-            <p>Animation-Station brings your sprites to life. Build frame-by-frame animations, control timing, and preview playback in real-time.</p>
+        const ANIMANCER_OVERVIEW = `
+            <p>Animancer brings your sprites to life. Build frame-by-frame animations, control timing, and preview playback in real-time.</p>
             <div class="feature-grid">
                 <div class="feature-item">
                     <span class="feature-icon">&#127902;</span>
@@ -1043,10 +1043,10 @@
             </div>
         `;
 
-        buildToolDocs('animation-station', 'Animation-Station',
+        buildToolDocs('animancer', 'Animancer',
             'Create and preview sprite animations. Build frame sequences, control timing, and export for your game engine.',
-            ANIMATION_STATION_OVERVIEW,
-            typeof ANIMATION_STATION_DOCS !== 'undefined' ? ANIMATION_STATION_DOCS : null);
+            ANIMANCER_OVERVIEW,
+            typeof ANIMANCER_DOCS !== 'undefined' ? ANIMANCER_DOCS : null);
 
         const LEVEL_FORGE_OVERVIEW = `
             <p>Level Forge is your complete level design toolkit. Build collision maps, add parallax backgrounds, paint visual tiles, and test with built-in demo mode.</p>
@@ -1087,8 +1087,8 @@
             LEVEL_FORGE_OVERVIEW,
             typeof LEVEL_FORGE_DOCS !== 'undefined' ? LEVEL_FORGE_DOCS : null);
 
-        const CHARACTER_FORGE_OVERVIEW = `
-            <p>Character Forge assembles characters from your sprite and animation libraries. Define character types, link animations to behaviors, and add custom properties.</p>
+        const INCARNUM_OVERVIEW = `
+            <p>Incarnum assembles characters from your sprite and animation libraries. Define character types, link animations to behaviors, and add custom properties.</p>
             <div class="feature-grid">
                 <div class="feature-item">
                     <span class="feature-icon">&#127912;</span>
@@ -1121,10 +1121,10 @@
             </div>
         `;
 
-        buildToolDocs('character-forge', 'Character Forge',
+        buildToolDocs('incarnum', 'Incarnum',
             'Assemble characters from sprites and animations. Define types, behaviors, tags, and custom properties.',
-            CHARACTER_FORGE_OVERVIEW,
-            typeof CHARACTER_FORGE_DOCS !== 'undefined' ? CHARACTER_FORGE_DOCS : null);
+            INCARNUM_OVERVIEW,
+            typeof INCARNUM_DOCS !== 'undefined' ? INCARNUM_DOCS : null);
 
         const CRUCIBLE_OVERVIEW = `
             <p>The Crucible of Code is your project command center. Create projects, manage levels, and compile all your game data into exportable JSON.</p>
@@ -1147,7 +1147,7 @@
                     <span class="feature-icon">&#128279;</span>
                     <div class="feature-text">
                         <strong>Tool Integration</strong>
-                        <span>Connects Tilesmith, Sprite-Rite, Animation-Station, and Level Forge.</span>
+                        <span>Connects Tilesmith, Sprite-Rite, Animancer, and Level Forge.</span>
                     </div>
                 </div>
                 <div class="feature-item">

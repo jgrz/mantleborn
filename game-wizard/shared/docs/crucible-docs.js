@@ -67,7 +67,7 @@ const CRUCIBLE_DOCS = [
             <ul>
                 <li><strong>Tilesmith</strong> creates sprites → Master Spritesheet</li>
                 <li><strong>Sprite-Rite</strong> imports sprites → Master Spritesheet</li>
-                <li><strong>Animation-Station</strong> animates sprites → Animation data</li>
+                <li><strong>Animancer</strong> animates sprites → Animation data</li>
                 <li><strong>Level Forge</strong> designs levels → Crucible</li>
                 <li><strong>Crucible</strong> compiles everything → Game-ready JSON</li>
             </ul>
@@ -406,7 +406,7 @@ player.y = level.spawn.y * level.tileSize;</code></pre>
                 ├──→ Master Spritesheet ──→ Level Forge
 Sprite-Rite ───┘                                │
                                                 │
-Animation-Station ←── Master Spritesheet        │
+Animancer ←── Master Spritesheet        │
                                                 ▼
                                            Crucible
                                                 │
@@ -425,7 +425,7 @@ Animation-Station ←── Master Spritesheet        │
             <p>Sprites you import in Sprite-Rite:</p>
             <ol>
                 <li>Get published to the master spritesheet</li>
-                <li>Become available in Level Forge and Animation-Station</li>
+                <li>Become available in Level Forge and Animancer</li>
             </ol>
 
             <h2>From Level Forge</h2>

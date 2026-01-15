@@ -1,6 +1,6 @@
 -- =============================================
 -- CHARACTERS TABLE
--- Migration for Character Forge tool
+-- Migration for Incarnum tool
 -- =============================================
 
 -- Characters: Character templates scoped to projects

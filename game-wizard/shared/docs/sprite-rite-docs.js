@@ -49,7 +49,7 @@ const SPRITE_RITE_DOCS = [
                 <div class="step-num">5</div>
                 <div class="step-text">
                     <strong>Publish to Master Sheet</strong><br>
-                    Once sprites are defined, they can be published to your project's master spritesheet for use in Level Forge and Animation-Station.
+                    Once sprites are defined, they can be published to your project's master spritesheet for use in Level Forge and Animancer.
                 </div>
             </div>
 
@@ -194,7 +194,7 @@ const SPRITE_RITE_DOCS = [
                 <li>Single texture atlas for better game performance</li>
                 <li>Automatic sprite packing (no wasted space)</li>
                 <li>Consistent atlas format across all tools</li>
-                <li>Level Forge and Animation-Station automatically use it</li>
+                <li>Level Forge and Animancer automatically use it</li>
             </ul>
 
             <h2>Publishing to Master Sheet</h2>
@@ -203,7 +203,7 @@ const SPRITE_RITE_DOCS = [
                 <li>Select the sprites you want to publish</li>
                 <li>Click "Publish to Master" (or similar action)</li>
                 <li>The sprites are added to your project's master sheet</li>
-                <li>They become available in Level Forge and Animation-Station</li>
+                <li>They become available in Level Forge and Animancer</li>
             </ol>
 
             <h2>Tilesmith vs Sprite-Rite</h2>

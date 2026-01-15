@@ -25,4 +25,4 @@ COMMENT ON COLUMN projects.master_sheet_updated_at IS 'Last time the master shee
 -- 1. Projects will have master_sheet_png, master_sheet_atlas, master_sheet_updated_at columns
 -- 2. Tilesmith can publish tiles to the master sheet
 -- 3. Sprite-Rite can add imported sprites to the master sheet
--- 4. Level Forge and Animation-Station can consume from the master sheet
+-- 4. Level Forge and Animancer can consume from the master sheet

@@ -1,15 +1,15 @@
 /**
- * Animation-Station Documentation
+ * Animancer Documentation
  * Used by the Help Drawer component and Grimoire
  */
 
-const ANIMATION_STATION_DOCS = [
+const ANIMANCER_DOCS = [
     {
         id: 'quick-start',
         title: 'Quick Start',
         content: `
             <h1>Quick Start</h1>
-            <p>Get started creating sprite animations in Animation-Station. This guide covers the basics of building your first animation.</p>
+            <p>Get started creating sprite animations in Animancer. This guide covers the basics of building your first animation.</p>
 
             <h2>Creating Your First Animation</h2>
 
@@ -174,7 +174,7 @@ const ANIMATION_STATION_DOCS = [
             <p>Tweening (in-betweening) adds smooth transitions between frames. Use it for fluid animations or disable it for classic pixel art snappiness.</p>
 
             <h2>What is Tweening?</h2>
-            <p>In traditional animation, tweening refers to the frames drawn between key poses. In Animation-Station, tweening creates a crossfade effect between frames, making transitions smoother.</p>
+            <p>In traditional animation, tweening refers to the frames drawn between key poses. In Animancer, tweening creates a crossfade effect between frames, making transitions smoother.</p>
 
             <h2>Enabling Tweening</h2>
             <ol>
@@ -322,5 +322,5 @@ const ANIMATION_STATION_DOCS = [
 
 // Export for use
 if (typeof module !== 'undefined' && module.exports) {
-    module.exports = ANIMATION_STATION_DOCS;
+    module.exports = ANIMANCER_DOCS;
 }

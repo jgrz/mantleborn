@@ -1389,7 +1389,7 @@ class CrucibleClient {
     }
 
     // =============================================
-    // CHARACTERS (Character Forge)
+    // CHARACTERS (Incarnum)
     // =============================================
 
     async createCharacter(projectId, name, characterType = 'npc') {

@@ -3,11 +3,11 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Character Forge | Game Wizard</title>
+    <title>Incarnum | Game Wizard</title>
     <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
     <style>
         /* ============================================
-           CHARACTER FORGE - CSS
+           INCARNUM - CSS
            ============================================ */
 
         :root {
@@ -696,7 +696,7 @@
         <div class="brand">
             <a href="/game-wizard/" class="home-btn" title="Back to Game Wizard">&#128302;</a>
             <span class="brand-icon">&#129497;</span>
-            <span class="brand-text">GAME WIZARD / <span>CHARACTER FORGE</span></span>
+            <span class="brand-text">GAME WIZARD / <span>INCARNUM</span></span>
         </div>
         <div class="header-actions">
             <select class="header-select" id="projectSelect">
@@ -862,7 +862,7 @@
     <!-- Help Drawer -->
     <link rel="stylesheet" href="../shared/help-drawer.css">
     <script src="../shared/help-drawer.js"></script>
-    <script src="../shared/docs/character-forge-docs.js"></script>
+    <script src="../shared/docs/incarnum-docs.js"></script>
 
     <!-- Supabase Client -->
     <script src="../shared/supabase-client.js"></script>
@@ -1657,13 +1657,13 @@
         init();
 
         // Initialize Help Drawer
-        if (typeof HelpDrawer !== 'undefined' && typeof CHARACTER_FORGE_DOCS !== 'undefined') {
+        if (typeof HelpDrawer !== 'undefined' && typeof INCARNUM_DOCS !== 'undefined') {
             HelpDrawer.init({
-                toolId: 'character-forge',
-                toolName: 'Character Forge',
+                toolId: 'incarnum',
+                toolName: 'Incarnum',
                 toolIcon: '&#129497;',
                 accentColor: '#ff6b9d',
-                docs: CHARACTER_FORGE_DOCS
+                docs: INCARNUM_DOCS
             });
         }
     </script>

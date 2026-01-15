@@ -3,7 +3,7 @@
  *
  * Handles packing sprites into a single master sheet using MaxRects bin packing.
  * Used by Tilesmith (publish tiles) and Sprite-Rite (import sprites).
- * Consumed by Level Forge and Animation-Station.
+ * Consumed by Level Forge and Animancer.
  */
 
 // =============================================
