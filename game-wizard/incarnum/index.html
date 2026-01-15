@@ -682,6 +682,29 @@
         }
 
         /* Animation Slots */
+        .animation-category {
+            margin-bottom: 16px;
+        }
+
+        .animation-category-header {
+            font-size: 9px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: var(--stone-mid);
+            margin-bottom: 8px;
+            padding-bottom: 4px;
+            border-bottom: 1px solid var(--stone-dark);
+        }
+
+        .animation-category-header.essential {
+            color: var(--accent-purple);
+            border-color: var(--accent-purple);
+        }
+
+        .animation-category-header.advanced {
+            color: var(--stone-mid);
+        }
+
         .animation-slot {
             display: flex;
             align-items: center;
@@ -690,7 +713,7 @@
         }
 
         .animation-slot-label {
-            width: 70px;
+            width: 80px;
             font-size: 11px;
             color: var(--stone-light);
             text-transform: capitalize;
@@ -982,6 +1005,13 @@
                         <option value="object">Object</option>
                     </select>
                 </div>
+                <div class="form-group">
+                    <label class="form-label">Perspective</label>
+                    <select class="form-select" id="characterPerspective" disabled>
+                        <option value="side_view">Side View (Platformer)</option>
+                        <option value="top_down">Top Down (RPG)</option>
+                    </select>
+                </div>
             </div>
 
             <!-- Default Sprite -->
@@ -996,48 +1026,7 @@
             <div class="panel-section">
                 <div class="panel-header">Animations</div>
                 <div id="animationSlots">
-                    <div class="animation-slot">
-                        <span class="animation-slot-label">Idle</span>
-                        <select class="animation-slot-select" data-slot="idle" disabled>
-                            <option value="">-- None --</option>
-                        </select>
-                    </div>
-                    <div class="animation-slot">
-                        <span class="animation-slot-label">Walk</span>
-                        <select class="animation-slot-select" data-slot="walk" disabled>
-                            <option value="">-- None --</option>
-                        </select>
-                    </div>
-                    <div class="animation-slot">
-                        <span class="animation-slot-label">Run</span>
-                        <select class="animation-slot-select" data-slot="run" disabled>
-                            <option value="">-- None --</option>
-                        </select>
-                    </div>
-                    <div class="animation-slot">
-                        <span class="animation-slot-label">Jump</span>
-                        <select class="animation-slot-select" data-slot="jump" disabled>
-                            <option value="">-- None --</option>
-                        </select>
-                    </div>
-                    <div class="animation-slot">
-                        <span class="animation-slot-label">Attack</span>
-                        <select class="animation-slot-select" data-slot="attack" disabled>
-                            <option value="">-- None --</option>
-                        </select>
-                    </div>
-                    <div class="animation-slot">
-                        <span class="animation-slot-label">Hurt</span>
-                        <select class="animation-slot-select" data-slot="hurt" disabled>
-                            <option value="">-- None --</option>
-                        </select>
-                    </div>
-                    <div class="animation-slot">
-                        <span class="animation-slot-label">Death</span>
-                        <select class="animation-slot-select" data-slot="death" disabled>
-                            <option value="">-- None --</option>
-                        </select>
-                    </div>
+                    <!-- Dynamically populated based on perspective -->
                 </div>
                 <div class="custom-slots" id="customSlots"></div>
                 <button class="btn add-property-btn" id="addAnimationBtn" disabled>+ Add Custom Animation</button>
@@ -1201,8 +1190,49 @@
             previewAnimationFrame: null
         };
 
-        // Predefined animation slots
-        const PREDEFINED_SLOTS = ['idle', 'walk', 'run', 'jump', 'attack', 'hurt', 'death'];
+        // Animation presets by perspective
+        const ANIMATION_PRESETS = {
+            side_view: {
+                essential: [
+                    { key: 'idle', label: 'Idle' },
+                    { key: 'walk', label: 'Walk' },
+                    { key: 'run', label: 'Run' },
+                    { key: 'jump', label: 'Jump' }
+                ],
+                advanced: [
+                    { key: 'duck', label: 'Duck' },
+                    { key: 'attack', label: 'Attack' },
+                    { key: 'hurt', label: 'Hurt' },
+                    { key: 'death', label: 'Death' }
+                ]
+            },
+            top_down: {
+                essential: [
+                    { key: 'idle_down', label: 'Idle ↓' },
+                    { key: 'idle_up', label: 'Idle ↑' },
+                    { key: 'idle_side', label: 'Idle →' },
+                    { key: 'walk_down', label: 'Walk ↓' },
+                    { key: 'walk_up', label: 'Walk ↑' },
+                    { key: 'walk_side', label: 'Walk →' },
+                    { key: 'run_down', label: 'Run ↓' },
+                    { key: 'run_up', label: 'Run ↑' },
+                    { key: 'run_side', label: 'Run →' }
+                ],
+                advanced: [
+                    { key: 'attack_down', label: 'Attack ↓' },
+                    { key: 'attack_up', label: 'Attack ↑' },
+                    { key: 'attack_side', label: 'Attack →' },
+                    { key: 'hurt', label: 'Hurt' },
+                    { key: 'death', label: 'Death' }
+                ]
+            }
+        };
+
+        // Get all predefined slot keys for a perspective
+        function getPredefinedSlots(perspective = 'side_view') {
+            const preset = ANIMATION_PRESETS[perspective] || ANIMATION_PRESETS.side_view;
+            return [...preset.essential, ...preset.advanced].map(s => s.key);
+        }
 
         // ==========================================
         // DOM Elements
@@ -1241,6 +1271,7 @@
             characterName: document.getElementById('characterName'),
             characterIdentifier: document.getElementById('characterIdentifier'),
             characterType: document.getElementById('characterType'),
+            characterPerspective: document.getElementById('characterPerspective'),
             spriteGrid: document.getElementById('spriteGrid'),
             animationSlots: document.getElementById('animationSlots'),
             customSlots: document.getElementById('customSlots'),
@@ -1273,6 +1304,9 @@
         // ==========================================
         async function init() {
             try {
+                // Render initial animation slots (disabled)
+                renderAnimationSlots('side_view', {});
+
                 const crucible = await getCrucible();
                 state.user = await crucible.getUser();
                 updateAuthIndicator();
@@ -1393,6 +1427,8 @@
             elements.characterIdentifier.disabled = true;
             elements.characterType.value = 'npc';
             elements.characterType.disabled = true;
+            elements.characterPerspective.value = 'side_view';
+            elements.characterPerspective.disabled = true;
             elements.newCharacterBtn.disabled = !state.projectId;
             elements.generateCharacterBtn.disabled = !state.projectId;
             elements.saveCharacterBtn.disabled = true;
@@ -1402,11 +1438,8 @@
             elements.addTagBtn.disabled = true;
             elements.addPropertyBtn.disabled = true;
 
-            // Clear animation slots
-            document.querySelectorAll('.animation-slot-select').forEach(sel => {
-                sel.value = '';
-                sel.disabled = true;
-            });
+            // Render empty animation slots
+            renderAnimationSlots('side_view', {});
 
             elements.customSlots.innerHTML = '';
             elements.tagsContainer.innerHTML = '';
@@ -1429,6 +1462,58 @@
         // ==========================================
         // Rendering
         // ==========================================
+
+        function renderAnimationSlots(perspective = 'side_view', animations = {}) {
+            const preset = ANIMATION_PRESETS[perspective] || ANIMATION_PRESETS.side_view;
+            const disabled = !state.currentCharacterId ? 'disabled' : '';
+
+            // Build options from loaded animations
+            let options = '<option value="">-- None --</option>';
+            state.animations.forEach(anim => {
+                options += `<option value="${anim.id}">${anim.name}</option>`;
+            });
+
+            // Build HTML for each category
+            let html = '';
+
+            // Essential category
+            html += `<div class="animation-category">
+                <div class="animation-category-header essential">Essential</div>`;
+            preset.essential.forEach(slot => {
+                const value = animations[slot.key] || '';
+                html += `
+                    <div class="animation-slot">
+                        <span class="animation-slot-label">${slot.label}</span>
+                        <select class="animation-slot-select" data-slot="${slot.key}" ${disabled}>
+                            ${options.replace(`value="${value}"`, `value="${value}" selected`)}
+                        </select>
+                    </div>`;
+            });
+            html += '</div>';
+
+            // Advanced category
+            html += `<div class="animation-category">
+                <div class="animation-category-header advanced">Advanced</div>`;
+            preset.advanced.forEach(slot => {
+                const value = animations[slot.key] || '';
+                html += `
+                    <div class="animation-slot">
+                        <span class="animation-slot-label">${slot.label}</span>
+                        <select class="animation-slot-select" data-slot="${slot.key}" ${disabled}>
+                            ${options.replace(`value="${value}"`, `value="${value}" selected`)}
+                        </select>
+                    </div>`;
+            });
+            html += '</div>';
+
+            elements.animationSlots.innerHTML = html;
+
+            // Re-attach change listeners
+            elements.animationSlots.querySelectorAll('.animation-slot-select').forEach(sel => {
+                sel.addEventListener('change', markDirty);
+            });
+        }
+
         function renderCharacterLibrary() {
             if (!state.projectId || state.characters.length === 0) {
                 elements.characterLibrary.innerHTML = '<div class="library-empty">No characters yet</div>';
@@ -1745,6 +1830,7 @@
             elements.characterName.disabled = false;
             elements.characterIdentifier.disabled = false;
             elements.characterType.disabled = false;
+            elements.characterPerspective.disabled = false;
             elements.saveCharacterBtn.disabled = false;
             elements.deleteCharacterBtn.disabled = false;
             elements.addAnimationBtn.disabled = false;
@@ -1752,14 +1838,14 @@
             elements.addTagBtn.disabled = false;
             elements.addPropertyBtn.disabled = false;
 
-            document.querySelectorAll('.animation-slot-select').forEach(sel => {
-                sel.disabled = false;
-            });
-
             // Load character data
             elements.characterName.value = character.name;
             elements.characterIdentifier.value = character.identifier || '';
             elements.characterType.value = character.character_type || 'npc';
+
+            // Get perspective from properties or default to side_view
+            const perspective = character.properties?.perspective || 'side_view';
+            elements.characterPerspective.value = perspective;
 
             // Load sprite
             state.selectedSprite = character.default_sprite;
@@ -1768,17 +1854,15 @@
 
             // Load animations
             const animations = character.animations || {};
-            PREDEFINED_SLOTS.forEach(slot => {
-                const select = document.querySelector(`[data-slot="${slot}"]`);
-                if (select) {
-                    select.value = animations[slot] || '';
-                }
-            });
 
-            // Load custom animation slots
+            // Render animation slots for this perspective
+            renderAnimationSlots(perspective, animations);
+
+            // Load custom animation slots (animations not in predefined slots for this perspective)
+            const predefinedSlots = getPredefinedSlots(perspective);
             state.customAnimationSlots = [];
             Object.keys(animations).forEach(key => {
-                if (!PREDEFINED_SLOTS.includes(key)) {
+                if (!predefinedSlots.includes(key)) {
                     state.customAnimationSlots.push({
                         name: key,
                         animationId: animations[key]
@@ -1813,9 +1897,12 @@
                 return;
             }
 
-            // Collect animations
+            const perspective = elements.characterPerspective.value;
+            const predefinedSlots = getPredefinedSlots(perspective);
+
+            // Collect animations from current perspective's slots
             const animations = {};
-            PREDEFINED_SLOTS.forEach(slot => {
+            predefinedSlots.forEach(slot => {
                 const select = document.querySelector(`[data-slot="${slot}"]`);
                 if (select && select.value) {
                     animations[slot] = select.value;
@@ -1826,6 +1913,12 @@
                     animations[slot.name] = slot.animationId;
                 }
             });
+
+            // Include perspective in properties
+            const properties = {
+                ...state.properties,
+                perspective
+            };
 
             elements.saveIndicator.textContent = 'Saving...';
             elements.saveIndicator.className = 'save-indicator saving';
@@ -1839,10 +1932,11 @@
                     default_sprite: state.selectedSprite,
                     animations,
                     tags: state.tags,
-                    properties: state.properties
+                    properties
                 });
 
                 // Update local state
+                state.properties = properties; // Update state with perspective included
                 const index = state.characters.findIndex(c => c.id === state.currentCharacterId);
                 if (index >= 0) {
                     state.characters[index] = {
@@ -1853,7 +1947,7 @@
                         default_sprite: state.selectedSprite,
                         animations,
                         tags: state.tags,
-                        properties: state.properties
+                        properties
                     };
                 }
 
@@ -2387,9 +2481,20 @@
             elements.characterIdentifier.addEventListener('input', markDirty);
             elements.characterType.addEventListener('change', markDirty);
 
-            document.querySelectorAll('.animation-slot-select[data-slot]').forEach(sel => {
-                sel.addEventListener('change', markDirty);
+            elements.characterPerspective.addEventListener('change', () => {
+                const perspective = elements.characterPerspective.value;
+                const currentAnimations = {};
+                // Preserve any currently selected animations
+                document.querySelectorAll('.animation-slot-select[data-slot]').forEach(sel => {
+                    if (sel.value) {
+                        currentAnimations[sel.dataset.slot] = sel.value;
+                    }
+                });
+                renderAnimationSlots(perspective, currentAnimations);
+                markDirty();
             });
+
+            // Animation slot listeners are added dynamically in renderAnimationSlots()
 
             elements.addAnimationBtn.addEventListener('click', addCustomAnimationSlot);
 
