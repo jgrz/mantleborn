@@ -439,6 +439,65 @@
             text-decoration: underline;
         }
 
+        /* Tool Overview */
+        .tool-overview {
+            margin-bottom: 32px;
+            line-height: 1.6;
+        }
+
+        .tool-overview p {
+            color: var(--stone-light);
+            margin-bottom: 20px;
+        }
+
+        .feature-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            gap: 16px;
+        }
+
+        .feature-item {
+            display: flex;
+            gap: 12px;
+            padding: 16px;
+            background: var(--bg-surface);
+            border: 1px solid var(--stone-dark);
+            border-radius: 6px;
+        }
+
+        .feature-icon {
+            font-size: 24px;
+            flex-shrink: 0;
+        }
+
+        .feature-text {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+
+        .feature-text strong {
+            color: var(--stone-bright);
+            font-size: 13px;
+        }
+
+        .feature-text span {
+            color: var(--stone-mid);
+            font-size: 12px;
+            line-height: 1.4;
+        }
+
+        .docs-section-title {
+            font-family: 'Press Start 2P', cursive;
+            font-size: 10px;
+            color: var(--stone-mid);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin: 32px 0 16px 0;
+            padding-bottom: 8px;
+            border-bottom: 1px solid var(--stone-dark);
+        }
+
         /* Step styling from docs */
         .article .step {
             display: flex;
@@ -677,7 +736,7 @@
         };
 
         // Helper to build tool documentation pages
-        function buildToolDocs(toolId, toolName, toolDesc, docs) {
+        function buildToolDocs(toolId, toolName, toolDesc, toolOverview, docs) {
             if (!docs) return;
 
             pages[toolId] = `
@@ -685,6 +744,10 @@
                     <h1 class="content-title">${toolName}</h1>
                     <p class="content-subtitle">${toolDesc}</p>
                 </div>
+                <div class="tool-overview">
+                    ${toolOverview}
+                </div>
+                <h2 class="docs-section-title">Documentation</h2>
                 <nav class="article-nav">
                     ${docs.map(doc => `<a href="#${toolId}/${doc.id}" class="article-nav-link">${doc.title}</a>`).join('')}
                 </nav>
@@ -710,13 +773,84 @@
             });
         }
 
+        // Tool overviews
+        const TILESMITH_OVERVIEW = `
+            <p>Tilesmith is your pixel art creation studio within Game Wizard. Design individual tiles or multi-tile tilesets for terrain, structures, vegetation, and more.</p>
+            <div class="feature-grid">
+                <div class="feature-item">
+                    <span class="feature-icon">&#127912;</span>
+                    <div class="feature-text">
+                        <strong>Pixel Editor</strong>
+                        <span>Draw with pencil, fill, line, and rectangle tools. Full undo/redo support.</span>
+                    </div>
+                </div>
+                <div class="feature-item">
+                    <span class="feature-icon">&#129302;</span>
+                    <div class="feature-text">
+                        <strong>AI Generation</strong>
+                        <span>Generate pixel art tiles from text descriptions. Specify style, biome, and more.</span>
+                    </div>
+                </div>
+                <div class="feature-item">
+                    <span class="feature-icon">&#128200;</span>
+                    <div class="feature-text">
+                        <strong>Multi-Tile Grids</strong>
+                        <span>Create larger assets like trees or buildings that span multiple tiles.</span>
+                    </div>
+                </div>
+                <div class="feature-item">
+                    <span class="feature-icon">&#128230;</span>
+                    <div class="feature-text">
+                        <strong>Publish to Master</strong>
+                        <span>Send tiles directly to your project's master spritesheet.</span>
+                    </div>
+                </div>
+            </div>
+        `;
+
+        const SPRITE_RITE_OVERVIEW = `
+            <p>Sprite-Rite handles importing external sprite assets into your Game Wizard project. Upload spritesheets, define sprite regions, and generate atlas data.</p>
+            <div class="feature-grid">
+                <div class="feature-item">
+                    <span class="feature-icon">&#128228;</span>
+                    <div class="feature-text">
+                        <strong>Import Spritesheets</strong>
+                        <span>Drag and drop PNG, JPG, GIF, or WebP images to import.</span>
+                    </div>
+                </div>
+                <div class="feature-item">
+                    <span class="feature-icon">&#9634;</span>
+                    <div class="feature-text">
+                        <strong>Define Regions</strong>
+                        <span>Click and drag to select sprite boundaries. Resize with handles.</span>
+                    </div>
+                </div>
+                <div class="feature-item">
+                    <span class="feature-icon">&#128196;</span>
+                    <div class="feature-text">
+                        <strong>JSON Atlas Export</strong>
+                        <span>Generate atlas JSON compatible with Phaser, PixiJS, and other engines.</span>
+                    </div>
+                </div>
+                <div class="feature-item">
+                    <span class="feature-icon">&#128230;</span>
+                    <div class="feature-text">
+                        <strong>Master Sheet Integration</strong>
+                        <span>Publish imported sprites to the project master sheet.</span>
+                    </div>
+                </div>
+            </div>
+        `;
+
         // Build documentation pages for each tool
         buildToolDocs('tilesmith', 'Tilesmith',
             'Create pixel art tiles with AI assistance. Support for multi-tile tilesets and seamless integration with the master spritesheet.',
+            TILESMITH_OVERVIEW,
             typeof TILESMITH_DOCS !== 'undefined' ? TILESMITH_DOCS : null);
 
         buildToolDocs('sprite-rite', 'Sprite-Rite',
             'Import and manage sprite assets. Define sprite regions, generate atlas JSON, and publish to the master spritesheet.',
+            SPRITE_RITE_OVERVIEW,
             typeof SPRITE_RITE_DOCS !== 'undefined' ? SPRITE_RITE_DOCS : null);
 
         function navigateTo(hash) {
