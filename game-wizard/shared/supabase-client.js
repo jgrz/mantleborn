@@ -735,6 +735,203 @@ class CrucibleClient {
             unconfiguredExitCount: level.level_exits?.filter(e => !e.configured).length || 0
         }));
     }
+
+    // =============================================
+    // SPRITESHEETS
+    // =============================================
+
+    async uploadSpritesheet(projectId, file, metadata = {}) {
+        if (!this.client) throw new Error('Crucible not initialized');
+
+        // Generate unique file path
+        const ext = file.name.split('.').pop();
+        const fileName = `${projectId}/${Date.now()}-${file.name}`;
+
+        // Upload to storage
+        const { data: uploadData, error: uploadError } = await this.client.storage
+            .from('spritesheets')
+            .upload(fileName, file);
+
+        if (uploadError) throw uploadError;
+
+        // Get public URL
+        const { data: { publicUrl } } = this.client.storage
+            .from('spritesheets')
+            .getPublicUrl(fileName);
+
+        // Create metadata record
+        const { data, error } = await this.client
+            .from('spritesheets')
+            .insert({
+                project_id: projectId,
+                name: metadata.name || file.name.replace(/\.[^/.]+$/, ''),
+                file_path: fileName,
+                category: metadata.category || null,
+                tags: metadata.tags || [],
+                frame_width: metadata.frameWidth || null,
+                frame_height: metadata.frameHeight || null,
+                columns: metadata.columns || null,
+                rows: metadata.rows || null,
+                animations: metadata.animations || {},
+                is_master: metadata.isMaster || false
+            })
+            .select()
+            .single();
+
+        if (error) throw error;
+        return { ...data, publicUrl };
+    }
+
+    async getSpritesheets(projectId, filters = {}) {
+        if (!this.client) throw new Error('Crucible not initialized');
+
+        let query = this.client
+            .from('spritesheets')
+            .select('*')
+            .eq('project_id', projectId);
+
+        // Apply filters
+        if (filters.category) {
+            query = query.eq('category', filters.category);
+        }
+        if (filters.tag) {
+            query = query.contains('tags', [filters.tag]);
+        }
+        if (filters.search) {
+            query = query.ilike('name', `%${filters.search}%`);
+        }
+        if (typeof filters.isMaster === 'boolean') {
+            query = query.eq('is_master', filters.isMaster);
+        }
+
+        query = query.order('created_at', { ascending: false });
+
+        const { data, error } = await query;
+        if (error) throw error;
+
+        // Add public URLs
+        return (data || []).map(sheet => ({
+            ...sheet,
+            publicUrl: this.client.storage.from('spritesheets').getPublicUrl(sheet.file_path).data.publicUrl
+        }));
+    }
+
+    async getSpritesheet(spritesheetId) {
+        if (!this.client) throw new Error('Crucible not initialized');
+
+        const { data, error } = await this.client
+            .from('spritesheets')
+            .select('*')
+            .eq('id', spritesheetId)
+            .single();
+
+        if (error) throw error;
+        return {
+            ...data,
+            publicUrl: this.client.storage.from('spritesheets').getPublicUrl(data.file_path).data.publicUrl
+        };
+    }
+
+    async updateSpritesheet(spritesheetId, updates) {
+        if (!this.client) throw new Error('Crucible not initialized');
+
+        const updateData = {};
+        if (updates.name !== undefined) updateData.name = updates.name;
+        if (updates.category !== undefined) updateData.category = updates.category;
+        if (updates.tags !== undefined) updateData.tags = updates.tags;
+        if (updates.frameWidth !== undefined) updateData.frame_width = updates.frameWidth;
+        if (updates.frameHeight !== undefined) updateData.frame_height = updates.frameHeight;
+        if (updates.columns !== undefined) updateData.columns = updates.columns;
+        if (updates.rows !== undefined) updateData.rows = updates.rows;
+        if (updates.animations !== undefined) updateData.animations = updates.animations;
+        if (updates.isMaster !== undefined) updateData.is_master = updates.isMaster;
+
+        const { data, error } = await this.client
+            .from('spritesheets')
+            .update(updateData)
+            .eq('id', spritesheetId)
+            .select()
+            .single();
+
+        if (error) throw error;
+        return data;
+    }
+
+    async deleteSpritesheet(spritesheetId) {
+        if (!this.client) throw new Error('Crucible not initialized');
+
+        // Get file path first
+        const { data: sheet, error: fetchError } = await this.client
+            .from('spritesheets')
+            .select('file_path')
+            .eq('id', spritesheetId)
+            .single();
+
+        if (fetchError) throw fetchError;
+
+        // Delete from storage
+        const { error: storageError } = await this.client.storage
+            .from('spritesheets')
+            .remove([sheet.file_path]);
+
+        if (storageError) throw storageError;
+
+        // Delete metadata record
+        const { error } = await this.client
+            .from('spritesheets')
+            .delete()
+            .eq('id', spritesheetId);
+
+        if (error) throw error;
+        return true;
+    }
+
+    async searchSpritesheetsByTags(projectId, tags) {
+        if (!this.client) throw new Error('Crucible not initialized');
+
+        const { data, error } = await this.client
+            .from('spritesheets')
+            .select('*')
+            .eq('project_id', projectId)
+            .overlaps('tags', tags);
+
+        if (error) throw error;
+
+        return (data || []).map(sheet => ({
+            ...sheet,
+            publicUrl: this.client.storage.from('spritesheets').getPublicUrl(sheet.file_path).data.publicUrl
+        }));
+    }
+
+    async getSpritesheetCategories(projectId) {
+        if (!this.client) throw new Error('Crucible not initialized');
+
+        const { data, error } = await this.client
+            .from('spritesheets')
+            .select('category')
+            .eq('project_id', projectId)
+            .not('category', 'is', null);
+
+        if (error) throw error;
+
+        // Return unique categories
+        return [...new Set(data.map(d => d.category))];
+    }
+
+    async getAllSpritesheetTags(projectId) {
+        if (!this.client) throw new Error('Crucible not initialized');
+
+        const { data, error } = await this.client
+            .from('spritesheets')
+            .select('tags')
+            .eq('project_id', projectId);
+
+        if (error) throw error;
+
+        // Flatten and dedupe all tags
+        const allTags = data.flatMap(d => d.tags || []);
+        return [...new Set(allTags)].sort();
+    }
 }
 
 // =============================================
