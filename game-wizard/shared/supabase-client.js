@@ -244,11 +244,14 @@ class CrucibleClient {
     // PROJECT OPERATIONS
     // =============================================
 
-    async createProject(name, description = '', isPublic = true) {
+    async createProject(name, description = '', isPublic = false) {
         if (!this.client) throw new Error('Crucible not initialized');
 
-        // Get current user for ownership
+        // Require authentication to create projects
         const user = await this.getUser();
+        if (!user) {
+            throw new Error('You must be logged in to create a project');
+        }
 
         const { data, error } = await this.client
             .from('projects')
@@ -256,7 +259,7 @@ class CrucibleClient {
                 name,
                 description,
                 is_public: isPublic,
-                user_id: user?.id || null
+                user_id: user.id
             })
             .select()
             .single();
