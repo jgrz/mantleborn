@@ -1,0 +1,1996 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tilesmith | Game Wizard</title>
+    <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+    <style>
+        /* ============================================
+           TILESMITH - CSS
+           ============================================ */
+
+        :root {
+            /* Backgrounds */
+            --bg-deep: #0d0d14;
+            --bg-mid: #1a1a2e;
+            --bg-surface: #252542;
+
+            /* Accents - forest green */
+            --accent-green: #40d080;
+            --accent-green-glow: #60f0a0;
+            --accent-dark: #2a6a4a;
+
+            /* Stone/neutral tones */
+            --stone-dark: #3a3a5c;
+            --stone-mid: #6a6a8e;
+            --stone-light: #9a9abe;
+            --stone-bright: #d0d0e8;
+
+            /* Status colors */
+            --success: #4ade80;
+            --error: #f87171;
+            --warning: #fbbf24;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'JetBrains Mono', monospace;
+            background: var(--bg-deep);
+            color: var(--stone-light);
+            min-height: 100vh;
+            overflow: hidden;
+        }
+
+        /* Header */
+        .header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 12px 20px;
+            background: var(--bg-mid);
+            border-bottom: 1px solid var(--stone-dark);
+        }
+
+        .brand {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .home-btn {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 32px;
+            height: 32px;
+            font-size: 18px;
+            text-decoration: none;
+            background: var(--bg-surface);
+            border: 1px solid var(--stone-dark);
+            border-radius: 4px;
+            transition: all 0.2s;
+        }
+
+        .home-btn:hover {
+            background: var(--stone-dark);
+            border-color: var(--accent-green);
+        }
+
+        .brand-icon {
+            font-size: 20px;
+        }
+
+        .brand-text {
+            font-family: 'Press Start 2P', cursive;
+            font-size: 10px;
+            color: var(--stone-mid);
+        }
+
+        .brand-text span {
+            color: var(--accent-green);
+            text-shadow: 0 0 10px rgba(64, 208, 128, 0.5);
+        }
+
+        .header-actions {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+
+        .header-select {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 12px;
+            padding: 8px 12px;
+            background: var(--bg-surface);
+            border: 1px solid var(--stone-dark);
+            border-radius: 4px;
+            color: var(--stone-light);
+            cursor: pointer;
+            min-width: 140px;
+        }
+
+        .header-select:focus {
+            outline: none;
+            border-color: var(--accent-green);
+        }
+
+        .auth-indicator {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            padding: 6px 12px;
+            background: var(--bg-surface);
+            border: 1px solid var(--stone-dark);
+            border-radius: 4px;
+            font-size: 11px;
+            color: var(--stone-mid);
+        }
+
+        .auth-indicator.logged-in {
+            border-color: var(--accent-green);
+            color: var(--stone-light);
+        }
+
+        .auth-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: var(--stone-dark);
+        }
+
+        .auth-indicator.logged-in .auth-dot {
+            background: var(--success);
+        }
+
+        .save-indicator {
+            font-size: 10px;
+            color: var(--stone-mid);
+            min-width: 60px;
+            text-align: right;
+        }
+
+        .save-indicator.saving { color: var(--warning); }
+        .save-indicator.saved { color: var(--success); }
+
+        /* Buttons */
+        .btn {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 12px;
+            padding: 8px 16px;
+            border: 1px solid var(--stone-dark);
+            border-radius: 4px;
+            background: var(--bg-surface);
+            color: var(--stone-light);
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .btn:hover {
+            background: var(--stone-dark);
+            border-color: var(--stone-mid);
+        }
+
+        .btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .btn-primary {
+            background: var(--accent-green);
+            border-color: var(--accent-green);
+            color: var(--bg-deep);
+            font-weight: 600;
+        }
+
+        .btn-primary:hover {
+            background: var(--accent-green-glow);
+            border-color: var(--accent-green-glow);
+        }
+
+        .btn-small {
+            padding: 4px 8px;
+            font-size: 10px;
+        }
+
+        /* Main Layout */
+        .main {
+            display: grid;
+            grid-template-columns: 1fr 300px;
+            height: calc(100vh - 53px);
+        }
+
+        /* Left Panel - Canvas */
+        .left-panel {
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            padding: 16px;
+            gap: 16px;
+        }
+
+        .canvas-area {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 12px;
+            min-height: 0;
+        }
+
+        .canvas-wrapper {
+            position: relative;
+            background: repeating-conic-gradient(
+                var(--bg-surface) 0% 25%,
+                var(--bg-mid) 0% 50%
+            ) 50% / 16px 16px;
+            border: 2px solid var(--stone-dark);
+            border-radius: 4px;
+            overflow: hidden;
+        }
+
+        #mainCanvas {
+            display: block;
+            image-rendering: pixelated;
+            image-rendering: crisp-edges;
+            cursor: crosshair;
+        }
+
+        #gridCanvas {
+            position: absolute;
+            top: 0;
+            left: 0;
+            pointer-events: none;
+            image-rendering: pixelated;
+        }
+
+        .canvas-controls {
+            display: flex;
+            gap: 8px;
+            align-items: center;
+        }
+
+        .zoom-group {
+            display: flex;
+            gap: 2px;
+        }
+
+        .zoom-btn {
+            padding: 6px 10px;
+            font-size: 11px;
+            background: var(--bg-surface);
+            border: 1px solid var(--stone-dark);
+            color: var(--stone-mid);
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .zoom-btn:first-child { border-radius: 4px 0 0 4px; }
+        .zoom-btn:last-child { border-radius: 0 4px 4px 0; }
+
+        .zoom-btn:hover {
+            background: var(--stone-dark);
+            color: var(--stone-light);
+        }
+
+        .zoom-btn.active {
+            background: var(--accent-green);
+            border-color: var(--accent-green);
+            color: var(--bg-deep);
+        }
+
+        .grid-toggle {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 11px;
+            color: var(--stone-mid);
+        }
+
+        .grid-toggle input {
+            accent-color: var(--accent-green);
+        }
+
+        /* Tile Library */
+        .tile-library {
+            border-top: 1px solid var(--stone-dark);
+            padding-top: 12px;
+        }
+
+        .library-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 8px;
+        }
+
+        .section-header {
+            font-family: 'Press Start 2P', cursive;
+            font-size: 8px;
+            color: var(--stone-bright);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .library-grid {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+            max-height: 100px;
+            overflow-y: auto;
+        }
+
+        .library-tile {
+            width: 48px;
+            height: 48px;
+            background: var(--bg-surface);
+            border: 2px solid var(--stone-dark);
+            border-radius: 4px;
+            cursor: pointer;
+            transition: all 0.15s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+        }
+
+        .library-tile:hover {
+            border-color: var(--stone-mid);
+        }
+
+        .library-tile.active {
+            border-color: var(--accent-green);
+        }
+
+        .library-tile canvas {
+            image-rendering: pixelated;
+        }
+
+        .library-tile-new {
+            font-size: 20px;
+            color: var(--stone-mid);
+        }
+
+        .library-tile-delete {
+            position: absolute;
+            top: -6px;
+            right: -6px;
+            width: 16px;
+            height: 16px;
+            background: var(--error);
+            border: none;
+            border-radius: 50%;
+            color: white;
+            font-size: 10px;
+            cursor: pointer;
+            display: none;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .library-tile:hover .library-tile-delete {
+            display: flex;
+        }
+
+        /* Right Panel - Tools & Settings */
+        .right-panel {
+            display: flex;
+            flex-direction: column;
+            background: var(--bg-mid);
+            border-left: 1px solid var(--stone-dark);
+            overflow-y: auto;
+        }
+
+        .panel-section {
+            padding: 16px;
+            border-bottom: 1px solid var(--stone-dark);
+        }
+
+        .section-header {
+            margin-bottom: 12px;
+        }
+
+        /* Tools */
+        .tools-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 4px;
+        }
+
+        .tool-btn {
+            padding: 10px;
+            font-size: 16px;
+            background: var(--bg-surface);
+            border: 1px solid var(--stone-dark);
+            border-radius: 4px;
+            cursor: pointer;
+            transition: all 0.15s;
+        }
+
+        .tool-btn:hover {
+            background: var(--stone-dark);
+        }
+
+        .tool-btn.active {
+            background: var(--accent-dark);
+            border-color: var(--accent-green);
+        }
+
+        /* Palette */
+        .current-color {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 12px;
+        }
+
+        .current-color-swatch {
+            width: 48px;
+            height: 48px;
+            border: 2px solid var(--stone-dark);
+            border-radius: 4px;
+            cursor: pointer;
+        }
+
+        .current-color-info {
+            flex: 1;
+        }
+
+        .current-color-hex {
+            font-size: 14px;
+            color: var(--stone-bright);
+            font-weight: 600;
+        }
+
+        .current-color-label {
+            font-size: 10px;
+            color: var(--stone-mid);
+        }
+
+        .palette-presets {
+            margin-bottom: 12px;
+        }
+
+        .palette-presets select {
+            width: 100%;
+            padding: 8px;
+            background: var(--bg-surface);
+            border: 1px solid var(--stone-dark);
+            border-radius: 4px;
+            color: var(--stone-light);
+            font-family: inherit;
+            font-size: 11px;
+        }
+
+        .palette-grid {
+            display: grid;
+            grid-template-columns: repeat(8, 1fr);
+            gap: 4px;
+        }
+
+        .palette-swatch {
+            aspect-ratio: 1;
+            border: 1px solid var(--stone-dark);
+            border-radius: 2px;
+            cursor: pointer;
+            transition: all 0.15s;
+        }
+
+        .palette-swatch:hover {
+            transform: scale(1.1);
+        }
+
+        .palette-swatch.active {
+            border-color: white;
+            box-shadow: 0 0 4px white;
+        }
+
+        .palette-actions {
+            display: flex;
+            gap: 8px;
+            margin-top: 8px;
+        }
+
+        /* Tile Settings */
+        .form-group {
+            margin-bottom: 12px;
+        }
+
+        .form-label {
+            display: block;
+            font-size: 10px;
+            color: var(--stone-mid);
+            text-transform: uppercase;
+            margin-bottom: 6px;
+        }
+
+        .form-input {
+            width: 100%;
+            padding: 8px 10px;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 12px;
+            background: var(--bg-deep);
+            border: 1px solid var(--stone-dark);
+            border-radius: 4px;
+            color: var(--stone-bright);
+        }
+
+        .form-input:focus {
+            outline: none;
+            border-color: var(--accent-green);
+        }
+
+        .form-row {
+            display: flex;
+            gap: 8px;
+        }
+
+        .form-row .form-group {
+            flex: 1;
+        }
+
+        /* AI Assistant */
+        .ai-section {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            min-height: 200px;
+        }
+
+        .ai-generate-btn {
+            width: 100%;
+            margin-bottom: 12px;
+        }
+
+        .ai-spec-preview {
+            flex: 1;
+            background: var(--bg-deep);
+            border: 1px solid var(--stone-dark);
+            border-radius: 4px;
+            padding: 12px;
+            overflow-y: auto;
+            font-size: 11px;
+            line-height: 1.5;
+            min-height: 0;
+        }
+
+        .ai-spec-preview.empty {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--stone-mid);
+            text-align: center;
+        }
+
+        .ai-spec-name {
+            color: var(--accent-green);
+            font-weight: 600;
+            margin-bottom: 8px;
+        }
+
+        .ai-spec-colors {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 4px;
+            margin: 8px 0;
+        }
+
+        .ai-spec-color {
+            width: 20px;
+            height: 20px;
+            border-radius: 2px;
+            border: 1px solid var(--stone-dark);
+        }
+
+        .ai-spec-apply {
+            margin-top: 8px;
+        }
+
+        /* Export */
+        .export-actions {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        /* Modal */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.8);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+        }
+
+        .modal-overlay.active {
+            display: flex;
+        }
+
+        .modal {
+            background: var(--bg-mid);
+            border: 2px solid var(--stone-dark);
+            border-radius: 8px;
+            width: 90%;
+            max-width: 500px;
+            max-height: 90vh;
+            overflow-y: auto;
+        }
+
+        .modal-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 16px;
+            border-bottom: 1px solid var(--stone-dark);
+        }
+
+        .modal-title {
+            font-family: 'Press Start 2P', cursive;
+            font-size: 10px;
+            color: var(--accent-green);
+        }
+
+        .modal-close {
+            background: none;
+            border: none;
+            color: var(--stone-mid);
+            font-size: 20px;
+            cursor: pointer;
+        }
+
+        .modal-close:hover {
+            color: var(--stone-light);
+        }
+
+        .modal-body {
+            padding: 16px;
+        }
+
+        .modal-footer {
+            display: flex;
+            gap: 8px;
+            justify-content: flex-end;
+            padding: 16px;
+            border-top: 1px solid var(--stone-dark);
+        }
+
+        /* Toast */
+        .toast {
+            position: fixed;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%) translateY(100px);
+            padding: 12px 20px;
+            background: var(--bg-surface);
+            border: 1px solid var(--accent-green);
+            border-radius: 4px;
+            font-size: 12px;
+            color: var(--stone-bright);
+            opacity: 0;
+            transition: all 0.3s;
+            z-index: 1000;
+        }
+
+        .toast.show {
+            transform: translateX(-50%) translateY(0);
+            opacity: 1;
+        }
+
+        .toast.error {
+            border-color: var(--error);
+        }
+
+        /* Scrollbar */
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: var(--stone-dark);
+            border-radius: 4px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: var(--bg-deep);
+        }
+    </style>
+</head>
+<body>
+    <!-- Header -->
+    <header class="header">
+        <div class="brand">
+            <a href="/game-wizard/" class="home-btn" title="Back to Game Wizard">&#127968;</a>
+            <span class="brand-icon">&#129513;</span>
+            <span class="brand-text">GAME WIZARD / <span>TILESMITH</span></span>
+        </div>
+        <div class="header-actions">
+            <select class="header-select" id="projectSelect">
+                <option value="">-- Select Project --</option>
+            </select>
+            <span class="save-indicator" id="saveIndicator"></span>
+            <div class="auth-indicator" id="authIndicator">
+                <span class="auth-dot"></span>
+                <span class="auth-text">Guest</span>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="main">
+        <!-- Left Panel - Canvas -->
+        <div class="left-panel">
+            <div class="canvas-area">
+                <div class="canvas-wrapper" id="canvasWrapper">
+                    <canvas id="mainCanvas"></canvas>
+                    <canvas id="gridCanvas"></canvas>
+                </div>
+                <div class="canvas-controls">
+                    <div class="zoom-group">
+                        <button class="zoom-btn" data-zoom="1">1x</button>
+                        <button class="zoom-btn" data-zoom="2">2x</button>
+                        <button class="zoom-btn active" data-zoom="4">4x</button>
+                        <button class="zoom-btn" data-zoom="8">8x</button>
+                        <button class="zoom-btn" data-zoom="16">16x</button>
+                    </div>
+                    <label class="grid-toggle">
+                        <input type="checkbox" id="gridToggle" checked>
+                        Show Grid
+                    </label>
+                </div>
+            </div>
+
+            <!-- Tile Library -->
+            <div class="tile-library">
+                <div class="library-header">
+                    <span class="section-header">Tile Library</span>
+                    <button class="btn btn-small" id="newTileBtn">+ New</button>
+                </div>
+                <div class="library-grid" id="libraryGrid">
+                    <!-- Tiles populated by JS -->
+                </div>
+            </div>
+        </div>
+
+        <!-- Right Panel -->
+        <div class="right-panel">
+            <!-- Tools -->
+            <div class="panel-section">
+                <div class="section-header">Tools</div>
+                <div class="tools-grid">
+                    <button class="tool-btn active" data-tool="pencil" title="Pencil (P)">&#9998;</button>
+                    <button class="tool-btn" data-tool="eraser" title="Eraser (E)">&#128454;</button>
+                    <button class="tool-btn" data-tool="fill" title="Fill (F)">&#128167;</button>
+                    <button class="tool-btn" data-tool="picker" title="Color Picker (I)">&#128371;</button>
+                    <button class="tool-btn" data-tool="line" title="Line (L)">&#9585;</button>
+                    <button class="tool-btn" data-tool="rect" title="Rectangle (R)">&#9633;</button>
+                    <button class="tool-btn" data-tool="rectfill" title="Filled Rectangle (Shift+R)">&#9632;</button>
+                    <button class="tool-btn" data-tool="clear" title="Clear Canvas">&#128465;</button>
+                </div>
+            </div>
+
+            <!-- Palette -->
+            <div class="panel-section">
+                <div class="section-header">Palette</div>
+                <div class="current-color">
+                    <input type="color" id="colorPicker" class="current-color-swatch" value="#40d080">
+                    <div class="current-color-info">
+                        <div class="current-color-hex" id="currentHex">#40D080</div>
+                        <div class="current-color-label">Current Color</div>
+                    </div>
+                </div>
+                <div class="palette-presets">
+                    <select id="palettePreset">
+                        <option value="custom">Custom Palette</option>
+                        <option value="gameboy">Game Boy (4)</option>
+                        <option value="nes">NES (16)</option>
+                        <option value="pico8">PICO-8 (16)</option>
+                        <option value="lospec16">Lospec 16</option>
+                        <option value="endesga32">ENDESGA 32</option>
+                    </select>
+                </div>
+                <div class="palette-grid" id="paletteGrid">
+                    <!-- Colors populated by JS -->
+                </div>
+                <div class="palette-actions">
+                    <button class="btn btn-small" id="addColorBtn">+ Add</button>
+                    <button class="btn btn-small" id="removeColorBtn">- Remove</button>
+                </div>
+            </div>
+
+            <!-- Tile Settings -->
+            <div class="panel-section">
+                <div class="section-header">Tile Settings</div>
+                <div class="form-group">
+                    <label class="form-label">Name</label>
+                    <input type="text" class="form-input" id="tileName" placeholder="grass_tile_01">
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label class="form-label">Width</label>
+                        <input type="number" class="form-input" id="tileWidth" value="16" min="8" max="64">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Height</label>
+                        <input type="number" class="form-input" id="tileHeight" value="16" min="8" max="64">
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Type</label>
+                    <select class="form-input" id="tileType">
+                        <option value="">-- Select --</option>
+                        <option value="terrain">Terrain</option>
+                        <option value="structure">Structure</option>
+                        <option value="vegetation">Vegetation</option>
+                        <option value="water">Water</option>
+                        <option value="path">Path</option>
+                        <option value="decoration">Decoration</option>
+                    </select>
+                </div>
+            </div>
+
+            <!-- AI Assistant -->
+            <div class="panel-section ai-section">
+                <div class="section-header">AI Assistant</div>
+                <button class="btn btn-primary ai-generate-btn" id="aiGenerateBtn">
+                    &#10024; Generate Spec
+                </button>
+                <div class="ai-spec-preview empty" id="aiSpecPreview">
+                    <div>
+                        <div style="font-size: 24px; margin-bottom: 8px;">&#129302;</div>
+                        Click "Generate Spec" to get AI-powered tile design guidance
+                    </div>
+                </div>
+            </div>
+
+            <!-- Export -->
+            <div class="panel-section">
+                <div class="section-header">Export</div>
+                <div class="export-actions">
+                    <button class="btn" id="saveTileBtn">Save Tile</button>
+                    <button class="btn" id="downloadPngBtn">Download PNG</button>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- AI Generation Modal -->
+    <div class="modal-overlay" id="aiModal">
+        <div class="modal">
+            <div class="modal-header">
+                <span class="modal-title">AI Tile Specification</span>
+                <button class="modal-close" id="aiModalClose">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="form-group">
+                    <label class="form-label">Tile Type *</label>
+                    <select class="form-input" id="aiTileType">
+                        <option value="terrain">Terrain</option>
+                        <option value="structure">Structure</option>
+                        <option value="vegetation">Vegetation</option>
+                        <option value="water">Water</option>
+                        <option value="path">Path</option>
+                        <option value="decoration">Decoration</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Description *</label>
+                    <input type="text" class="form-input" id="aiSubtype" placeholder="e.g., grassy meadow, cobblestone road">
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label class="form-label">Art Style</label>
+                        <select class="form-input" id="aiArtStyle">
+                            <option value="pixel_8bit">8-bit Pixel</option>
+                            <option value="pixel_16bit" selected>16-bit Pixel</option>
+                            <option value="pixel_32bit">32-bit Pixel</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Perspective</label>
+                        <select class="form-input" id="aiPerspective">
+                            <option value="top_down" selected>Top-down</option>
+                            <option value="isometric">Isometric</option>
+                            <option value="side_view">Side View</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label class="form-label">Palette Size</label>
+                        <select class="form-input" id="aiPaletteSize">
+                            <option value="4">4 Colors</option>
+                            <option value="8">8 Colors</option>
+                            <option value="16" selected>16 Colors</option>
+                            <option value="32">32 Colors</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Shading</label>
+                        <select class="form-input" id="aiShadingStyle">
+                            <option value="flat">Flat</option>
+                            <option value="dithered" selected>Dithered</option>
+                            <option value="soft_gradient">Soft Gradient</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label class="form-label">Biome</label>
+                        <select class="form-input" id="aiBiome">
+                            <option value="forest">Forest</option>
+                            <option value="desert">Desert</option>
+                            <option value="snow">Snow</option>
+                            <option value="urban">Urban</option>
+                            <option value="fantasy" selected>Fantasy</option>
+                            <option value="plains">Plains</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Condition</label>
+                        <select class="form-input" id="aiWearLevel">
+                            <option value="pristine">Pristine</option>
+                            <option value="used" selected>Used</option>
+                            <option value="weathered">Weathered</option>
+                            <option value="ruined">Ruined</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Custom Instructions (optional)</label>
+                    <textarea class="form-input" id="aiCustomInstructions" rows="2" placeholder="Any specific details or requirements..."></textarea>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn" id="aiModalCancel">Cancel</button>
+                <button class="btn btn-primary" id="aiModalGenerate">Generate</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast -->
+    <div class="toast" id="toast"></div>
+
+    <script src="../shared/supabase-client.js"></script>
+    <script>
+        /* ============================================
+           TILESMITH - JavaScript
+           ============================================ */
+
+        // ==========================================
+        // PALETTE PRESETS
+        // ==========================================
+        const PALETTES = {
+            gameboy: ['#0f380f', '#306230', '#8bac0f', '#9bbc0f'],
+            nes: [
+                '#000000', '#fcfcfc', '#f8f8f8', '#bcbcbc',
+                '#7c7c7c', '#a4e4fc', '#3cbcfc', '#0078f8',
+                '#0000fc', '#b8b8f8', '#6888fc', '#0058f8',
+                '#0000bc', '#d8b8f8', '#9878f8', '#6844fc'
+            ],
+            pico8: [
+                '#000000', '#1d2b53', '#7e2553', '#008751',
+                '#ab5236', '#5f574f', '#c2c3c7', '#fff1e8',
+                '#ff004d', '#ffa300', '#ffec27', '#00e436',
+                '#29adff', '#83769c', '#ff77a8', '#ffccaa'
+            ],
+            lospec16: [
+                '#140c1c', '#442434', '#30346d', '#4e4a4e',
+                '#854c30', '#346524', '#d04648', '#757161',
+                '#597dce', '#d27d2c', '#8595a1', '#6daa2c',
+                '#d2aa99', '#6dc2ca', '#dad45e', '#deeed6'
+            ],
+            endesga32: [
+                '#be4a2f', '#d77643', '#ead4aa', '#e4a672',
+                '#b86f50', '#733e39', '#3e2731', '#a22633',
+                '#e43b44', '#f77622', '#feae34', '#fee761',
+                '#63c74d', '#3e8948', '#265c42', '#193c3e',
+                '#124e89', '#0099db', '#2ce8f5', '#ffffff',
+                '#c0cbdc', '#8b9bb4', '#5a6988', '#3a4466',
+                '#262b44', '#181425', '#ff0044', '#68386c',
+                '#b55088', '#f6757a', '#e8b796', '#c28569'
+            ]
+        };
+
+        // ==========================================
+        // STATE
+        // ==========================================
+        const state = {
+            user: null,
+            projectId: null,
+            tiles: [],
+            currentTileId: null,
+
+            // Canvas
+            width: 16,
+            height: 16,
+            zoom: 4,
+            showGrid: true,
+
+            // Drawing
+            tool: 'pencil',
+            currentColor: '#40d080',
+            palette: [...PALETTES.pico8],
+            pixels: null, // ImageData
+
+            // Drawing state
+            isDrawing: false,
+            lastX: -1,
+            lastY: -1,
+            startX: -1,
+            startY: -1,
+
+            // Undo
+            undoStack: [],
+            redoStack: [],
+
+            // AI spec
+            currentSpec: null,
+
+            // Save
+            saveTimeout: null,
+            isDirty: false
+        };
+
+        // ==========================================
+        // DOM ELEMENTS
+        // ==========================================
+        const elements = {
+            projectSelect: document.getElementById('projectSelect'),
+            saveIndicator: document.getElementById('saveIndicator'),
+            authIndicator: document.getElementById('authIndicator'),
+            mainCanvas: document.getElementById('mainCanvas'),
+            gridCanvas: document.getElementById('gridCanvas'),
+            canvasWrapper: document.getElementById('canvasWrapper'),
+            gridToggle: document.getElementById('gridToggle'),
+            libraryGrid: document.getElementById('libraryGrid'),
+            newTileBtn: document.getElementById('newTileBtn'),
+            colorPicker: document.getElementById('colorPicker'),
+            currentHex: document.getElementById('currentHex'),
+            palettePreset: document.getElementById('palettePreset'),
+            paletteGrid: document.getElementById('paletteGrid'),
+            addColorBtn: document.getElementById('addColorBtn'),
+            removeColorBtn: document.getElementById('removeColorBtn'),
+            tileName: document.getElementById('tileName'),
+            tileWidth: document.getElementById('tileWidth'),
+            tileHeight: document.getElementById('tileHeight'),
+            tileType: document.getElementById('tileType'),
+            aiGenerateBtn: document.getElementById('aiGenerateBtn'),
+            aiSpecPreview: document.getElementById('aiSpecPreview'),
+            aiModal: document.getElementById('aiModal'),
+            aiModalClose: document.getElementById('aiModalClose'),
+            aiModalCancel: document.getElementById('aiModalCancel'),
+            aiModalGenerate: document.getElementById('aiModalGenerate'),
+            saveTileBtn: document.getElementById('saveTileBtn'),
+            downloadPngBtn: document.getElementById('downloadPngBtn'),
+            toast: document.getElementById('toast')
+        };
+
+        const ctx = elements.mainCanvas.getContext('2d');
+        const gridCtx = elements.gridCanvas.getContext('2d');
+        ctx.imageSmoothingEnabled = false;
+        gridCtx.imageSmoothingEnabled = false;
+
+        // ==========================================
+        // INITIALIZATION
+        // ==========================================
+        async function init() {
+            await crucibleClient.init();
+            state.user = await crucibleClient.getUser();
+            updateAuthIndicator();
+
+            initializeCanvas();
+            renderPalette();
+            setupEventListeners();
+
+            if (state.user) {
+                await loadProjects();
+            }
+        }
+
+        function updateAuthIndicator() {
+            const indicator = elements.authIndicator;
+            const textEl = indicator.querySelector('.auth-text');
+
+            if (state.user) {
+                indicator.classList.add('logged-in');
+                const name = state.user.user_metadata?.display_name || state.user.email?.split('@')[0] || 'User';
+                textEl.textContent = name;
+            } else {
+                indicator.classList.remove('logged-in');
+                textEl.textContent = 'Guest';
+            }
+        }
+
+        // ==========================================
+        // CANVAS
+        // ==========================================
+        function initializeCanvas() {
+            state.width = parseInt(elements.tileWidth.value) || 16;
+            state.height = parseInt(elements.tileHeight.value) || 16;
+
+            // Create pixel data
+            state.pixels = ctx.createImageData(state.width, state.height);
+
+            // Fill with transparent
+            for (let i = 0; i < state.pixels.data.length; i += 4) {
+                state.pixels.data[i] = 0;
+                state.pixels.data[i + 1] = 0;
+                state.pixels.data[i + 2] = 0;
+                state.pixels.data[i + 3] = 0;
+            }
+
+            updateCanvasSize();
+            render();
+        }
+
+        function updateCanvasSize() {
+            const displayWidth = state.width * state.zoom;
+            const displayHeight = state.height * state.zoom;
+
+            elements.mainCanvas.width = displayWidth;
+            elements.mainCanvas.height = displayHeight;
+            elements.gridCanvas.width = displayWidth;
+            elements.gridCanvas.height = displayHeight;
+
+            elements.canvasWrapper.style.width = displayWidth + 'px';
+            elements.canvasWrapper.style.height = displayHeight + 'px';
+
+            render();
+        }
+
+        function render() {
+            // Clear
+            ctx.clearRect(0, 0, elements.mainCanvas.width, elements.mainCanvas.height);
+
+            // Draw pixels scaled up
+            const tempCanvas = document.createElement('canvas');
+            tempCanvas.width = state.width;
+            tempCanvas.height = state.height;
+            const tempCtx = tempCanvas.getContext('2d');
+            tempCtx.putImageData(state.pixels, 0, 0);
+
+            ctx.imageSmoothingEnabled = false;
+            ctx.drawImage(tempCanvas, 0, 0, state.width * state.zoom, state.height * state.zoom);
+
+            renderGrid();
+        }
+
+        function renderGrid() {
+            gridCtx.clearRect(0, 0, elements.gridCanvas.width, elements.gridCanvas.height);
+
+            if (!state.showGrid) return;
+
+            gridCtx.strokeStyle = 'rgba(255, 255, 255, 0.15)';
+            gridCtx.lineWidth = 1;
+
+            // Vertical lines
+            for (let x = 0; x <= state.width; x++) {
+                gridCtx.beginPath();
+                gridCtx.moveTo(x * state.zoom + 0.5, 0);
+                gridCtx.lineTo(x * state.zoom + 0.5, state.height * state.zoom);
+                gridCtx.stroke();
+            }
+
+            // Horizontal lines
+            for (let y = 0; y <= state.height; y++) {
+                gridCtx.beginPath();
+                gridCtx.moveTo(0, y * state.zoom + 0.5);
+                gridCtx.lineTo(state.width * state.zoom, y * state.zoom + 0.5);
+                gridCtx.stroke();
+            }
+        }
+
+        // ==========================================
+        // DRAWING
+        // ==========================================
+        function getPixelPos(e) {
+            const rect = elements.mainCanvas.getBoundingClientRect();
+            const x = Math.floor((e.clientX - rect.left) / state.zoom);
+            const y = Math.floor((e.clientY - rect.top) / state.zoom);
+            return { x, y };
+        }
+
+        function getPixelIndex(x, y) {
+            return (y * state.width + x) * 4;
+        }
+
+        function hexToRgb(hex) {
+            const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+            return result ? {
+                r: parseInt(result[1], 16),
+                g: parseInt(result[2], 16),
+                b: parseInt(result[3], 16)
+            } : { r: 0, g: 0, b: 0 };
+        }
+
+        function rgbToHex(r, g, b) {
+            return '#' + [r, g, b].map(x => x.toString(16).padStart(2, '0')).join('');
+        }
+
+        function setPixel(x, y, color, alpha = 255) {
+            if (x < 0 || x >= state.width || y < 0 || y >= state.height) return;
+
+            const idx = getPixelIndex(x, y);
+            const rgb = hexToRgb(color);
+
+            state.pixels.data[idx] = rgb.r;
+            state.pixels.data[idx + 1] = rgb.g;
+            state.pixels.data[idx + 2] = rgb.b;
+            state.pixels.data[idx + 3] = alpha;
+        }
+
+        function getPixel(x, y) {
+            if (x < 0 || x >= state.width || y < 0 || y >= state.height) return null;
+
+            const idx = getPixelIndex(x, y);
+            return {
+                r: state.pixels.data[idx],
+                g: state.pixels.data[idx + 1],
+                b: state.pixels.data[idx + 2],
+                a: state.pixels.data[idx + 3]
+            };
+        }
+
+        function saveUndoState() {
+            const data = new Uint8ClampedArray(state.pixels.data);
+            state.undoStack.push(data);
+            if (state.undoStack.length > 50) state.undoStack.shift();
+            state.redoStack = [];
+        }
+
+        function undo() {
+            if (state.undoStack.length === 0) return;
+
+            const current = new Uint8ClampedArray(state.pixels.data);
+            state.redoStack.push(current);
+
+            const previous = state.undoStack.pop();
+            state.pixels.data.set(previous);
+            render();
+            markDirty();
+        }
+
+        function redo() {
+            if (state.redoStack.length === 0) return;
+
+            const current = new Uint8ClampedArray(state.pixels.data);
+            state.undoStack.push(current);
+
+            const next = state.redoStack.pop();
+            state.pixels.data.set(next);
+            render();
+            markDirty();
+        }
+
+        function drawLine(x0, y0, x1, y1, color) {
+            const dx = Math.abs(x1 - x0);
+            const dy = Math.abs(y1 - y0);
+            const sx = x0 < x1 ? 1 : -1;
+            const sy = y0 < y1 ? 1 : -1;
+            let err = dx - dy;
+
+            while (true) {
+                setPixel(x0, y0, color);
+
+                if (x0 === x1 && y0 === y1) break;
+
+                const e2 = 2 * err;
+                if (e2 > -dy) {
+                    err -= dy;
+                    x0 += sx;
+                }
+                if (e2 < dx) {
+                    err += dx;
+                    y0 += sy;
+                }
+            }
+        }
+
+        function floodFill(startX, startY, fillColor) {
+            const targetPixel = getPixel(startX, startY);
+            if (!targetPixel) return;
+
+            const targetColor = rgbToHex(targetPixel.r, targetPixel.g, targetPixel.b);
+            const targetAlpha = targetPixel.a;
+
+            if (targetColor.toLowerCase() === fillColor.toLowerCase() && targetAlpha === 255) return;
+
+            const stack = [[startX, startY]];
+            const visited = new Set();
+
+            while (stack.length > 0) {
+                const [x, y] = stack.pop();
+                const key = `${x},${y}`;
+
+                if (visited.has(key)) continue;
+                if (x < 0 || x >= state.width || y < 0 || y >= state.height) continue;
+
+                const pixel = getPixel(x, y);
+                const pixelColor = rgbToHex(pixel.r, pixel.g, pixel.b);
+
+                if (pixelColor.toLowerCase() !== targetColor.toLowerCase() || pixel.a !== targetAlpha) continue;
+
+                visited.add(key);
+                setPixel(x, y, fillColor);
+
+                stack.push([x + 1, y]);
+                stack.push([x - 1, y]);
+                stack.push([x, y + 1]);
+                stack.push([x, y - 1]);
+            }
+        }
+
+        function clearCanvas() {
+            saveUndoState();
+            for (let i = 0; i < state.pixels.data.length; i += 4) {
+                state.pixels.data[i] = 0;
+                state.pixels.data[i + 1] = 0;
+                state.pixels.data[i + 2] = 0;
+                state.pixels.data[i + 3] = 0;
+            }
+            render();
+            markDirty();
+        }
+
+        // ==========================================
+        // PALETTE
+        // ==========================================
+        function renderPalette() {
+            elements.paletteGrid.innerHTML = '';
+
+            state.palette.forEach((color, idx) => {
+                const swatch = document.createElement('div');
+                swatch.className = 'palette-swatch';
+                if (color.toLowerCase() === state.currentColor.toLowerCase()) {
+                    swatch.classList.add('active');
+                }
+                swatch.style.backgroundColor = color;
+                swatch.title = color;
+                swatch.addEventListener('click', () => selectColor(color));
+                elements.paletteGrid.appendChild(swatch);
+            });
+        }
+
+        function selectColor(color) {
+            state.currentColor = color;
+            elements.colorPicker.value = color;
+            elements.currentHex.textContent = color.toUpperCase();
+            renderPalette();
+        }
+
+        function addColorToPalette(color) {
+            if (!state.palette.includes(color.toLowerCase())) {
+                state.palette.push(color);
+                renderPalette();
+            }
+        }
+
+        function removeColorFromPalette() {
+            const idx = state.palette.findIndex(c => c.toLowerCase() === state.currentColor.toLowerCase());
+            if (idx !== -1 && state.palette.length > 1) {
+                state.palette.splice(idx, 1);
+                selectColor(state.palette[0]);
+            }
+        }
+
+        function loadPalettePreset(presetName) {
+            if (presetName === 'custom') return;
+
+            if (PALETTES[presetName]) {
+                state.palette = [...PALETTES[presetName]];
+                selectColor(state.palette[0]);
+            }
+        }
+
+        // ==========================================
+        // PROJECTS & TILES
+        // ==========================================
+        async function loadProjects() {
+            try {
+                const projects = await crucibleClient.getMyProjects();
+
+                elements.projectSelect.innerHTML = '<option value="">-- Select Project --</option>';
+                projects.forEach(p => {
+                    const opt = document.createElement('option');
+                    opt.value = p.id;
+                    opt.textContent = p.name;
+                    elements.projectSelect.appendChild(opt);
+                });
+
+                const lastProject = localStorage.getItem('tilesmith_project');
+                if (lastProject && projects.find(p => p.id === lastProject)) {
+                    elements.projectSelect.value = lastProject;
+                    await selectProject(lastProject);
+                }
+            } catch (err) {
+                console.error('Failed to load projects:', err);
+                showToast('Failed to load projects', true);
+            }
+        }
+
+        async function selectProject(projectId) {
+            state.projectId = projectId;
+            state.tiles = [];
+            state.currentTileId = null;
+
+            localStorage.setItem('tilesmith_project', projectId);
+
+            if (!projectId) {
+                renderTileLibrary();
+                return;
+            }
+
+            try {
+                state.tiles = await crucibleClient.getTiles(projectId);
+                renderTileLibrary();
+            } catch (err) {
+                console.error('Failed to load tiles:', err);
+                showToast('Failed to load tiles', true);
+            }
+        }
+
+        function renderTileLibrary() {
+            elements.libraryGrid.innerHTML = '';
+
+            state.tiles.forEach(tile => {
+                const tileEl = document.createElement('div');
+                tileEl.className = 'library-tile';
+                if (tile.id === state.currentTileId) {
+                    tileEl.classList.add('active');
+                }
+
+                // Render thumbnail
+                const canvas = document.createElement('canvas');
+                const thumbSize = 40;
+                const scale = Math.min(thumbSize / tile.width, thumbSize / tile.height);
+                canvas.width = Math.floor(tile.width * scale);
+                canvas.height = Math.floor(tile.height * scale);
+
+                // Load pixel data
+                if (tile.pixel_data) {
+                    try {
+                        const img = new Image();
+                        img.onload = () => {
+                            const tCtx = canvas.getContext('2d');
+                            tCtx.imageSmoothingEnabled = false;
+                            tCtx.drawImage(img, 0, 0, canvas.width, canvas.height);
+                        };
+                        img.src = tile.pixel_data;
+                    } catch (e) {
+                        console.warn('Failed to load tile thumbnail');
+                    }
+                }
+
+                tileEl.appendChild(canvas);
+                tileEl.title = tile.name;
+
+                // Delete button
+                const deleteBtn = document.createElement('button');
+                deleteBtn.className = 'library-tile-delete';
+                deleteBtn.textContent = '×';
+                deleteBtn.addEventListener('click', async (e) => {
+                    e.stopPropagation();
+                    if (confirm(`Delete "${tile.name}"?`)) {
+                        await deleteTile(tile.id);
+                    }
+                });
+                tileEl.appendChild(deleteBtn);
+
+                tileEl.addEventListener('click', () => loadTile(tile));
+
+                elements.libraryGrid.appendChild(tileEl);
+            });
+        }
+
+        async function loadTile(tile) {
+            state.currentTileId = tile.id;
+            state.width = tile.width;
+            state.height = tile.height;
+
+            elements.tileName.value = tile.name;
+            elements.tileWidth.value = tile.width;
+            elements.tileHeight.value = tile.height;
+            elements.tileType.value = tile.tile_type || '';
+
+            if (tile.palette && tile.palette.length > 0) {
+                state.palette = tile.palette.map(p => p.hex || p);
+                elements.palettePreset.value = 'custom';
+                renderPalette();
+            }
+
+            // Create new pixel data
+            state.pixels = ctx.createImageData(tile.width, tile.height);
+
+            // Load from data URL
+            if (tile.pixel_data) {
+                try {
+                    const img = new Image();
+                    await new Promise((resolve, reject) => {
+                        img.onload = resolve;
+                        img.onerror = reject;
+                        img.src = tile.pixel_data;
+                    });
+
+                    const tempCanvas = document.createElement('canvas');
+                    tempCanvas.width = tile.width;
+                    tempCanvas.height = tile.height;
+                    const tempCtx = tempCanvas.getContext('2d');
+                    tempCtx.drawImage(img, 0, 0);
+
+                    const imgData = tempCtx.getImageData(0, 0, tile.width, tile.height);
+                    state.pixels.data.set(imgData.data);
+                } catch (e) {
+                    console.warn('Failed to load tile pixel data');
+                }
+            }
+
+            updateCanvasSize();
+            renderTileLibrary();
+            state.undoStack = [];
+            state.redoStack = [];
+        }
+
+        function newTile() {
+            state.currentTileId = null;
+            state.width = parseInt(elements.tileWidth.value) || 16;
+            state.height = parseInt(elements.tileHeight.value) || 16;
+
+            elements.tileName.value = '';
+            elements.tileType.value = '';
+
+            initializeCanvas();
+            renderTileLibrary();
+            state.undoStack = [];
+            state.redoStack = [];
+        }
+
+        async function saveTile() {
+            if (!state.user) {
+                showToast('Sign in to save tiles', true);
+                return;
+            }
+
+            if (!state.projectId) {
+                showToast('Select a project first', true);
+                return;
+            }
+
+            const name = elements.tileName.value.trim();
+            if (!name) {
+                showToast('Enter a tile name', true);
+                return;
+            }
+
+            // Convert pixels to data URL
+            const tempCanvas = document.createElement('canvas');
+            tempCanvas.width = state.width;
+            tempCanvas.height = state.height;
+            const tempCtx = tempCanvas.getContext('2d');
+            tempCtx.putImageData(state.pixels, 0, 0);
+            const pixelData = tempCanvas.toDataURL('image/png');
+
+            const tileData = {
+                name: name,
+                width: state.width,
+                height: state.height,
+                pixelData: pixelData,
+                palette: state.palette.map(hex => ({ hex })),
+                tileType: elements.tileType.value || null,
+                specId: state.currentSpec?.id || null
+            };
+
+            elements.saveIndicator.textContent = 'Saving...';
+            elements.saveIndicator.className = 'save-indicator saving';
+
+            try {
+                if (state.currentTileId) {
+                    await crucibleClient.updateTile(state.currentTileId, tileData);
+                } else {
+                    const newTile = await crucibleClient.createTile(state.projectId, tileData);
+                    state.currentTileId = newTile.id;
+                    state.tiles.unshift(newTile);
+                }
+
+                // Refresh list
+                state.tiles = await crucibleClient.getTiles(state.projectId);
+                renderTileLibrary();
+
+                elements.saveIndicator.textContent = 'Saved';
+                elements.saveIndicator.className = 'save-indicator saved';
+                state.isDirty = false;
+
+                showToast('Tile saved');
+            } catch (err) {
+                console.error('Failed to save tile:', err);
+                elements.saveIndicator.textContent = 'Save failed';
+                elements.saveIndicator.className = 'save-indicator';
+                showToast('Failed to save tile', true);
+            }
+        }
+
+        async function deleteTile(tileId) {
+            try {
+                await crucibleClient.deleteTile(tileId);
+                state.tiles = state.tiles.filter(t => t.id !== tileId);
+
+                if (state.currentTileId === tileId) {
+                    newTile();
+                }
+
+                renderTileLibrary();
+                showToast('Tile deleted');
+            } catch (err) {
+                console.error('Failed to delete tile:', err);
+                showToast('Failed to delete tile', true);
+            }
+        }
+
+        function markDirty() {
+            state.isDirty = true;
+            elements.saveIndicator.textContent = 'Modified';
+            elements.saveIndicator.className = 'save-indicator';
+        }
+
+        // ==========================================
+        // AI GENERATION
+        // ==========================================
+        function openAiModal() {
+            elements.aiModal.classList.add('active');
+        }
+
+        function closeAiModal() {
+            elements.aiModal.classList.remove('active');
+        }
+
+        async function generateTileSpec() {
+            const request = {
+                tileType: document.getElementById('aiTileType').value,
+                subtype: document.getElementById('aiSubtype').value,
+                width: state.width,
+                height: state.height,
+                artStyle: document.getElementById('aiArtStyle').value,
+                perspective: document.getElementById('aiPerspective').value,
+                paletteSize: parseInt(document.getElementById('aiPaletteSize').value),
+                shadingStyle: document.getElementById('aiShadingStyle').value,
+                biome: document.getElementById('aiBiome').value,
+                wearLevel: document.getElementById('aiWearLevel').value,
+                customInstructions: document.getElementById('aiCustomInstructions').value || undefined
+            };
+
+            if (!request.subtype) {
+                showToast('Enter a tile description', true);
+                return;
+            }
+
+            elements.aiModalGenerate.disabled = true;
+            elements.aiModalGenerate.textContent = 'Generating...';
+
+            try {
+                const spec = await crucibleClient.generateTileSpec(request);
+                state.currentSpec = spec;
+
+                // Save spec if logged in
+                if (state.user && state.projectId) {
+                    await crucibleClient.saveTileSpec(state.projectId, request, spec);
+                }
+
+                displaySpec(spec);
+                closeAiModal();
+                showToast('Specification generated');
+            } catch (err) {
+                console.error('Failed to generate spec:', err);
+                showToast(err.message || 'Failed to generate spec', true);
+            } finally {
+                elements.aiModalGenerate.disabled = false;
+                elements.aiModalGenerate.textContent = 'Generate';
+            }
+        }
+
+        function displaySpec(spec) {
+            elements.aiSpecPreview.classList.remove('empty');
+
+            let html = `<div class="ai-spec-name">${spec.tileName}</div>`;
+            html += `<div>${spec.description}</div>`;
+
+            if (spec.colors && spec.colors.length > 0) {
+                html += `<div class="ai-spec-colors">`;
+                spec.colors.forEach(c => {
+                    html += `<div class="ai-spec-color" style="background:${c.hex}" title="${c.name}: ${c.usage}"></div>`;
+                });
+                html += `</div>`;
+                html += `<button class="btn btn-small ai-spec-apply" onclick="applySpecPalette()">Apply Palette</button>`;
+            }
+
+            html += `<div style="margin-top: 12px; font-size: 10px; color: var(--stone-mid);">`;
+            html += `<strong>Guidance:</strong><br>${spec.pixelGuidance || 'No guidance provided.'}`;
+            html += `</div>`;
+
+            if (spec.edgeNotes) {
+                html += `<div style="margin-top: 8px; font-size: 10px; color: var(--stone-mid);">`;
+                html += `<strong>Edges:</strong> ${spec.edgeNotes}`;
+                html += `</div>`;
+            }
+
+            elements.aiSpecPreview.innerHTML = html;
+        }
+
+        function applySpecPalette() {
+            if (!state.currentSpec || !state.currentSpec.colors) return;
+
+            state.palette = state.currentSpec.colors.map(c => c.hex);
+            elements.palettePreset.value = 'custom';
+            selectColor(state.palette[0]);
+            showToast('Palette applied from spec');
+        }
+
+        // ==========================================
+        // EXPORT
+        // ==========================================
+        function downloadPng() {
+            const tempCanvas = document.createElement('canvas');
+            tempCanvas.width = state.width;
+            tempCanvas.height = state.height;
+            const tempCtx = tempCanvas.getContext('2d');
+            tempCtx.putImageData(state.pixels, 0, 0);
+
+            const link = document.createElement('a');
+            const name = elements.tileName.value || 'tile';
+            link.download = `${name}.png`;
+            link.href = tempCanvas.toDataURL('image/png');
+            link.click();
+        }
+
+        // ==========================================
+        // UTILITIES
+        // ==========================================
+        function showToast(message, isError = false) {
+            elements.toast.textContent = message;
+            elements.toast.className = 'toast show' + (isError ? ' error' : '');
+            setTimeout(() => elements.toast.classList.remove('show'), 2500);
+        }
+
+        // ==========================================
+        // EVENT LISTENERS
+        // ==========================================
+        function setupEventListeners() {
+            // Project select
+            elements.projectSelect.addEventListener('change', (e) => {
+                selectProject(e.target.value);
+            });
+
+            // Canvas mouse events
+            elements.mainCanvas.addEventListener('mousedown', handleMouseDown);
+            elements.mainCanvas.addEventListener('mousemove', handleMouseMove);
+            elements.mainCanvas.addEventListener('mouseup', handleMouseUp);
+            elements.mainCanvas.addEventListener('mouseleave', handleMouseUp);
+            elements.mainCanvas.addEventListener('contextmenu', (e) => e.preventDefault());
+
+            // Zoom buttons
+            document.querySelectorAll('.zoom-btn').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    document.querySelectorAll('.zoom-btn').forEach(b => b.classList.remove('active'));
+                    btn.classList.add('active');
+                    state.zoom = parseInt(btn.dataset.zoom);
+                    updateCanvasSize();
+                });
+            });
+
+            // Grid toggle
+            elements.gridToggle.addEventListener('change', (e) => {
+                state.showGrid = e.target.checked;
+                renderGrid();
+            });
+
+            // Tool buttons
+            document.querySelectorAll('.tool-btn').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    if (btn.dataset.tool === 'clear') {
+                        if (confirm('Clear the canvas?')) clearCanvas();
+                        return;
+                    }
+                    document.querySelectorAll('.tool-btn').forEach(b => b.classList.remove('active'));
+                    btn.classList.add('active');
+                    state.tool = btn.dataset.tool;
+                });
+            });
+
+            // Color picker
+            elements.colorPicker.addEventListener('input', (e) => {
+                selectColor(e.target.value);
+            });
+
+            // Palette preset
+            elements.palettePreset.addEventListener('change', (e) => {
+                loadPalettePreset(e.target.value);
+            });
+
+            // Add/remove color
+            elements.addColorBtn.addEventListener('click', () => {
+                addColorToPalette(state.currentColor);
+            });
+
+            elements.removeColorBtn.addEventListener('click', removeColorFromPalette);
+
+            // Tile size changes
+            elements.tileWidth.addEventListener('change', () => {
+                if (!state.currentTileId) {
+                    state.width = parseInt(elements.tileWidth.value) || 16;
+                    initializeCanvas();
+                }
+            });
+
+            elements.tileHeight.addEventListener('change', () => {
+                if (!state.currentTileId) {
+                    state.height = parseInt(elements.tileHeight.value) || 16;
+                    initializeCanvas();
+                }
+            });
+
+            // New tile
+            elements.newTileBtn.addEventListener('click', newTile);
+
+            // AI modal
+            elements.aiGenerateBtn.addEventListener('click', openAiModal);
+            elements.aiModalClose.addEventListener('click', closeAiModal);
+            elements.aiModalCancel.addEventListener('click', closeAiModal);
+            elements.aiModalGenerate.addEventListener('click', generateTileSpec);
+
+            // Export
+            elements.saveTileBtn.addEventListener('click', saveTile);
+            elements.downloadPngBtn.addEventListener('click', downloadPng);
+
+            // Keyboard shortcuts
+            window.addEventListener('keydown', (e) => {
+                if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
+
+                if (e.key === 'z' && (e.ctrlKey || e.metaKey)) {
+                    e.preventDefault();
+                    if (e.shiftKey) redo();
+                    else undo();
+                }
+
+                if (e.key === 'p') selectTool('pencil');
+                if (e.key === 'e') selectTool('eraser');
+                if (e.key === 'f') selectTool('fill');
+                if (e.key === 'i') selectTool('picker');
+                if (e.key === 'l') selectTool('line');
+                if (e.key === 'r') selectTool(e.shiftKey ? 'rectfill' : 'rect');
+            });
+        }
+
+        function selectTool(tool) {
+            state.tool = tool;
+            document.querySelectorAll('.tool-btn').forEach(b => {
+                b.classList.toggle('active', b.dataset.tool === tool);
+            });
+        }
+
+        function handleMouseDown(e) {
+            const { x, y } = getPixelPos(e);
+            state.isDrawing = true;
+            state.startX = x;
+            state.startY = y;
+            state.lastX = x;
+            state.lastY = y;
+
+            if (state.tool === 'picker') {
+                const pixel = getPixel(x, y);
+                if (pixel && pixel.a > 0) {
+                    selectColor(rgbToHex(pixel.r, pixel.g, pixel.b));
+                }
+                return;
+            }
+
+            if (['pencil', 'eraser', 'fill'].includes(state.tool)) {
+                saveUndoState();
+            }
+
+            if (state.tool === 'pencil') {
+                setPixel(x, y, state.currentColor);
+                render();
+                markDirty();
+            } else if (state.tool === 'eraser') {
+                setPixel(x, y, '#000000', 0);
+                render();
+                markDirty();
+            } else if (state.tool === 'fill') {
+                floodFill(x, y, state.currentColor);
+                render();
+                markDirty();
+            }
+        }
+
+        function handleMouseMove(e) {
+            if (!state.isDrawing) return;
+
+            const { x, y } = getPixelPos(e);
+
+            if (state.tool === 'pencil') {
+                drawLine(state.lastX, state.lastY, x, y, state.currentColor);
+                render();
+                markDirty();
+            } else if (state.tool === 'eraser') {
+                drawLine(state.lastX, state.lastY, x, y, '#000000');
+                // Set alpha to 0 for eraser
+                let x0 = state.lastX, y0 = state.lastY;
+                const dx = Math.abs(x - x0);
+                const dy = Math.abs(y - y0);
+                const sx = x0 < x ? 1 : -1;
+                const sy = y0 < y ? 1 : -1;
+                let err = dx - dy;
+
+                while (true) {
+                    setPixel(x0, y0, '#000000', 0);
+                    if (x0 === x && y0 === y) break;
+                    const e2 = 2 * err;
+                    if (e2 > -dy) { err -= dy; x0 += sx; }
+                    if (e2 < dx) { err += dx; y0 += sy; }
+                }
+                render();
+                markDirty();
+            }
+
+            state.lastX = x;
+            state.lastY = y;
+        }
+
+        function handleMouseUp(e) {
+            if (!state.isDrawing) return;
+
+            const { x, y } = getPixelPos(e);
+
+            if (state.tool === 'line') {
+                saveUndoState();
+                drawLine(state.startX, state.startY, x, y, state.currentColor);
+                render();
+                markDirty();
+            } else if (state.tool === 'rect' || state.tool === 'rectfill') {
+                saveUndoState();
+                const x0 = Math.min(state.startX, x);
+                const y0 = Math.min(state.startY, y);
+                const x1 = Math.max(state.startX, x);
+                const y1 = Math.max(state.startY, y);
+
+                if (state.tool === 'rectfill') {
+                    for (let py = y0; py <= y1; py++) {
+                        for (let px = x0; px <= x1; px++) {
+                            setPixel(px, py, state.currentColor);
+                        }
+                    }
+                } else {
+                    for (let px = x0; px <= x1; px++) {
+                        setPixel(px, y0, state.currentColor);
+                        setPixel(px, y1, state.currentColor);
+                    }
+                    for (let py = y0; py <= y1; py++) {
+                        setPixel(x0, py, state.currentColor);
+                        setPixel(x1, py, state.currentColor);
+                    }
+                }
+
+                render();
+                markDirty();
+            }
+
+            state.isDrawing = false;
+        }
+
+        // ==========================================
+        // Initialize
+        // ==========================================
+        init();
+    </script>
+</body>
+</html>

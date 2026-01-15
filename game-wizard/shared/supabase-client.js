@@ -1206,6 +1206,187 @@ class CrucibleClient {
             publicUrl: this.client.storage.from('spritesheets').getPublicUrl(data.file_path).data.publicUrl
         };
     }
+
+    // =============================================
+    // TILES (Tilesmith)
+    // =============================================
+
+    async createTile(projectId, tileData) {
+        if (!this.client) throw new Error('Crucible not initialized');
+
+        const user = await this.getUser();
+
+        const { data, error } = await this.client
+            .from('tiles')
+            .insert({
+                project_id: projectId,
+                user_id: user?.id || null,
+                name: tileData.name,
+                width: tileData.width || 16,
+                height: tileData.height || 16,
+                pixel_data: tileData.pixelData,
+                palette: tileData.palette || [],
+                tile_type: tileData.tileType || null,
+                tags: tileData.tags || [],
+                metadata: tileData.metadata || {},
+                spec_id: tileData.specId || null
+            })
+            .select()
+            .single();
+
+        if (error) throw error;
+        return data;
+    }
+
+    async getTiles(projectId) {
+        if (!this.client) throw new Error('Crucible not initialized');
+
+        const { data, error } = await this.client
+            .from('tiles')
+            .select('*')
+            .eq('project_id', projectId)
+            .order('created_at', { ascending: false });
+
+        if (error) throw error;
+        return data || [];
+    }
+
+    async getTile(tileId) {
+        if (!this.client) throw new Error('Crucible not initialized');
+
+        const { data, error } = await this.client
+            .from('tiles')
+            .select('*')
+            .eq('id', tileId)
+            .single();
+
+        if (error) throw error;
+        return data;
+    }
+
+    async updateTile(tileId, updates) {
+        if (!this.client) throw new Error('Crucible not initialized');
+
+        const updateData = {};
+        if (updates.name !== undefined) updateData.name = updates.name;
+        if (updates.width !== undefined) updateData.width = updates.width;
+        if (updates.height !== undefined) updateData.height = updates.height;
+        if (updates.pixelData !== undefined) updateData.pixel_data = updates.pixelData;
+        if (updates.palette !== undefined) updateData.palette = updates.palette;
+        if (updates.tileType !== undefined) updateData.tile_type = updates.tileType;
+        if (updates.tags !== undefined) updateData.tags = updates.tags;
+        if (updates.metadata !== undefined) updateData.metadata = updates.metadata;
+        if (updates.specId !== undefined) updateData.spec_id = updates.specId;
+
+        const { data, error } = await this.client
+            .from('tiles')
+            .update(updateData)
+            .eq('id', tileId)
+            .select()
+            .single();
+
+        if (error) throw error;
+        return data;
+    }
+
+    async deleteTile(tileId) {
+        if (!this.client) throw new Error('Crucible not initialized');
+
+        const { error } = await this.client
+            .from('tiles')
+            .delete()
+            .eq('id', tileId);
+
+        if (error) throw error;
+        return true;
+    }
+
+    // =============================================
+    // TILE SPECIFICATIONS (AI-generated)
+    // =============================================
+
+    async generateTileSpec(request) {
+        if (!this.client) throw new Error('Crucible not initialized');
+
+        // Call the edge function
+        const response = await fetch(
+            `${SUPABASE_URL}/functions/v1/generate-tile-spec`,
+            {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(request)
+            }
+        );
+
+        if (!response.ok) {
+            const error = await response.json();
+            throw new Error(error.error || 'Failed to generate tile specification');
+        }
+
+        return response.json();
+    }
+
+    async saveTileSpec(projectId, request, specification) {
+        if (!this.client) throw new Error('Crucible not initialized');
+
+        const user = await this.getUser();
+
+        const { data, error } = await this.client
+            .from('tile_specifications')
+            .insert({
+                project_id: projectId,
+                user_id: user?.id || null,
+                name: specification.tileName || 'Untitled Spec',
+                request: request,
+                specification: specification
+            })
+            .select()
+            .single();
+
+        if (error) throw error;
+        return data;
+    }
+
+    async getTileSpecs(projectId) {
+        if (!this.client) throw new Error('Crucible not initialized');
+
+        const { data, error } = await this.client
+            .from('tile_specifications')
+            .select('*')
+            .eq('project_id', projectId)
+            .order('created_at', { ascending: false });
+
+        if (error) throw error;
+        return data || [];
+    }
+
+    async getTileSpec(specId) {
+        if (!this.client) throw new Error('Crucible not initialized');
+
+        const { data, error } = await this.client
+            .from('tile_specifications')
+            .select('*')
+            .eq('id', specId)
+            .single();
+
+        if (error) throw error;
+        return data;
+    }
+
+    async deleteTileSpec(specId) {
+        if (!this.client) throw new Error('Crucible not initialized');
+
+        const { error } = await this.client
+            .from('tile_specifications')
+            .delete()
+            .eq('id', specId);
+
+        if (error) throw error;
+        return true;
+    }
 }
 
 // =============================================
