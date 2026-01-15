@@ -376,6 +376,110 @@
             margin-bottom: 4px;
         }
 
+        /* Article Navigation */
+        .article-nav {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-bottom: 24px;
+        }
+
+        .article-nav-link {
+            padding: 8px 16px;
+            background: var(--bg-surface);
+            border: 1px solid var(--stone-dark);
+            border-radius: 4px;
+            color: var(--stone-light);
+            text-decoration: none;
+            font-size: 12px;
+            transition: all 0.15s;
+        }
+
+        .article-nav-link:hover {
+            background: var(--accent-dark);
+            border-color: var(--accent-purple);
+            color: var(--accent-purple-glow);
+        }
+
+        .article-list {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            gap: 16px;
+        }
+
+        .article-card {
+            padding: 16px;
+            background: var(--bg-surface);
+            border: 1px solid var(--stone-dark);
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.15s;
+        }
+
+        .article-card:hover {
+            border-color: var(--accent-purple);
+            transform: translateY(-2px);
+        }
+
+        .article-card-title {
+            font-size: 13px;
+            color: var(--stone-bright);
+        }
+
+        .back-link {
+            display: inline-block;
+            margin-bottom: 16px;
+            color: var(--accent-purple);
+            text-decoration: none;
+            font-size: 12px;
+        }
+
+        .back-link:hover {
+            color: var(--accent-purple-glow);
+            text-decoration: underline;
+        }
+
+        /* Step styling from docs */
+        .article .step {
+            display: flex;
+            gap: 16px;
+            margin-bottom: 16px;
+            padding: 12px;
+            background: var(--bg-surface);
+            border-radius: 6px;
+        }
+
+        .article .step-num {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 32px;
+            height: 32px;
+            background: var(--accent-dark);
+            color: var(--accent-purple);
+            border-radius: 50%;
+            font-weight: 600;
+            flex-shrink: 0;
+        }
+
+        .article .step-text {
+            flex: 1;
+        }
+
+        .article .tip-label,
+        .article .warning-label {
+            font-weight: 600;
+            margin-bottom: 4px;
+        }
+
+        .article .tip-label {
+            color: var(--accent-purple);
+        }
+
+        .article .warning-label {
+            color: var(--warning);
+        }
+
         /* Scrollbar */
         ::-webkit-scrollbar {
             width: 8px;
@@ -562,25 +666,63 @@
         </div>
     </main>
 
+    <!-- Load documentation modules -->
+    <script src="../shared/docs/tilesmith-docs.js"></script>
+
     <script>
         // Simple client-side routing
         const pages = {
             welcome: document.getElementById('page-welcome').innerHTML
         };
 
+        // Build Tilesmith page from docs
+        if (typeof TILESMITH_DOCS !== 'undefined') {
+            pages['tilesmith'] = `
+                <div class="content-header">
+                    <h1 class="content-title">Tilesmith</h1>
+                    <p class="content-subtitle">Create pixel art tiles with AI assistance. Support for multi-tile tilesets and seamless integration with the master spritesheet.</p>
+                </div>
+                <nav class="article-nav">
+                    ${TILESMITH_DOCS.map(doc => `<a href="#tilesmith/${doc.id}" class="article-nav-link">${doc.title}</a>`).join('')}
+                </nav>
+                <div class="article-list">
+                    ${TILESMITH_DOCS.map(doc => `
+                        <div class="article-card" data-article="tilesmith/${doc.id}">
+                            <div class="article-card-title">${doc.title}</div>
+                        </div>
+                    `).join('')}
+                </div>
+            `;
+
+            // Add individual article pages
+            TILESMITH_DOCS.forEach(doc => {
+                pages['tilesmith/' + doc.id] = `
+                    <div class="content-header">
+                        <a href="#tilesmith" class="back-link">← Back to Tilesmith</a>
+                        <h1 class="content-title">${doc.title}</h1>
+                    </div>
+                    <div class="article">
+                        ${doc.content}
+                    </div>
+                `;
+            });
+        }
+
         function navigateTo(hash) {
             const page = hash.replace('#', '') || 'welcome';
 
-            // Update active nav link
+            // Update active nav link (handle sub-pages)
+            const topPage = page.split('/')[0];
             document.querySelectorAll('.nav-link').forEach(link => {
-                link.classList.toggle('active', link.getAttribute('href') === '#' + page);
+                const linkPage = link.getAttribute('href').replace('#', '');
+                link.classList.toggle('active', linkPage === topPage || linkPage === page);
             });
 
             // For now, show welcome for undefined pages
             if (!pages[page]) {
                 document.getElementById('content').innerHTML = `
                     <div class="content-header">
-                        <h1 class="content-title">${page.charAt(0).toUpperCase() + page.slice(1).replace(/-/g, ' ')}</h1>
+                        <h1 class="content-title">${page.charAt(0).toUpperCase() + page.split('/')[0].replace(/-/g, ' ')}</h1>
                         <p class="content-subtitle">Documentation coming soon...</p>
                     </div>
                 `;
@@ -588,6 +730,13 @@
             }
 
             document.getElementById('content').innerHTML = pages[page];
+
+            // Add click handlers for article cards
+            document.querySelectorAll('.article-card').forEach(card => {
+                card.addEventListener('click', () => {
+                    location.hash = card.dataset.article;
+                });
+            });
         }
 
         // Handle navigation
