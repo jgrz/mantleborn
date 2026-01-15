@@ -72,6 +72,25 @@
             gap: 8px;
         }
 
+        .home-btn {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 32px;
+            height: 32px;
+            font-size: 18px;
+            text-decoration: none;
+            background: var(--bg-surface);
+            border: 1px solid var(--stone-dark);
+            border-radius: 4px;
+            transition: all 0.2s;
+        }
+
+        .home-btn:hover {
+            background: var(--stone-dark);
+            border-color: var(--accent-ember);
+        }
+
         .brand-icon {
             font-size: 20px;
             animation: flicker 2s infinite;
@@ -1113,6 +1132,7 @@
     <!-- Header -->
     <header class="header">
         <div class="brand">
+            <a href="/game-wizard/" class="home-btn" title="Back to Game Wizard">&#127968;</a>
             <span class="brand-icon">&#128293;</span>
             <span class="brand-text">MANTLEBORN / <span>LEVEL-FORGE</span></span>
         </div>
@@ -1186,7 +1206,7 @@
                             <canvas id="backgroundCanvas"></canvas>
                         </div>
                         <div class="background-layers" id="backgroundLayers">
-                            <div class="no-layers-message">No background layers. Click "+ Add Layer" to upload an image.</div>
+                            <div class="no-layers-message">No background layers. Click "+ Add Layer" to upload an image.<br><br>Recommended: 768x432px (32x18 tiles at 24px)</div>
                         </div>
                     </div>
                 </div>
@@ -2699,7 +2719,7 @@
 
         function renderBackgroundLayers() {
             if (state.backgrounds.length === 0) {
-                elements.backgroundLayers.innerHTML = '<div class="no-layers-message">No background layers. Click "+ Add Layer" to upload an image.</div>';
+                elements.backgroundLayers.innerHTML = '<div class="no-layers-message">No background layers. Click "+ Add Layer" to upload an image.<br><br>Recommended: 768x432px (32x18 tiles at 24px)</div>';
                 return;
             }
 
