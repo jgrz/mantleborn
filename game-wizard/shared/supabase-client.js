@@ -1586,6 +1586,214 @@ class CrucibleClient {
             }
         };
     }
+
+    // =============================================
+    // PROJECT MEMBERS & INVITES
+    // =============================================
+
+    async findUserByIdentifier(identifier) {
+        if (!this.client) throw new Error('Crucible not initialized');
+
+        const { data, error } = await this.client
+            .rpc('find_user_by_identifier', { identifier });
+
+        if (error) throw error;
+        return data?.[0] || null;
+    }
+
+    async inviteToProject(projectId, identifier) {
+        if (!this.client) throw new Error('Crucible not initialized');
+
+        // Find the user
+        const targetUser = await this.findUserByIdentifier(identifier);
+        if (!targetUser) {
+            throw new Error('User not found');
+        }
+
+        // Get current user and project
+        const currentUser = await this.getUser();
+        if (!currentUser) throw new Error('Must be logged in to invite');
+
+        const project = await this.getProject(projectId);
+        if (!project) throw new Error('Project not found');
+
+        // Check if already a member
+        const { data: existing } = await this.client
+            .from('project_members')
+            .select('id')
+            .eq('project_id', projectId)
+            .eq('user_id', targetUser.id)
+            .single();
+
+        if (existing) {
+            throw new Error('User is already a member of this project');
+        }
+
+        // Create notification for the invitee
+        const { data: notification, error } = await this.client
+            .from('notifications')
+            .insert({
+                user_id: targetUser.id,
+                type: 'project_invite',
+                title: 'Project Invitation',
+                message: `${currentUser.user_metadata?.display_name || currentUser.email} has invited you to help with "${project.name}". Join?`,
+                data: {
+                    project_id: projectId,
+                    project_name: project.name,
+                    invited_by: currentUser.id,
+                    invited_by_name: currentUser.user_metadata?.display_name || currentUser.email
+                }
+            })
+            .select()
+            .single();
+
+        if (error) throw error;
+        return notification;
+    }
+
+    async getProjectMembers(projectId) {
+        if (!this.client) throw new Error('Crucible not initialized');
+
+        const { data, error } = await this.client
+            .from('project_members')
+            .select('*')
+            .eq('project_id', projectId);
+
+        if (error) throw error;
+        return data || [];
+    }
+
+    async removeProjectMember(projectId, userId) {
+        if (!this.client) throw new Error('Crucible not initialized');
+
+        const { error } = await this.client
+            .from('project_members')
+            .delete()
+            .eq('project_id', projectId)
+            .eq('user_id', userId);
+
+        if (error) throw error;
+    }
+
+    // =============================================
+    // NOTIFICATIONS
+    // =============================================
+
+    async getNotifications(unreadOnly = false) {
+        if (!this.client) throw new Error('Crucible not initialized');
+
+        let query = this.client
+            .from('notifications')
+            .select('*')
+            .order('created_at', { ascending: false });
+
+        if (unreadOnly) {
+            query = query.eq('read', false);
+        }
+
+        const { data, error } = await query;
+        if (error) throw error;
+        return data || [];
+    }
+
+    async getUnreadNotificationCount() {
+        if (!this.client) throw new Error('Crucible not initialized');
+
+        const { count, error } = await this.client
+            .from('notifications')
+            .select('*', { count: 'exact', head: true })
+            .eq('read', false);
+
+        if (error) throw error;
+        return count || 0;
+    }
+
+    async markNotificationRead(notificationId) {
+        if (!this.client) throw new Error('Crucible not initialized');
+
+        const { data, error } = await this.client
+            .from('notifications')
+            .update({ read: true })
+            .eq('id', notificationId)
+            .select()
+            .single();
+
+        if (error) throw error;
+        return data;
+    }
+
+    async markAllNotificationsRead() {
+        if (!this.client) throw new Error('Crucible not initialized');
+
+        const { error } = await this.client
+            .from('notifications')
+            .update({ read: true })
+            .eq('read', false);
+
+        if (error) throw error;
+    }
+
+    async acceptProjectInvite(notificationId) {
+        if (!this.client) throw new Error('Crucible not initialized');
+
+        // Get the notification
+        const { data: notification, error: fetchError } = await this.client
+            .from('notifications')
+            .select('*')
+            .eq('id', notificationId)
+            .single();
+
+        if (fetchError) throw fetchError;
+        if (!notification || notification.type !== 'project_invite') {
+            throw new Error('Invalid invite notification');
+        }
+
+        const currentUser = await this.getUser();
+        if (!currentUser) throw new Error('Must be logged in');
+
+        // Add to project members
+        const { error: memberError } = await this.client
+            .from('project_members')
+            .insert({
+                project_id: notification.data.project_id,
+                user_id: currentUser.id,
+                role: 'member',
+                invited_by: notification.data.invited_by
+            });
+
+        if (memberError) throw memberError;
+
+        // Mark notification as acted on
+        await this.client
+            .from('notifications')
+            .update({ read: true, acted_on: true })
+            .eq('id', notificationId);
+
+        return notification.data;
+    }
+
+    async declineProjectInvite(notificationId) {
+        if (!this.client) throw new Error('Crucible not initialized');
+
+        // Just mark as acted on
+        const { error } = await this.client
+            .from('notifications')
+            .update({ read: true, acted_on: true })
+            .eq('id', notificationId);
+
+        if (error) throw error;
+    }
+
+    async deleteNotification(notificationId) {
+        if (!this.client) throw new Error('Crucible not initialized');
+
+        const { error } = await this.client
+            .from('notifications')
+            .delete()
+            .eq('id', notificationId);
+
+        if (error) throw error;
+    }
 }
 
 // =============================================
