@@ -580,6 +580,47 @@
             z-index: 1000;
         }
 
+        /* Modal */
+        .modal-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.8);
+            z-index: 2000;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .modal-overlay.active {
+            display: flex;
+        }
+
+        .modal {
+            background: var(--bg-mid);
+            border: 1px solid var(--stone-dark);
+            border-radius: 12px;
+            padding: 24px;
+            min-width: 360px;
+            max-width: 90vw;
+        }
+
+        .modal-header {
+            font-family: 'Press Start 2P', cursive;
+            font-size: 12px;
+            color: var(--stone-bright);
+            margin-bottom: 20px;
+        }
+
+        .modal-actions {
+            display: flex;
+            gap: 12px;
+            justify-content: flex-end;
+            margin-top: 24px;
+        }
+
         .toast.show {
             transform: translateX(-50%) translateY(0);
             opacity: 1;
@@ -668,6 +709,17 @@
             background: var(--tile-open);
             border-color: var(--tile-open);
             color: white;
+        }
+
+        .btn-crucible {
+            background: #5a4a2a;
+            border-color: #7a6a4a;
+            color: #ffa500;
+        }
+
+        .btn-crucible:hover {
+            background: #6a5a3a;
+            border-color: #ffa500;
         }
 
         .btn-play:hover {
@@ -1137,6 +1189,7 @@
             <span class="brand-text">MANTLEBORN / <span>LEVEL-FORGE</span></span>
         </div>
         <div class="header-actions">
+            <button class="btn btn-crucible" id="sendToCrucibleBtn" title="Send to Crucible">&#129516; Send to Crucible</button>
             <button class="btn btn-play" id="playDemoBtn">&#9658; Play Demo</button>
             <button class="btn" id="newLevelBtn">New Level</button>
         </div>
@@ -1467,8 +1520,35 @@
         </div>
     </main>
 
+    <!-- Crucible Modal -->
+    <div class="modal-overlay" id="crucibleModal">
+        <div class="modal">
+            <div class="modal-header">Send to Crucible</div>
+            <div class="form-group">
+                <label class="form-label">Project</label>
+                <select class="form-input" id="crucibleProjectSelect">
+                    <option value="">Loading projects...</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label class="form-label">Level</label>
+                <select class="form-input" id="crucibleLevelSelect" disabled>
+                    <option value="">Select a project first</option>
+                </select>
+            </div>
+            <div class="crucible-status" id="crucibleStatus" style="margin-bottom: 16px; font-size: 11px; color: var(--stone-mid);"></div>
+            <div class="modal-actions">
+                <button class="btn" id="cancelCrucibleBtn">Cancel</button>
+                <button class="btn btn-crucible" id="confirmCrucibleBtn" disabled>Send Data</button>
+            </div>
+        </div>
+    </div>
+
     <!-- Toast -->
     <div class="toast" id="toast"></div>
+
+    <!-- Supabase Client -->
+    <script src="../shared/supabase-client.js"></script>
 
     <script>
         /* ============================================
@@ -3612,6 +3692,178 @@
         });
 
         elements.clearTilesBtn.addEventListener('click', clearVisualTiles);
+
+        // ==========================================
+        // Crucible Integration
+        // ==========================================
+        const crucibleElements = {
+            modal: document.getElementById('crucibleModal'),
+            projectSelect: document.getElementById('crucibleProjectSelect'),
+            levelSelect: document.getElementById('crucibleLevelSelect'),
+            status: document.getElementById('crucibleStatus'),
+            confirmBtn: document.getElementById('confirmCrucibleBtn'),
+            cancelBtn: document.getElementById('cancelCrucibleBtn'),
+            sendBtn: document.getElementById('sendToCrucibleBtn')
+        };
+
+        let crucibleProjects = [];
+        let crucibleLevels = [];
+        let selectedCrucibleProject = null;
+        let selectedCrucibleLevel = null;
+
+        async function openCrucibleModal() {
+            crucibleElements.modal.classList.add('active');
+            crucibleElements.status.textContent = 'Loading projects...';
+            crucibleElements.confirmBtn.disabled = true;
+
+            try {
+                const crucible = await getCrucible();
+                if (!crucible.isConfigured()) {
+                    crucibleElements.status.textContent = 'Crucible not configured. Edit supabase-client.js first.';
+                    return;
+                }
+
+                crucibleProjects = await crucible.getProjects();
+
+                if (crucibleProjects.length === 0) {
+                    crucibleElements.projectSelect.innerHTML = '<option value="">No projects - create one in Crucible first</option>';
+                    crucibleElements.status.textContent = 'Create a project in Crucible first.';
+                    return;
+                }
+
+                crucibleElements.projectSelect.innerHTML = '<option value="">Select a project...</option>' +
+                    crucibleProjects.map(p => `<option value="${p.id}">${p.name}</option>`).join('');
+
+                // Check if we have a saved context
+                const ctx = crucible.getContext();
+                if (ctx.projectId) {
+                    crucibleElements.projectSelect.value = ctx.projectId;
+                    await loadCrucibleLevels(ctx.projectId);
+                    if (ctx.levelSlug) {
+                        const level = crucibleLevels.find(l => l.slug === ctx.levelSlug);
+                        if (level) {
+                            crucibleElements.levelSelect.value = level.id;
+                            selectedCrucibleLevel = level;
+                            crucibleElements.confirmBtn.disabled = false;
+                        }
+                    }
+                }
+
+                crucibleElements.status.textContent = '';
+            } catch (err) {
+                console.error('Failed to load Crucible data:', err);
+                crucibleElements.status.textContent = 'Failed to load: ' + err.message;
+            }
+        }
+
+        async function loadCrucibleLevels(projectId) {
+            if (!projectId) {
+                crucibleElements.levelSelect.disabled = true;
+                crucibleElements.levelSelect.innerHTML = '<option value="">Select a project first</option>';
+                crucibleLevels = [];
+                selectedCrucibleProject = null;
+                selectedCrucibleLevel = null;
+                crucibleElements.confirmBtn.disabled = true;
+                return;
+            }
+
+            try {
+                const crucible = await getCrucible();
+                crucibleLevels = await crucible.getLevels(projectId);
+                selectedCrucibleProject = crucibleProjects.find(p => p.id === projectId);
+
+                if (crucibleLevels.length === 0) {
+                    crucibleElements.levelSelect.innerHTML = '<option value="">No levels - create one in Crucible first</option>';
+                    crucibleElements.levelSelect.disabled = true;
+                    crucibleElements.status.textContent = 'Create a level in Crucible first.';
+                    return;
+                }
+
+                crucibleElements.levelSelect.disabled = false;
+                crucibleElements.levelSelect.innerHTML = '<option value="">Select a level...</option>' +
+                    crucibleLevels.map(l => `<option value="${l.id}">${l.name} (${l.width}x${l.height})</option>`).join('');
+                crucibleElements.status.textContent = '';
+            } catch (err) {
+                console.error('Failed to load levels:', err);
+                crucibleElements.status.textContent = 'Failed to load levels: ' + err.message;
+            }
+        }
+
+        async function sendToCrucible() {
+            if (!selectedCrucibleLevel) return;
+
+            crucibleElements.confirmBtn.disabled = true;
+            crucibleElements.status.textContent = 'Sending data...';
+
+            try {
+                const crucible = await getCrucible();
+                const levelId = selectedCrucibleLevel.id;
+
+                // Generate level data (reuse existing function)
+                const levelData = generateLevelData();
+
+                // Save grid data
+                await crucible.saveGridData(
+                    levelId,
+                    levelData.grid,
+                    levelData.spawn,
+                    levelData.walkable,
+                    levelData.obstructions,
+                    levelData.physics
+                );
+
+                // Save background layers
+                const bgLayers = state.backgrounds.map(layer => ({
+                    name: layer.name,
+                    imageSrc: layer.imageSrc,
+                    depth: layer.depth,
+                    scrollRate: layer.scrollRate,
+                    offsetX: layer.offsetX,
+                    offsetY: layer.offsetY,
+                    scale: layer.scale,
+                    visible: layer.visible,
+                    pixelifyConfig: layer.pixelified ? state.pixelifySettings : null
+                }));
+                await crucible.saveBackgroundLayers(levelId, bgLayers);
+
+                // Save visual tiles
+                await crucible.saveTileData(levelId, levelData.visualTiles);
+
+                // Update context
+                crucible.setContext(selectedCrucibleProject.id, levelId, selectedCrucibleLevel.slug);
+
+                crucibleElements.modal.classList.remove('active');
+                showToast('Level data sent to Crucible!');
+            } catch (err) {
+                console.error('Failed to send to Crucible:', err);
+                crucibleElements.status.textContent = 'Failed: ' + err.message;
+                crucibleElements.confirmBtn.disabled = false;
+            }
+        }
+
+        // Crucible event listeners
+        crucibleElements.sendBtn.addEventListener('click', openCrucibleModal);
+
+        crucibleElements.projectSelect.addEventListener('change', (e) => {
+            loadCrucibleLevels(e.target.value);
+        });
+
+        crucibleElements.levelSelect.addEventListener('change', (e) => {
+            selectedCrucibleLevel = crucibleLevels.find(l => l.id === e.target.value) || null;
+            crucibleElements.confirmBtn.disabled = !selectedCrucibleLevel;
+        });
+
+        crucibleElements.confirmBtn.addEventListener('click', sendToCrucible);
+
+        crucibleElements.cancelBtn.addEventListener('click', () => {
+            crucibleElements.modal.classList.remove('active');
+        });
+
+        crucibleElements.modal.addEventListener('click', (e) => {
+            if (e.target === crucibleElements.modal) {
+                crucibleElements.modal.classList.remove('active');
+            }
+        });
 
         // ==========================================
         // Initialize
