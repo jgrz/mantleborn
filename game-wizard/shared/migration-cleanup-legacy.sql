@@ -169,10 +169,9 @@ CREATE POLICY "Tiles viewable by owner or public project" ON tiles
   FOR SELECT USING (
     user_id = auth.uid()
     OR EXISTS (
-      SELECT 1 FROM spritesheets s
-      JOIN projects p ON p.id = s.project_id
-      WHERE s.id = tiles.spritesheet_id
-      AND p.is_public = true
+      SELECT 1 FROM projects
+      WHERE projects.id = tiles.project_id
+      AND projects.is_public = true
     )
   );
 

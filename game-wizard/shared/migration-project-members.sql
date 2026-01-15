@@ -213,10 +213,9 @@ CREATE POLICY "Tiles viewable by owner, members, or public" ON tiles
     FOR SELECT USING (
         user_id = auth.uid()
         OR EXISTS (
-            SELECT 1 FROM spritesheets s
-            JOIN projects p ON p.id = s.project_id
+            SELECT 1 FROM projects p
             LEFT JOIN project_members pm ON pm.project_id = p.id
-            WHERE s.id = tiles.spritesheet_id
+            WHERE p.id = tiles.project_id
             AND (p.is_public = true OR p.user_id = auth.uid() OR pm.user_id = auth.uid())
         )
     );
@@ -226,9 +225,8 @@ CREATE POLICY "Owner and members can update tiles" ON tiles
     FOR UPDATE USING (
         user_id = auth.uid()
         OR EXISTS (
-            SELECT 1 FROM spritesheets s
-            JOIN project_members pm ON pm.project_id = s.project_id
-            WHERE s.id = tiles.spritesheet_id
+            SELECT 1 FROM project_members pm
+            WHERE pm.project_id = tiles.project_id
             AND pm.user_id = auth.uid()
         )
     );
