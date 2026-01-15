@@ -1,5 +1,5 @@
 // Supabase Edge Function: generate-tile-spec
-// Generates tile specifications using Claude AI
+// Generates actual tile pixel data using Claude AI
 
 import Anthropic from "npm:@anthropic-ai/sdk@0.39.0";
 
@@ -8,96 +8,73 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
-interface TileSpecRequest {
-  // Core
+interface TileRequest {
   tileType: string;
   subtype: string;
   width: number;
   height: number;
-
-  // Style
-  artStyle: string;
-  perspective: string;
-  paletteSize: number;
-  outlineStyle: string;
-  shadingStyle: string;
-
-  // Context
-  biome: string;
-  season: string;
-  timeOfDay: string;
-  wearLevel: string;
-
-  // Optional
+  artStyle?: string;
+  perspective?: string;
+  paletteSize?: number;
+  outlineStyle?: string;
+  shadingStyle?: string;
+  biome?: string;
+  season?: string;
+  timeOfDay?: string;
+  wearLevel?: string;
   customColors?: string[];
-  negativePrompt?: string;
   customInstructions?: string;
 }
 
-interface TileSpecResponse {
-  tileName: string;
-  description: string;
-  colors: Array<{ name: string; hex: string; usage: string }>;
-  pixelGuidance: string;
-  variations: string[];
-  edgeNotes: string;
-  animationSuggestion?: {
-    frames: number;
-    description: string;
-  };
+function buildPrompt(request: TileRequest): string {
+  const width = request.width;
+  const height = request.height;
+  const totalPixels = width * height;
+
+  return `You are an expert pixel artist. Your task is to generate actual pixel data for a game tile.
+
+## TILE SPECIFICATIONS
+
+**Type:** ${request.tileType} - ${request.subtype}
+**Dimensions:** ${width}x${height} pixels (${totalPixels} total pixels)
+**Art Style:** ${(request.artStyle || "pixel_16bit").replace(/_/g, " ")}
+**Perspective:** ${(request.perspective || "top_down").replace(/_/g, " ")}
+**Max Colors:** ${request.paletteSize || 16}
+**Outline:** ${(request.outlineStyle || "thin_black").replace(/_/g, " ")}
+**Shading:** ${(request.shadingStyle || "dithered").replace(/_/g, " ")}
+**Biome/Theme:** ${request.biome || "fantasy"}
+**Condition:** ${request.wearLevel || "used"}
+${request.customColors?.length ? `**Must use colors:** ${request.customColors.join(", ")}` : ""}
+${request.customInstructions ? `**Special instructions:** ${request.customInstructions}` : ""}
+
+## YOUR TASK
+
+Generate a ${width}x${height} pixel tile. Output the EXACT pixel colors as a 2D array of hex values.
+
+Think carefully about:
+1. The overall composition and what this tile should depict
+2. A cohesive color palette (max ${request.paletteSize || 16} colors)
+3. Proper shading and depth
+4. How this tile might tile/repeat seamlessly if applicable
+
+## OUTPUT FORMAT
+
+Return ONLY valid JSON with this exact structure:
+{
+  "tileName": "descriptive_name",
+  "description": "Brief description of the tile",
+  "palette": ["#hex1", "#hex2", ...],
+  "pixels": [
+    ["#hex", "#hex", "#hex", ...],
+    ["#hex", "#hex", "#hex", ...],
+    ...
+  ]
 }
 
-function buildPrompt(request: TileSpecRequest): string {
-  let prompt = `You are an expert pixel artist specializing in game tile creation. Generate a detailed specification for a tile based on these parameters:
+The "pixels" array must have exactly ${height} rows, and each row must have exactly ${width} hex color values.
+Use "#00000000" for transparent pixels.
 
-**Tile Type:** ${request.tileType} - ${request.subtype}
-**Dimensions:** ${request.width}x${request.height} pixels
-**Art Style:** ${request.artStyle.replace(/_/g, " ")}
-**Perspective:** ${request.perspective.replace(/_/g, " ")}
-**Palette Size:** ${request.paletteSize} colors maximum
-**Outline:** ${request.outlineStyle.replace(/_/g, " ")}
-**Shading:** ${request.shadingStyle.replace(/_/g, " ")}
-**Biome:** ${request.biome}
-**Season:** ${request.season}
-**Time of Day:** ${request.timeOfDay.replace(/_/g, " ")}
-**Condition:** ${request.wearLevel}
-`;
-
-  if (request.customColors && request.customColors.length > 0) {
-    prompt += `\n**Must include these colors:** ${request.customColors.join(", ")}`;
-  }
-
-  if (request.customInstructions) {
-    prompt += `\n**Additional instructions:** ${request.customInstructions}`;
-  }
-
-  if (request.negativePrompt) {
-    prompt += `\n**Avoid:** ${request.negativePrompt}`;
-  }
-
-  prompt += `
-
-Generate a JSON specification with:
-1. A descriptive name for this tile (tileName)
-2. A brief description of what the tile depicts (description)
-3. An exact color palette with ${request.paletteSize} or fewer colors (colors array with name, hex, usage)
-4. Detailed pixel-by-pixel drawing guidance appropriate for ${request.width}x${request.height} pixels (pixelGuidance)
-5. Notes on how edges should work for seamless tiling (edgeNotes)
-6. 2-3 variation suggestions (variations array)
-7. Optional animation suggestion if applicable (animationSuggestion with frames and description, or null)
-
-Return ONLY valid JSON matching this structure:
-{
-  "tileName": "string",
-  "description": "string",
-  "colors": [{"name": "string", "hex": "#XXXXXX", "usage": "string"}],
-  "pixelGuidance": "string",
-  "variations": ["string"],
-  "edgeNotes": "string",
-  "animationSuggestion": {"frames": number, "description": "string"} | null
-}`;
-
-  return prompt;
+Generate the complete pixel data now:`;
 }
 
 Deno.serve(async (req: Request) => {
@@ -112,7 +89,7 @@ Deno.serve(async (req: Request) => {
       throw new Error("ANTHROPIC_API_KEY not configured");
     }
 
-    const request: TileSpecRequest = await req.json();
+    const request: TileRequest = await req.json();
 
     // Validate required fields
     if (!request.tileType || !request.subtype || !request.width || !request.height) {
@@ -122,23 +99,20 @@ Deno.serve(async (req: Request) => {
       );
     }
 
-    // Set defaults
-    request.artStyle = request.artStyle || "pixel_16bit";
-    request.perspective = request.perspective || "top_down";
-    request.paletteSize = request.paletteSize || 16;
-    request.outlineStyle = request.outlineStyle || "thin_black";
-    request.shadingStyle = request.shadingStyle || "dithered";
-    request.biome = request.biome || "fantasy";
-    request.season = request.season || "timeless";
-    request.timeOfDay = request.timeOfDay || "day";
-    request.wearLevel = request.wearLevel || "used";
+    // Limit size for reasonable generation
+    if (request.width > 32 || request.height > 32) {
+      return new Response(
+        JSON.stringify({ error: "Maximum tile size is 32x32 for AI generation" }),
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
 
     const client = new Anthropic({ apiKey });
     const prompt = buildPrompt(request);
 
     const message = await client.messages.create({
       model: "claude-sonnet-4-20250514",
-      max_tokens: 2048,
+      max_tokens: 16000, // Need more tokens for pixel data
       messages: [
         {
           role: "user",
@@ -154,26 +128,34 @@ Deno.serve(async (req: Request) => {
     }
 
     // Parse JSON from response
-    let specification: TileSpecResponse;
+    let result;
     try {
-      // Try to extract JSON from the response (in case there's extra text)
       const jsonMatch = textContent.text.match(/\{[\s\S]*\}/);
       if (!jsonMatch) {
         throw new Error("No JSON found in response");
       }
-      specification = JSON.parse(jsonMatch[0]);
+      result = JSON.parse(jsonMatch[0]);
     } catch (parseError) {
       console.error("Failed to parse Claude response:", textContent.text);
       throw new Error("Failed to parse AI response as JSON");
     }
 
-    return new Response(JSON.stringify(specification), {
+    // Validate pixel array dimensions
+    if (!result.pixels || !Array.isArray(result.pixels)) {
+      throw new Error("Response missing pixels array");
+    }
+
+    if (result.pixels.length !== request.height) {
+      console.warn(`Expected ${request.height} rows, got ${result.pixels.length}`);
+    }
+
+    return new Response(JSON.stringify(result), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (error) {
-    console.error("Error generating tile spec:", error);
+    console.error("Error generating tile:", error);
     return new Response(
-      JSON.stringify({ error: error.message || "Failed to generate tile specification" }),
+      JSON.stringify({ error: error.message || "Failed to generate tile" }),
       { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   }

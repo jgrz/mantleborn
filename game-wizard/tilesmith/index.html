@@ -842,14 +842,14 @@
 
             <!-- AI Assistant -->
             <div class="panel-section ai-section">
-                <div class="section-header">AI Assistant</div>
+                <div class="section-header">AI Generator</div>
                 <button class="btn btn-primary ai-generate-btn" id="aiGenerateBtn">
-                    &#10024; Generate Spec
+                    &#10024; Generate Tile
                 </button>
                 <div class="ai-spec-preview empty" id="aiSpecPreview">
                     <div>
                         <div style="font-size: 24px; margin-bottom: 8px;">&#129302;</div>
-                        Click "Generate Spec" to get AI-powered tile design guidance
+                        Click "Generate Tile" to create AI-generated pixel art
                     </div>
                 </div>
             </div>
@@ -869,7 +869,7 @@
     <div class="modal-overlay" id="aiModal">
         <div class="modal">
             <div class="modal-header">
-                <span class="modal-title">AI Tile Specification</span>
+                <span class="modal-title">AI Tile Generator</span>
                 <button class="modal-close" id="aiModalClose">&times;</button>
             </div>
             <div class="modal-body">
@@ -954,7 +954,7 @@
             </div>
             <div class="modal-footer">
                 <button class="btn" id="aiModalCancel">Cancel</button>
-                <button class="btn btn-primary" id="aiModalGenerate">Generate</button>
+                <button class="btn btn-primary" id="aiModalGenerate">Generate Tile</button>
             </div>
         </div>
     </div>
@@ -1679,6 +1679,12 @@
 
             try {
                 const spec = await crucibleClient.generateTileSpec(request);
+
+                // Check for error in response
+                if (spec.error) {
+                    throw new Error(spec.error);
+                }
+
                 state.currentSpec = spec;
 
                 // Save spec if logged in
@@ -1688,48 +1694,128 @@
 
                 displaySpec(spec);
                 closeAiModal();
-                showToast('Specification generated');
+                showToast('Tile generated! Click "Apply to Canvas" to use it.');
             } catch (err) {
-                console.error('Failed to generate spec:', err);
-                showToast(err.message || 'Failed to generate spec', true);
+                console.error('Failed to generate tile:', err);
+                showToast(err.message || 'Failed to generate tile', true);
             } finally {
                 elements.aiModalGenerate.disabled = false;
-                elements.aiModalGenerate.textContent = 'Generate';
+                elements.aiModalGenerate.textContent = 'Generate Tile';
             }
         }
 
         function displaySpec(spec) {
             elements.aiSpecPreview.classList.remove('empty');
 
-            let html = `<div class="ai-spec-name">${spec.tileName}</div>`;
-            html += `<div>${spec.description}</div>`;
+            let html = `<div class="ai-spec-name">${spec.tileName || 'Generated Tile'}</div>`;
+            html += `<div>${spec.description || ''}</div>`;
 
-            if (spec.colors && spec.colors.length > 0) {
+            // Show palette colors
+            if (spec.palette && spec.palette.length > 0) {
                 html += `<div class="ai-spec-colors">`;
-                spec.colors.forEach(c => {
-                    html += `<div class="ai-spec-color" style="background:${c.hex}" title="${c.name}: ${c.usage}"></div>`;
+                spec.palette.forEach(hex => {
+                    html += `<div class="ai-spec-color" style="background:${hex}" title="${hex}"></div>`;
                 });
                 html += `</div>`;
                 html += `<button class="btn btn-small ai-spec-apply" onclick="applySpecPalette()">Apply Palette</button>`;
             }
 
-            html += `<div style="margin-top: 12px; font-size: 10px; color: var(--stone-mid);">`;
-            html += `<strong>Guidance:</strong><br>${spec.pixelGuidance || 'No guidance provided.'}`;
-            html += `</div>`;
-
-            if (spec.edgeNotes) {
-                html += `<div style="margin-top: 8px; font-size: 10px; color: var(--stone-mid);">`;
-                html += `<strong>Edges:</strong> ${spec.edgeNotes}`;
+            // Show preview canvas if pixels are available
+            if (spec.pixels && Array.isArray(spec.pixels)) {
+                html += `<div style="margin-top: 12px;">`;
+                html += `<strong style="font-size: 10px; color: var(--stone-mid);">Preview:</strong>`;
+                html += `<div style="margin-top: 8px; display: flex; justify-content: center;">`;
+                html += `<canvas id="specPreviewCanvas" style="image-rendering: pixelated; border: 1px solid var(--stone-dark);"></canvas>`;
+                html += `</div>`;
+                html += `<button class="btn btn-primary" style="width: 100%; margin-top: 12px;" onclick="applyGeneratedPixels()">Apply to Canvas</button>`;
                 html += `</div>`;
             }
 
             elements.aiSpecPreview.innerHTML = html;
+
+            // Render preview if pixels available
+            if (spec.pixels && Array.isArray(spec.pixels)) {
+                renderSpecPreview(spec.pixels);
+            }
+        }
+
+        function renderSpecPreview(pixels) {
+            const canvas = document.getElementById('specPreviewCanvas');
+            if (!canvas) return;
+
+            const height = pixels.length;
+            const width = pixels[0]?.length || 0;
+            if (!width || !height) return;
+
+            // Set canvas size with zoom for visibility
+            const previewZoom = 4;
+            canvas.width = width * previewZoom;
+            canvas.height = height * previewZoom;
+
+            const ctx = canvas.getContext('2d');
+            ctx.imageSmoothingEnabled = false;
+
+            // Draw each pixel
+            for (let y = 0; y < height; y++) {
+                for (let x = 0; x < width; x++) {
+                    const hex = pixels[y]?.[x];
+                    if (hex && hex !== '#00000000') {
+                        ctx.fillStyle = hex;
+                        ctx.fillRect(x * previewZoom, y * previewZoom, previewZoom, previewZoom);
+                    }
+                }
+            }
+        }
+
+        function applyGeneratedPixels() {
+            if (!state.currentSpec || !state.currentSpec.pixels) {
+                showToast('No pixel data to apply', true);
+                return;
+            }
+
+            const pixels = state.currentSpec.pixels;
+            const height = pixels.length;
+            const width = pixels[0]?.length || 0;
+
+            if (!width || !height) {
+                showToast('Invalid pixel data', true);
+                return;
+            }
+
+            // Update canvas size if needed
+            if (width !== state.width || height !== state.height) {
+                state.width = width;
+                state.height = height;
+                elements.tileWidth.value = width;
+                elements.tileHeight.value = height;
+                state.pixels = ctx.createImageData(width, height);
+                updateCanvasSize();
+            }
+
+            // Save undo state
+            saveUndoState();
+
+            // Apply pixels
+            for (let y = 0; y < height; y++) {
+                for (let x = 0; x < width; x++) {
+                    const hex = pixels[y]?.[x];
+                    if (hex === '#00000000' || !hex) {
+                        setPixel(x, y, '#000000', 0); // Transparent
+                    } else {
+                        setPixel(x, y, hex, 255);
+                    }
+                }
+            }
+
+            render();
+            markDirty();
+            showToast('Tile applied to canvas!');
         }
 
         function applySpecPalette() {
-            if (!state.currentSpec || !state.currentSpec.colors) return;
+            if (!state.currentSpec || !state.currentSpec.palette) return;
 
-            state.palette = state.currentSpec.colors.map(c => c.hex);
+            state.palette = [...state.currentSpec.palette];
             elements.palettePreset.value = 'custom';
             selectColor(state.palette[0]);
             showToast('Palette applied from spec');
