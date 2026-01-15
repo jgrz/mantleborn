@@ -1685,7 +1685,7 @@
         // ==========================================
         async function loadProjects() {
             try {
-                const projects = await crucibleClient.getMyProjects();
+                const projects = await crucibleClient.getProjects();
 
                 elements.projectSelect.innerHTML = '<option value="">-- Select Project --</option>';
                 projects.forEach(p => {
