@@ -1151,6 +1151,14 @@
 
             try {
                 const crucible = await getCrucible();
+
+                // Check auth before trying
+                const user = await crucible.getUser();
+                if (!user) {
+                    showToast('Please log in to create a project', 'error');
+                    return;
+                }
+
                 const project = await crucible.createProject(name, elements.newProjectDesc.value);
 
                 state.projects.unshift(project);
@@ -1165,7 +1173,7 @@
                 showToast('Project created!', 'success');
             } catch (err) {
                 console.error('Failed to create project:', err);
-                showToast('Failed to create project', 'error');
+                showToast(err.message || 'Failed to create project', 'error');
             }
         }
 
