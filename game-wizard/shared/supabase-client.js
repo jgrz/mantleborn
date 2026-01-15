@@ -1,0 +1,530 @@
+/**
+ * CRUCIBLE OF CODE - Shared Supabase Client
+ *
+ * This module provides a singleton client for all Game Wizard tools
+ * to communicate with the Supabase backend.
+ */
+
+// =============================================
+// CONFIGURATION - UPDATE THESE VALUES
+// =============================================
+const SUPABASE_URL = 'YOUR_SUPABASE_URL';  // e.g., 'https://abc123.supabase.co'
+const SUPABASE_ANON_KEY = 'YOUR_SUPABASE_ANON_KEY';  // From Settings > API
+
+// =============================================
+// CRUCIBLE CLIENT CLASS
+// =============================================
+class CrucibleClient {
+    constructor() {
+        this.client = null;
+        this.initialized = false;
+        this.context = {
+            projectId: null,
+            projectName: null,
+            levelId: null,
+            levelSlug: null
+        };
+    }
+
+    // =============================================
+    // INITIALIZATION
+    // =============================================
+
+    async init() {
+        if (this.initialized) return this;
+
+        // Check configuration
+        if (SUPABASE_URL === 'YOUR_SUPABASE_URL' || SUPABASE_ANON_KEY === 'YOUR_SUPABASE_ANON_KEY') {
+            console.warn('Crucible: Supabase not configured. Edit game-wizard/shared/supabase-client.js');
+            return this;
+        }
+
+        // Load Supabase from CDN if not already loaded
+        if (!window.supabase) {
+            await this.loadSupabaseScript();
+        }
+
+        // Create client
+        this.client = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+        this.initialized = true;
+
+        // Load context from URL params or localStorage
+        this.loadContext();
+
+        return this;
+    }
+
+    async loadSupabaseScript() {
+        return new Promise((resolve, reject) => {
+            const script = document.createElement('script');
+            script.src = 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2';
+            script.onload = resolve;
+            script.onerror = reject;
+            document.head.appendChild(script);
+        });
+    }
+
+    isConfigured() {
+        return SUPABASE_URL !== 'YOUR_SUPABASE_URL' && SUPABASE_ANON_KEY !== 'YOUR_SUPABASE_ANON_KEY';
+    }
+
+    // =============================================
+    // CONTEXT MANAGEMENT
+    // =============================================
+
+    loadContext() {
+        // Check URL params first
+        const params = new URLSearchParams(window.location.search);
+        const projectId = params.get('project');
+        const levelSlug = params.get('level');
+
+        if (projectId) {
+            this.context.projectId = projectId;
+            localStorage.setItem('crucible_project_id', projectId);
+        } else {
+            this.context.projectId = localStorage.getItem('crucible_project_id');
+        }
+
+        if (levelSlug) {
+            this.context.levelSlug = levelSlug;
+            localStorage.setItem('crucible_level_slug', levelSlug);
+        } else {
+            this.context.levelSlug = localStorage.getItem('crucible_level_slug');
+        }
+    }
+
+    setContext(projectId, levelId, levelSlug) {
+        this.context.projectId = projectId;
+        this.context.levelId = levelId;
+        this.context.levelSlug = levelSlug;
+
+        if (projectId) localStorage.setItem('crucible_project_id', projectId);
+        if (levelSlug) localStorage.setItem('crucible_level_slug', levelSlug);
+    }
+
+    getContext() {
+        return { ...this.context };
+    }
+
+    clearContext() {
+        this.context = { projectId: null, projectName: null, levelId: null, levelSlug: null };
+        localStorage.removeItem('crucible_project_id');
+        localStorage.removeItem('crucible_level_slug');
+    }
+
+    // =============================================
+    // PROJECT OPERATIONS
+    // =============================================
+
+    async createProject(name, description = '') {
+        if (!this.client) throw new Error('Crucible not initialized');
+
+        const { data, error } = await this.client
+            .from('projects')
+            .insert({ name, description, is_public: true })
+            .select()
+            .single();
+
+        if (error) throw error;
+
+        this.setContext(data.id, null, null);
+        this.context.projectName = name;
+
+        return data;
+    }
+
+    async getProjects() {
+        if (!this.client) throw new Error('Crucible not initialized');
+
+        const { data, error } = await this.client
+            .from('projects')
+            .select('*')
+            .order('updated_at', { ascending: false });
+
+        if (error) throw error;
+        return data;
+    }
+
+    async getProject(projectId) {
+        if (!this.client) throw new Error('Crucible not initialized');
+
+        const { data, error } = await this.client
+            .from('projects')
+            .select('*')
+            .eq('id', projectId)
+            .single();
+
+        if (error) throw error;
+        return data;
+    }
+
+    async deleteProject(projectId) {
+        if (!this.client) throw new Error('Crucible not initialized');
+
+        const { error } = await this.client
+            .from('projects')
+            .delete()
+            .eq('id', projectId);
+
+        if (error) throw error;
+
+        if (this.context.projectId === projectId) {
+            this.clearContext();
+        }
+    }
+
+    // =============================================
+    // LEVEL OPERATIONS
+    // =============================================
+
+    async createLevel(projectId, name, levelType = 'platformer', width = 32, height = 18) {
+        if (!this.client) throw new Error('Crucible not initialized');
+
+        const slug = name.toLowerCase().replace(/[^a-z0-9]+/g, '_').replace(/^_|_$/g, '');
+
+        const { data, error } = await this.client
+            .from('levels')
+            .insert({
+                project_id: projectId,
+                name,
+                slug,
+                level_type: levelType,
+                width,
+                height
+            })
+            .select()
+            .single();
+
+        if (error) throw error;
+
+        this.setContext(projectId, data.id, slug);
+
+        return data;
+    }
+
+    async getLevels(projectId) {
+        if (!this.client) throw new Error('Crucible not initialized');
+
+        const { data, error } = await this.client
+            .from('levels')
+            .select('*')
+            .eq('project_id', projectId)
+            .order('sort_order', { ascending: true });
+
+        if (error) throw error;
+        return data;
+    }
+
+    async getLevel(levelId) {
+        if (!this.client) throw new Error('Crucible not initialized');
+
+        const { data, error } = await this.client
+            .from('levels')
+            .select(`
+                *,
+                level_grids (*),
+                level_backgrounds (*),
+                level_tiles (*)
+            `)
+            .eq('id', levelId)
+            .single();
+
+        if (error) throw error;
+        return data;
+    }
+
+    async getLevelBySlug(projectId, slug) {
+        if (!this.client) throw new Error('Crucible not initialized');
+
+        const { data, error } = await this.client
+            .from('levels')
+            .select(`
+                *,
+                level_grids (*),
+                level_backgrounds (*),
+                level_tiles (*)
+            `)
+            .eq('project_id', projectId)
+            .eq('slug', slug)
+            .single();
+
+        if (error) throw error;
+        return data;
+    }
+
+    async deleteLevel(levelId) {
+        if (!this.client) throw new Error('Crucible not initialized');
+
+        const { error } = await this.client
+            .from('levels')
+            .delete()
+            .eq('id', levelId);
+
+        if (error) throw error;
+
+        if (this.context.levelId === levelId) {
+            this.context.levelId = null;
+            this.context.levelSlug = null;
+        }
+    }
+
+    // =============================================
+    // GRID DATA OPERATIONS
+    // =============================================
+
+    async saveGridData(levelId, gridData, spawnPoint, walkable, obstructions, physicsConfig) {
+        if (!this.client) throw new Error('Crucible not initialized');
+
+        // Check if grid exists
+        const { data: existing } = await this.client
+            .from('level_grids')
+            .select('id')
+            .eq('level_id', levelId)
+            .single();
+
+        const payload = {
+            level_id: levelId,
+            grid_data: gridData,
+            spawn_point: spawnPoint,
+            walkable: walkable,
+            obstructions: obstructions,
+            physics_config: physicsConfig
+        };
+
+        let result;
+        if (existing) {
+            result = await this.client
+                .from('level_grids')
+                .update(payload)
+                .eq('level_id', levelId)
+                .select()
+                .single();
+        } else {
+            result = await this.client
+                .from('level_grids')
+                .insert(payload)
+                .select()
+                .single();
+        }
+
+        if (result.error) throw result.error;
+        return result.data;
+    }
+
+    async getGridData(levelId) {
+        if (!this.client) throw new Error('Crucible not initialized');
+
+        const { data, error } = await this.client
+            .from('level_grids')
+            .select('*')
+            .eq('level_id', levelId)
+            .single();
+
+        if (error && error.code !== 'PGRST116') throw error; // Ignore "not found"
+        return data;
+    }
+
+    // =============================================
+    // BACKGROUND OPERATIONS
+    // =============================================
+
+    async saveBackgroundLayers(levelId, layers) {
+        if (!this.client) throw new Error('Crucible not initialized');
+
+        // Delete existing layers for this level
+        await this.client
+            .from('level_backgrounds')
+            .delete()
+            .eq('level_id', levelId);
+
+        if (layers.length === 0) return [];
+
+        // Insert new layers
+        const payload = layers.map((layer, index) => ({
+            level_id: levelId,
+            layer_name: layer.name,
+            image_path: layer.imageSrc, // Data URL for now, could be storage path
+            depth: layer.depth,
+            scroll_rate: layer.scrollRate,
+            offset_x: layer.offsetX,
+            offset_y: layer.offsetY,
+            scale: layer.scale,
+            visible: layer.visible,
+            pixelify_config: layer.pixelifyConfig || null,
+            sort_order: index
+        }));
+
+        const { data, error } = await this.client
+            .from('level_backgrounds')
+            .insert(payload)
+            .select();
+
+        if (error) throw error;
+        return data;
+    }
+
+    async getBackgroundLayers(levelId) {
+        if (!this.client) throw new Error('Crucible not initialized');
+
+        const { data, error } = await this.client
+            .from('level_backgrounds')
+            .select('*')
+            .eq('level_id', levelId)
+            .order('sort_order', { ascending: true });
+
+        if (error) throw error;
+        return data || [];
+    }
+
+    // =============================================
+    // TILE DATA OPERATIONS
+    // =============================================
+
+    async saveTileData(levelId, tileData) {
+        if (!this.client) throw new Error('Crucible not initialized');
+
+        // Check if tiles exist
+        const { data: existing } = await this.client
+            .from('level_tiles')
+            .select('id')
+            .eq('level_id', levelId)
+            .single();
+
+        const payload = {
+            level_id: levelId,
+            tile_data: tileData
+        };
+
+        let result;
+        if (existing) {
+            result = await this.client
+                .from('level_tiles')
+                .update(payload)
+                .eq('level_id', levelId)
+                .select()
+                .single();
+        } else {
+            result = await this.client
+                .from('level_tiles')
+                .insert(payload)
+                .select()
+                .single();
+        }
+
+        if (result.error) throw result.error;
+        return result.data;
+    }
+
+    async getTileData(levelId) {
+        if (!this.client) throw new Error('Crucible not initialized');
+
+        const { data, error } = await this.client
+            .from('level_tiles')
+            .select('*')
+            .eq('level_id', levelId)
+            .single();
+
+        if (error && error.code !== 'PGRST116') throw error;
+        return data;
+    }
+
+    // =============================================
+    // IMAGE UPLOAD (Storage Bucket)
+    // =============================================
+
+    async uploadBackgroundImage(projectId, levelSlug, layerName, file) {
+        if (!this.client) throw new Error('Crucible not initialized');
+
+        const path = `${projectId}/${levelSlug}/${layerName}_${Date.now()}.png`;
+
+        const { data, error } = await this.client.storage
+            .from('backgrounds')
+            .upload(path, file, {
+                contentType: 'image/png',
+                upsert: true
+            });
+
+        if (error) throw error;
+
+        // Get public URL
+        const { data: urlData } = this.client.storage
+            .from('backgrounds')
+            .getPublicUrl(path);
+
+        return urlData.publicUrl;
+    }
+
+    // =============================================
+    // EXPORT: Compile Level to Game-Ready JSON
+    // =============================================
+
+    async compileLevel(levelId) {
+        if (!this.client) throw new Error('Crucible not initialized');
+
+        const level = await this.getLevel(levelId);
+        if (!level) throw new Error('Level not found');
+
+        const grid = level.level_grids;
+        const backgrounds = level.level_backgrounds || [];
+        const tiles = level.level_tiles;
+
+        return {
+            name: level.name,
+            type: level.level_type,
+            width: level.width,
+            height: level.height,
+            tileSize: level.tile_size,
+            physics: grid?.physics_config || {
+                gravity: level.level_type === 'platformer',
+                gravityStrength: level.level_type === 'platformer' ? 1800 : 0,
+                collisionMode: level.level_type === 'platformer' ? 'solid' : 'blocking'
+            },
+            spawn: grid?.spawn_point || null,
+            grid: grid?.grid_data || [],
+            walkable: grid?.walkable || [],
+            obstructions: grid?.obstructions || [],
+            backgrounds: backgrounds.map(bg => ({
+                name: bg.layer_name,
+                imageSrc: bg.image_path,
+                depth: bg.depth,
+                scrollRate: parseFloat(bg.scroll_rate),
+                offsetX: bg.offset_x,
+                offsetY: bg.offset_y,
+                scale: parseFloat(bg.scale),
+                visible: bg.visible
+            })),
+            visualTiles: tiles?.tile_data || [],
+            meta: {
+                levelId: level.id,
+                projectId: level.project_id,
+                compiledAt: new Date().toISOString()
+            }
+        };
+    }
+}
+
+// =============================================
+// SINGLETON INSTANCE
+// =============================================
+const crucibleClient = new CrucibleClient();
+
+// Export for module usage
+if (typeof module !== 'undefined' && module.exports) {
+    module.exports = { CrucibleClient, crucibleClient };
+}
+
+// Global access for vanilla JS
+window.CrucibleClient = CrucibleClient;
+window.crucibleClient = crucibleClient;
+
+// =============================================
+// HELPER: Get or initialize client
+// =============================================
+async function getCrucible() {
+    if (!crucibleClient.initialized) {
+        await crucibleClient.init();
+    }
+    return crucibleClient;
+}
+
+window.getCrucible = getCrucible;

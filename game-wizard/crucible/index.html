@@ -1,0 +1,1450 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Crucible of Code | Mantleborn Game Wizard</title>
+    <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-deep: #0d0d14;
+            --bg-mid: #1a1a2e;
+            --bg-surface: #252542;
+            --accent-ember: #e07020;
+            --accent-ember-glow: #ff9040;
+            --accent-gold: #ffa500;
+            --accent-gold-glow: #ffcc00;
+            --crucible-bronze: #7a5a3a;
+            --crucible-bronze-light: #9a7a5a;
+            --stone-dark: #3a3a5c;
+            --stone-mid: #6a6a8e;
+            --stone-light: #9a9abe;
+            --stone-bright: #d0d0e8;
+            --success: #30d158;
+            --error: #ff453a;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'JetBrains Mono', monospace;
+            background: var(--bg-deep);
+            color: var(--stone-light);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* Header */
+        .header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 12px 20px;
+            background: var(--bg-mid);
+            border-bottom: 1px solid var(--stone-dark);
+        }
+
+        .brand {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .home-btn {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 32px;
+            height: 32px;
+            font-size: 18px;
+            text-decoration: none;
+            background: var(--bg-surface);
+            border: 1px solid var(--stone-dark);
+            border-radius: 4px;
+            transition: all 0.2s;
+        }
+
+        .home-btn:hover {
+            background: var(--stone-dark);
+            border-color: var(--accent-gold);
+        }
+
+        .brand-icon {
+            font-size: 24px;
+            filter: drop-shadow(0 0 8px rgba(255, 165, 0, 0.6));
+        }
+
+        .brand-text {
+            font-family: 'Press Start 2P', cursive;
+            font-size: 10px;
+            color: var(--stone-mid);
+            letter-spacing: 1px;
+        }
+
+        .brand-text span {
+            color: var(--accent-gold);
+            text-shadow: 0 0 10px rgba(255, 165, 0, 0.5);
+        }
+
+        .project-selector {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .project-dropdown {
+            background: var(--bg-surface);
+            border: 1px solid var(--stone-dark);
+            color: var(--stone-light);
+            padding: 8px 12px;
+            border-radius: 4px;
+            font-family: inherit;
+            font-size: 12px;
+            min-width: 200px;
+            cursor: pointer;
+        }
+
+        .project-dropdown:focus {
+            outline: none;
+            border-color: var(--accent-gold);
+        }
+
+        .btn {
+            background: var(--bg-surface);
+            border: 1px solid var(--stone-dark);
+            color: var(--stone-light);
+            padding: 8px 16px;
+            border-radius: 4px;
+            font-family: inherit;
+            font-size: 11px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .btn:hover {
+            background: var(--stone-dark);
+            border-color: var(--stone-mid);
+        }
+
+        .btn-primary {
+            background: var(--crucible-bronze);
+            border-color: var(--crucible-bronze-light);
+            color: var(--stone-bright);
+        }
+
+        .btn-primary:hover {
+            background: var(--crucible-bronze-light);
+            border-color: var(--accent-gold);
+        }
+
+        /* Main Layout */
+        .main-layout {
+            display: flex;
+            flex: 1;
+            overflow: hidden;
+        }
+
+        /* Sidebar */
+        .sidebar {
+            width: 260px;
+            background: var(--bg-mid);
+            border-right: 1px solid var(--stone-dark);
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        .sidebar-section {
+            padding: 16px;
+            border-bottom: 1px solid var(--stone-dark);
+        }
+
+        .sidebar-section-header {
+            font-family: 'Press Start 2P', cursive;
+            font-size: 8px;
+            color: var(--stone-mid);
+            margin-bottom: 12px;
+            letter-spacing: 1px;
+        }
+
+        .levels-list {
+            flex: 1;
+            overflow-y: auto;
+            padding: 8px;
+        }
+
+        .level-item {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 10px 12px;
+            background: var(--bg-surface);
+            border: 1px solid transparent;
+            border-radius: 4px;
+            margin-bottom: 6px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .level-item:hover {
+            border-color: var(--stone-dark);
+        }
+
+        .level-item.active {
+            border-color: var(--accent-gold);
+            background: rgba(255, 165, 0, 0.1);
+        }
+
+        .level-item-name {
+            font-size: 12px;
+            color: var(--stone-bright);
+        }
+
+        .level-item-meta {
+            font-size: 9px;
+            color: var(--stone-mid);
+        }
+
+        .level-item-delete {
+            opacity: 0;
+            background: none;
+            border: none;
+            color: var(--error);
+            cursor: pointer;
+            font-size: 14px;
+            padding: 4px;
+            transition: opacity 0.2s;
+        }
+
+        .level-item:hover .level-item-delete {
+            opacity: 0.6;
+        }
+
+        .level-item-delete:hover {
+            opacity: 1 !important;
+        }
+
+        .new-level-btn {
+            width: 100%;
+            padding: 12px;
+            margin-top: 8px;
+            border-style: dashed;
+            color: var(--stone-mid);
+        }
+
+        .new-level-btn:hover {
+            color: var(--accent-gold);
+            border-color: var(--accent-gold);
+        }
+
+        /* Main Content */
+        .main-content {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        /* Dashboard */
+        .dashboard {
+            padding: 24px;
+            overflow-y: auto;
+        }
+
+        .dashboard-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 24px;
+        }
+
+        .level-title {
+            font-family: 'Press Start 2P', cursive;
+            font-size: 16px;
+            color: var(--stone-bright);
+        }
+
+        .level-subtitle {
+            font-size: 11px;
+            color: var(--stone-mid);
+            margin-top: 8px;
+        }
+
+        /* Component Status Cards */
+        .status-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 16px;
+            margin-bottom: 32px;
+        }
+
+        .status-card {
+            background: var(--bg-mid);
+            border: 1px solid var(--stone-dark);
+            border-radius: 8px;
+            padding: 16px;
+        }
+
+        .status-card-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 12px;
+        }
+
+        .status-card-title {
+            font-size: 11px;
+            color: var(--stone-mid);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .status-card-icon {
+            font-size: 20px;
+        }
+
+        .status-bar {
+            height: 8px;
+            background: var(--bg-deep);
+            border-radius: 4px;
+            overflow: hidden;
+            margin-bottom: 8px;
+        }
+
+        .status-bar-fill {
+            height: 100%;
+            background: linear-gradient(90deg, var(--crucible-bronze), var(--accent-gold));
+            border-radius: 4px;
+            transition: width 0.3s ease;
+        }
+
+        .status-card-value {
+            font-size: 12px;
+            color: var(--stone-bright);
+        }
+
+        .status-card-meta {
+            font-size: 10px;
+            color: var(--stone-mid);
+            margin-top: 4px;
+        }
+
+        .status-card.empty .status-bar-fill {
+            width: 0 !important;
+            background: var(--stone-dark);
+        }
+
+        .status-card.empty .status-card-value {
+            color: var(--stone-mid);
+        }
+
+        /* Open in Tool button */
+        .open-tool-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            margin-top: 12px;
+            padding: 6px 12px;
+            font-size: 10px;
+            background: var(--bg-surface);
+            border: 1px solid var(--stone-dark);
+            border-radius: 4px;
+            color: var(--stone-light);
+            text-decoration: none;
+            transition: all 0.2s;
+        }
+
+        .open-tool-btn:hover {
+            border-color: var(--accent-gold);
+            color: var(--accent-gold);
+        }
+
+        /* Data Tabs */
+        .data-tabs {
+            display: flex;
+            gap: 4px;
+            padding: 0 24px;
+            border-bottom: 1px solid var(--stone-dark);
+        }
+
+        .data-tab {
+            padding: 12px 20px;
+            background: none;
+            border: none;
+            color: var(--stone-mid);
+            font-family: inherit;
+            font-size: 11px;
+            cursor: pointer;
+            border-bottom: 2px solid transparent;
+            transition: all 0.2s;
+        }
+
+        .data-tab:hover {
+            color: var(--stone-light);
+        }
+
+        .data-tab.active {
+            color: var(--accent-gold);
+            border-bottom-color: var(--accent-gold);
+        }
+
+        .data-panel {
+            display: none;
+            padding: 24px;
+            overflow-y: auto;
+            flex: 1;
+        }
+
+        .data-panel.active {
+            display: block;
+        }
+
+        /* JSON Preview */
+        .json-preview {
+            background: var(--bg-mid);
+            border: 1px solid var(--stone-dark);
+            border-radius: 8px;
+            overflow: hidden;
+        }
+
+        .json-preview-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 12px 16px;
+            background: var(--bg-surface);
+            border-bottom: 1px solid var(--stone-dark);
+        }
+
+        .json-preview-title {
+            font-size: 11px;
+            color: var(--stone-mid);
+        }
+
+        .json-preview-content {
+            padding: 16px;
+            max-height: 400px;
+            overflow: auto;
+            font-size: 11px;
+            line-height: 1.5;
+            color: var(--stone-light);
+            white-space: pre-wrap;
+            font-family: 'JetBrains Mono', monospace;
+        }
+
+        /* Empty State */
+        .empty-state {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 60px 20px;
+            text-align: center;
+        }
+
+        .empty-state-icon {
+            font-size: 64px;
+            margin-bottom: 20px;
+            opacity: 0.5;
+        }
+
+        .empty-state-title {
+            font-family: 'Press Start 2P', cursive;
+            font-size: 14px;
+            color: var(--stone-bright);
+            margin-bottom: 12px;
+        }
+
+        .empty-state-text {
+            font-size: 12px;
+            color: var(--stone-mid);
+            max-width: 400px;
+            line-height: 1.6;
+        }
+
+        /* Modal */
+        .modal-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.8);
+            z-index: 1000;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .modal-overlay.active {
+            display: flex;
+        }
+
+        .modal {
+            background: var(--bg-mid);
+            border: 1px solid var(--stone-dark);
+            border-radius: 12px;
+            padding: 24px;
+            min-width: 360px;
+            max-width: 90vw;
+        }
+
+        .modal-header {
+            font-family: 'Press Start 2P', cursive;
+            font-size: 12px;
+            color: var(--stone-bright);
+            margin-bottom: 20px;
+        }
+
+        .form-group {
+            margin-bottom: 16px;
+        }
+
+        .form-label {
+            display: block;
+            font-size: 10px;
+            color: var(--stone-mid);
+            margin-bottom: 6px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .form-input {
+            width: 100%;
+            padding: 10px 12px;
+            background: var(--bg-surface);
+            border: 1px solid var(--stone-dark);
+            border-radius: 4px;
+            color: var(--stone-light);
+            font-family: inherit;
+            font-size: 12px;
+        }
+
+        .form-input:focus {
+            outline: none;
+            border-color: var(--accent-gold);
+        }
+
+        .modal-actions {
+            display: flex;
+            gap: 12px;
+            justify-content: flex-end;
+            margin-top: 24px;
+        }
+
+        /* Toast */
+        .toast {
+            position: fixed;
+            bottom: 24px;
+            right: 24px;
+            background: var(--bg-mid);
+            border: 1px solid var(--stone-dark);
+            border-radius: 8px;
+            padding: 12px 20px;
+            font-size: 12px;
+            color: var(--stone-light);
+            transform: translateY(100px);
+            opacity: 0;
+            transition: all 0.3s ease;
+            z-index: 1001;
+        }
+
+        .toast.show {
+            transform: translateY(0);
+            opacity: 1;
+        }
+
+        .toast.success {
+            border-color: var(--success);
+        }
+
+        .toast.error {
+            border-color: var(--error);
+        }
+
+        /* Not Configured Warning */
+        .config-warning {
+            background: rgba(255, 69, 58, 0.1);
+            border: 1px solid var(--error);
+            border-radius: 8px;
+            padding: 16px;
+            margin-bottom: 24px;
+        }
+
+        .config-warning-title {
+            font-size: 12px;
+            color: var(--error);
+            margin-bottom: 8px;
+        }
+
+        .config-warning-text {
+            font-size: 11px;
+            color: var(--stone-light);
+            line-height: 1.5;
+        }
+
+        .config-warning code {
+            background: var(--bg-deep);
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-size: 10px;
+        }
+
+        /* Grid Preview */
+        .grid-preview {
+            display: grid;
+            gap: 1px;
+            background: var(--stone-dark);
+            border: 1px solid var(--stone-dark);
+            border-radius: 4px;
+            overflow: hidden;
+            max-width: 100%;
+            max-height: 300px;
+        }
+
+        .grid-preview-cell {
+            width: 8px;
+            height: 8px;
+            background: var(--bg-deep);
+        }
+
+        .grid-preview-cell.open {
+            background: var(--bg-surface);
+        }
+
+        .grid-preview-cell.obstruction {
+            background: var(--crucible-bronze);
+        }
+
+        .grid-preview-cell.spawn {
+            background: var(--success);
+        }
+
+        /* Background Preview */
+        .bg-preview {
+            display: flex;
+            gap: 12px;
+            flex-wrap: wrap;
+        }
+
+        .bg-layer-card {
+            background: var(--bg-surface);
+            border: 1px solid var(--stone-dark);
+            border-radius: 8px;
+            padding: 12px;
+            width: 180px;
+        }
+
+        .bg-layer-thumb {
+            width: 100%;
+            height: 100px;
+            background: var(--bg-deep);
+            border-radius: 4px;
+            overflow: hidden;
+            margin-bottom: 8px;
+        }
+
+        .bg-layer-thumb img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            image-rendering: pixelated;
+        }
+
+        .bg-layer-name {
+            font-size: 11px;
+            color: var(--stone-bright);
+            margin-bottom: 4px;
+        }
+
+        .bg-layer-meta {
+            font-size: 9px;
+            color: var(--stone-mid);
+        }
+    </style>
+</head>
+<body>
+    <!-- Header -->
+    <header class="header">
+        <div class="brand">
+            <a href="/game-wizard/" class="home-btn" title="Back to Game Wizard">&#127968;</a>
+            <span class="brand-icon">&#129516;</span>
+            <span class="brand-text">MANTLEBORN / <span>CRUCIBLE OF CODE</span></span>
+        </div>
+        <div class="project-selector">
+            <select class="project-dropdown" id="projectSelect">
+                <option value="">Select Project...</option>
+            </select>
+            <button class="btn btn-primary" id="newProjectBtn">+ New Project</button>
+        </div>
+    </header>
+
+    <!-- Main Layout -->
+    <div class="main-layout">
+        <!-- Sidebar -->
+        <aside class="sidebar">
+            <div class="sidebar-section">
+                <div class="sidebar-section-header">PROJECT</div>
+                <div id="projectInfo">
+                    <div style="font-size: 12px; color: var(--stone-mid);">No project selected</div>
+                </div>
+            </div>
+            <div class="sidebar-section">
+                <div class="sidebar-section-header">LEVELS</div>
+            </div>
+            <div class="levels-list" id="levelsList">
+                <div class="empty-state" style="padding: 20px;">
+                    <div style="font-size: 11px; color: var(--stone-mid);">Select a project to view levels</div>
+                </div>
+            </div>
+            <div style="padding: 8px;">
+                <button class="btn new-level-btn" id="newLevelBtn" disabled>+ New Level</button>
+            </div>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="main-content" id="mainContent">
+            <!-- Empty State (no level selected) -->
+            <div class="empty-state" id="emptyState">
+                <div class="empty-state-icon">&#129516;</div>
+                <div class="empty-state-title">CRUCIBLE OF CODE</div>
+                <div class="empty-state-text">
+                    Select a project and level to begin, or create a new one. The Crucible combines data from all Game Wizard tools into playable levels.
+                </div>
+            </div>
+
+            <!-- Dashboard (level selected) -->
+            <div class="dashboard" id="dashboard" style="display: none;">
+                <!-- Config Warning -->
+                <div class="config-warning" id="configWarning" style="display: none;">
+                    <div class="config-warning-title">Supabase Not Configured</div>
+                    <div class="config-warning-text">
+                        Edit <code>game-wizard/shared/supabase-client.js</code> and add your Supabase URL and anon key.
+                        Run the SQL in <code>game-wizard/shared/setup-supabase.sql</code> to create the database tables.
+                    </div>
+                </div>
+
+                <div class="dashboard-header">
+                    <div>
+                        <div class="level-title" id="levelTitle">Level Name</div>
+                        <div class="level-subtitle" id="levelSubtitle">32x18 tiles • Platformer</div>
+                    </div>
+                    <div style="display: flex; gap: 12px;">
+                        <button class="btn" id="copyJsonBtn">Copy JSON</button>
+                        <button class="btn btn-primary" id="exportBtn">Export Level</button>
+                    </div>
+                </div>
+
+                <!-- Status Cards -->
+                <div class="status-grid">
+                    <div class="status-card" id="gridStatus">
+                        <div class="status-card-header">
+                            <span class="status-card-title">Collision Grid</span>
+                            <span class="status-card-icon">&#128506;</span>
+                        </div>
+                        <div class="status-bar">
+                            <div class="status-bar-fill" style="width: 0%;"></div>
+                        </div>
+                        <div class="status-card-value">Not defined</div>
+                        <div class="status-card-meta">0 obstructions • 0 walkable</div>
+                        <a href="#" class="open-tool-btn" id="openLevelForgeGrid">
+                            Open in Level Forge &#8594;
+                        </a>
+                    </div>
+
+                    <div class="status-card" id="bgStatus">
+                        <div class="status-card-header">
+                            <span class="status-card-title">Backgrounds</span>
+                            <span class="status-card-icon">&#127748;</span>
+                        </div>
+                        <div class="status-bar">
+                            <div class="status-bar-fill" style="width: 0%;"></div>
+                        </div>
+                        <div class="status-card-value">No layers</div>
+                        <div class="status-card-meta">Add parallax backgrounds</div>
+                        <a href="#" class="open-tool-btn" id="openLevelForgeBg">
+                            Open in Level Forge &#8594;
+                        </a>
+                    </div>
+
+                    <div class="status-card" id="tilesStatus">
+                        <div class="status-card-header">
+                            <span class="status-card-title">Visual Tiles</span>
+                            <span class="status-card-icon">&#129521;</span>
+                        </div>
+                        <div class="status-bar">
+                            <div class="status-bar-fill" style="width: 0%;"></div>
+                        </div>
+                        <div class="status-card-value">0 tiles placed</div>
+                        <div class="status-card-meta">Paint sprites on grid</div>
+                        <a href="#" class="open-tool-btn" id="openLevelForgeTiles">
+                            Open in Level Forge &#8594;
+                        </a>
+                    </div>
+
+                    <div class="status-card empty" id="spawnStatus">
+                        <div class="status-card-header">
+                            <span class="status-card-title">Spawn Point</span>
+                            <span class="status-card-icon">&#127919;</span>
+                        </div>
+                        <div class="status-bar">
+                            <div class="status-bar-fill" style="width: 0%;"></div>
+                        </div>
+                        <div class="status-card-value">Not set</div>
+                        <div class="status-card-meta">Player start position</div>
+                    </div>
+                </div>
+
+                <!-- Data Tabs -->
+                <div class="data-tabs">
+                    <button class="data-tab active" data-tab="grid">Grid</button>
+                    <button class="data-tab" data-tab="backgrounds">Backgrounds</button>
+                    <button class="data-tab" data-tab="tiles">Tiles</button>
+                    <button class="data-tab" data-tab="json">JSON</button>
+                </div>
+
+                <!-- Tab Panels -->
+                <div class="data-panel active" id="gridPanel">
+                    <h3 style="font-size: 12px; margin-bottom: 16px; color: var(--stone-mid);">Grid Preview</h3>
+                    <div class="grid-preview" id="gridPreview">
+                        <div style="padding: 40px; text-align: center; color: var(--stone-mid); font-size: 11px;">
+                            No grid data. Open in Level Forge to design collision.
+                        </div>
+                    </div>
+                </div>
+
+                <div class="data-panel" id="backgroundsPanel">
+                    <h3 style="font-size: 12px; margin-bottom: 16px; color: var(--stone-mid);">Background Layers</h3>
+                    <div class="bg-preview" id="bgPreview">
+                        <div style="padding: 40px; text-align: center; color: var(--stone-mid); font-size: 11px;">
+                            No background layers. Open in Level Forge to add parallax backgrounds.
+                        </div>
+                    </div>
+                </div>
+
+                <div class="data-panel" id="tilesPanel">
+                    <h3 style="font-size: 12px; margin-bottom: 16px; color: var(--stone-mid);">Visual Tiles</h3>
+                    <div id="tilesPreview">
+                        <div style="padding: 40px; text-align: center; color: var(--stone-mid); font-size: 11px;">
+                            No visual tiles placed. Open in Level Forge to paint tiles.
+                        </div>
+                    </div>
+                </div>
+
+                <div class="data-panel" id="jsonPanel">
+                    <div class="json-preview">
+                        <div class="json-preview-header">
+                            <span class="json-preview-title">Compiled Level JSON</span>
+                            <button class="btn" id="copyJsonBtn2" style="padding: 4px 12px; font-size: 10px;">Copy</button>
+                        </div>
+                        <div class="json-preview-content" id="jsonOutput">{}</div>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- New Project Modal -->
+    <div class="modal-overlay" id="newProjectModal">
+        <div class="modal">
+            <div class="modal-header">New Project</div>
+            <div class="form-group">
+                <label class="form-label">Project Name</label>
+                <input type="text" class="form-input" id="newProjectName" placeholder="My Game">
+            </div>
+            <div class="form-group">
+                <label class="form-label">Description (optional)</label>
+                <input type="text" class="form-input" id="newProjectDesc" placeholder="A platformer adventure">
+            </div>
+            <div class="modal-actions">
+                <button class="btn" id="cancelProjectBtn">Cancel</button>
+                <button class="btn btn-primary" id="createProjectBtn">Create Project</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- New Level Modal -->
+    <div class="modal-overlay" id="newLevelModal">
+        <div class="modal">
+            <div class="modal-header">New Level</div>
+            <div class="form-group">
+                <label class="form-label">Level Name</label>
+                <input type="text" class="form-input" id="newLevelName" placeholder="Level 1">
+            </div>
+            <div class="form-group">
+                <label class="form-label">Level Type</label>
+                <select class="form-input" id="newLevelType">
+                    <option value="platformer">Platformer</option>
+                    <option value="topdown">Top-Down</option>
+                </select>
+            </div>
+            <div style="display: flex; gap: 12px;">
+                <div class="form-group" style="flex: 1;">
+                    <label class="form-label">Width (tiles)</label>
+                    <input type="number" class="form-input" id="newLevelWidth" value="32" min="8" max="128">
+                </div>
+                <div class="form-group" style="flex: 1;">
+                    <label class="form-label">Height (tiles)</label>
+                    <input type="number" class="form-input" id="newLevelHeight" value="18" min="8" max="72">
+                </div>
+            </div>
+            <div class="modal-actions">
+                <button class="btn" id="cancelLevelBtn">Cancel</button>
+                <button class="btn btn-primary" id="createLevelBtn">Create Level</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast -->
+    <div class="toast" id="toast"></div>
+
+    <!-- Load Supabase Client -->
+    <script src="../shared/supabase-client.js"></script>
+
+    <script>
+        /* ============================================
+           CRUCIBLE OF CODE - Main Application
+           ============================================ */
+
+        // State
+        const state = {
+            projects: [],
+            levels: [],
+            currentProject: null,
+            currentLevel: null,
+            levelData: null
+        };
+
+        // Elements
+        const elements = {
+            projectSelect: document.getElementById('projectSelect'),
+            newProjectBtn: document.getElementById('newProjectBtn'),
+            projectInfo: document.getElementById('projectInfo'),
+            levelsList: document.getElementById('levelsList'),
+            newLevelBtn: document.getElementById('newLevelBtn'),
+            emptyState: document.getElementById('emptyState'),
+            dashboard: document.getElementById('dashboard'),
+            configWarning: document.getElementById('configWarning'),
+            levelTitle: document.getElementById('levelTitle'),
+            levelSubtitle: document.getElementById('levelSubtitle'),
+            gridStatus: document.getElementById('gridStatus'),
+            bgStatus: document.getElementById('bgStatus'),
+            tilesStatus: document.getElementById('tilesStatus'),
+            spawnStatus: document.getElementById('spawnStatus'),
+            gridPreview: document.getElementById('gridPreview'),
+            bgPreview: document.getElementById('bgPreview'),
+            tilesPreview: document.getElementById('tilesPreview'),
+            jsonOutput: document.getElementById('jsonOutput'),
+            toast: document.getElementById('toast'),
+            // Modals
+            newProjectModal: document.getElementById('newProjectModal'),
+            newLevelModal: document.getElementById('newLevelModal'),
+            newProjectName: document.getElementById('newProjectName'),
+            newProjectDesc: document.getElementById('newProjectDesc'),
+            newLevelName: document.getElementById('newLevelName'),
+            newLevelType: document.getElementById('newLevelType'),
+            newLevelWidth: document.getElementById('newLevelWidth'),
+            newLevelHeight: document.getElementById('newLevelHeight')
+        };
+
+        // =============================================
+        // UTILITIES
+        // =============================================
+
+        function showToast(message, type = '') {
+            elements.toast.textContent = message;
+            elements.toast.className = 'toast show' + (type ? ' ' + type : '');
+            setTimeout(() => elements.toast.classList.remove('show'), 3000);
+        }
+
+        function showModal(modal) {
+            modal.classList.add('active');
+        }
+
+        function hideModal(modal) {
+            modal.classList.remove('active');
+        }
+
+        // =============================================
+        // PROJECT MANAGEMENT
+        // =============================================
+
+        async function loadProjects() {
+            try {
+                const crucible = await getCrucible();
+                if (!crucible.isConfigured()) {
+                    elements.configWarning.style.display = 'block';
+                    return;
+                }
+
+                state.projects = await crucible.getProjects();
+                renderProjectDropdown();
+
+                // Check if we have a saved project context
+                const ctx = crucible.getContext();
+                if (ctx.projectId) {
+                    elements.projectSelect.value = ctx.projectId;
+                    await selectProject(ctx.projectId);
+                }
+            } catch (err) {
+                console.error('Failed to load projects:', err);
+                showToast('Failed to load projects', 'error');
+            }
+        }
+
+        function renderProjectDropdown() {
+            elements.projectSelect.innerHTML = '<option value="">Select Project...</option>';
+            for (const project of state.projects) {
+                const opt = document.createElement('option');
+                opt.value = project.id;
+                opt.textContent = project.name;
+                elements.projectSelect.appendChild(opt);
+            }
+        }
+
+        async function selectProject(projectId) {
+            if (!projectId) {
+                state.currentProject = null;
+                state.levels = [];
+                elements.projectInfo.innerHTML = '<div style="font-size: 12px; color: var(--stone-mid);">No project selected</div>';
+                renderLevelsList();
+                elements.newLevelBtn.disabled = true;
+                showEmptyState();
+                return;
+            }
+
+            try {
+                const crucible = await getCrucible();
+                state.currentProject = await crucible.getProject(projectId);
+                state.levels = await crucible.getLevels(projectId);
+
+                elements.projectInfo.innerHTML = `
+                    <div style="font-size: 13px; color: var(--stone-bright);">${state.currentProject.name}</div>
+                    <div style="font-size: 10px; color: var(--stone-mid); margin-top: 4px;">
+                        ${state.levels.length} level${state.levels.length !== 1 ? 's' : ''}
+                    </div>
+                `;
+
+                renderLevelsList();
+                elements.newLevelBtn.disabled = false;
+
+                crucible.setContext(projectId, null, null);
+
+                // Check if we have a saved level context
+                const ctx = crucible.getContext();
+                if (ctx.levelSlug) {
+                    const level = state.levels.find(l => l.slug === ctx.levelSlug);
+                    if (level) {
+                        await selectLevel(level.id);
+                        return;
+                    }
+                }
+
+                // Select first level if exists
+                if (state.levels.length > 0) {
+                    await selectLevel(state.levels[0].id);
+                } else {
+                    showEmptyState();
+                }
+            } catch (err) {
+                console.error('Failed to select project:', err);
+                showToast('Failed to load project', 'error');
+            }
+        }
+
+        async function createProject() {
+            const name = elements.newProjectName.value.trim();
+            if (!name) {
+                showToast('Please enter a project name', 'error');
+                return;
+            }
+
+            try {
+                const crucible = await getCrucible();
+                const project = await crucible.createProject(name, elements.newProjectDesc.value);
+
+                state.projects.unshift(project);
+                renderProjectDropdown();
+                elements.projectSelect.value = project.id;
+                await selectProject(project.id);
+
+                hideModal(elements.newProjectModal);
+                elements.newProjectName.value = '';
+                elements.newProjectDesc.value = '';
+
+                showToast('Project created!', 'success');
+            } catch (err) {
+                console.error('Failed to create project:', err);
+                showToast('Failed to create project', 'error');
+            }
+        }
+
+        // =============================================
+        // LEVEL MANAGEMENT
+        // =============================================
+
+        function renderLevelsList() {
+            if (state.levels.length === 0) {
+                elements.levelsList.innerHTML = `
+                    <div style="padding: 20px; text-align: center; font-size: 11px; color: var(--stone-mid);">
+                        No levels yet. Create one!
+                    </div>
+                `;
+                return;
+            }
+
+            elements.levelsList.innerHTML = state.levels.map(level => `
+                <div class="level-item ${state.currentLevel?.id === level.id ? 'active' : ''}" data-level-id="${level.id}">
+                    <div>
+                        <div class="level-item-name">${level.name}</div>
+                        <div class="level-item-meta">${level.width}x${level.height} • ${level.level_type}</div>
+                    </div>
+                    <button class="level-item-delete" data-delete-level="${level.id}" title="Delete level">&times;</button>
+                </div>
+            `).join('');
+
+            // Add click handlers
+            elements.levelsList.querySelectorAll('.level-item').forEach(item => {
+                item.addEventListener('click', (e) => {
+                    if (e.target.classList.contains('level-item-delete')) return;
+                    selectLevel(item.dataset.levelId);
+                });
+            });
+
+            elements.levelsList.querySelectorAll('.level-item-delete').forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    deleteLevel(btn.dataset.deleteLevel);
+                });
+            });
+        }
+
+        async function selectLevel(levelId) {
+            try {
+                const crucible = await getCrucible();
+                const level = await crucible.getLevel(levelId);
+
+                state.currentLevel = level;
+                crucible.setContext(state.currentProject.id, levelId, level.slug);
+
+                // Compile level data
+                state.levelData = await crucible.compileLevel(levelId);
+
+                renderLevelsList();
+                showDashboard();
+                updateDashboard();
+
+            } catch (err) {
+                console.error('Failed to select level:', err);
+                showToast('Failed to load level', 'error');
+            }
+        }
+
+        async function createLevel() {
+            const name = elements.newLevelName.value.trim();
+            if (!name) {
+                showToast('Please enter a level name', 'error');
+                return;
+            }
+
+            try {
+                const crucible = await getCrucible();
+                const level = await crucible.createLevel(
+                    state.currentProject.id,
+                    name,
+                    elements.newLevelType.value,
+                    parseInt(elements.newLevelWidth.value),
+                    parseInt(elements.newLevelHeight.value)
+                );
+
+                state.levels.push(level);
+                renderLevelsList();
+                await selectLevel(level.id);
+
+                hideModal(elements.newLevelModal);
+                elements.newLevelName.value = '';
+
+                showToast('Level created!', 'success');
+            } catch (err) {
+                console.error('Failed to create level:', err);
+                showToast('Failed to create level', 'error');
+            }
+        }
+
+        async function deleteLevel(levelId) {
+            if (!confirm('Delete this level? This cannot be undone.')) return;
+
+            try {
+                const crucible = await getCrucible();
+                await crucible.deleteLevel(levelId);
+
+                state.levels = state.levels.filter(l => l.id !== levelId);
+                renderLevelsList();
+
+                if (state.currentLevel?.id === levelId) {
+                    state.currentLevel = null;
+                    if (state.levels.length > 0) {
+                        await selectLevel(state.levels[0].id);
+                    } else {
+                        showEmptyState();
+                    }
+                }
+
+                showToast('Level deleted', 'success');
+            } catch (err) {
+                console.error('Failed to delete level:', err);
+                showToast('Failed to delete level', 'error');
+            }
+        }
+
+        // =============================================
+        // DASHBOARD
+        // =============================================
+
+        function showEmptyState() {
+            elements.emptyState.style.display = 'flex';
+            elements.dashboard.style.display = 'none';
+        }
+
+        function showDashboard() {
+            elements.emptyState.style.display = 'none';
+            elements.dashboard.style.display = 'block';
+        }
+
+        function updateDashboard() {
+            if (!state.currentLevel || !state.levelData) return;
+
+            const level = state.currentLevel;
+            const data = state.levelData;
+
+            // Header
+            elements.levelTitle.textContent = level.name;
+            elements.levelSubtitle.textContent = `${level.width}x${level.height} tiles • ${level.level_type}`;
+
+            // Update tool links
+            const baseUrl = `/game-wizard/level-forge/?project=${state.currentProject.id}&level=${level.slug}`;
+            document.getElementById('openLevelForgeGrid').href = baseUrl + '&tab=grid';
+            document.getElementById('openLevelForgeBg').href = baseUrl + '&tab=background';
+            document.getElementById('openLevelForgeTiles').href = baseUrl + '&tab=tiles';
+
+            // Grid Status
+            const totalTiles = level.width * level.height;
+            const definedTiles = (data.walkable?.length || 0) + (data.obstructions?.length || 0);
+            const gridPercent = totalTiles > 0 ? Math.round((definedTiles / totalTiles) * 100) : 0;
+
+            updateStatusCard(elements.gridStatus, {
+                percent: gridPercent,
+                value: gridPercent > 0 ? `${gridPercent}% defined` : 'Not defined',
+                meta: `${data.obstructions?.length || 0} obstructions • ${data.walkable?.length || 0} walkable`
+            });
+
+            // Background Status
+            const bgCount = data.backgrounds?.length || 0;
+            updateStatusCard(elements.bgStatus, {
+                percent: bgCount > 0 ? 100 : 0,
+                value: bgCount > 0 ? `${bgCount} layer${bgCount !== 1 ? 's' : ''}` : 'No layers',
+                meta: bgCount > 0 ? 'Parallax backgrounds' : 'Add parallax backgrounds'
+            });
+
+            // Tiles Status
+            const tileCount = data.visualTiles?.length || 0;
+            updateStatusCard(elements.tilesStatus, {
+                percent: tileCount > 0 ? Math.min(100, Math.round((tileCount / totalTiles) * 100)) : 0,
+                value: tileCount > 0 ? `${tileCount} tiles placed` : '0 tiles placed',
+                meta: 'Paint sprites on grid'
+            });
+
+            // Spawn Status
+            const hasSpawn = data.spawn !== null;
+            updateStatusCard(elements.spawnStatus, {
+                percent: hasSpawn ? 100 : 0,
+                value: hasSpawn ? `(${data.spawn.x}, ${data.spawn.y})` : 'Not set',
+                meta: 'Player start position'
+            });
+            elements.spawnStatus.classList.toggle('empty', !hasSpawn);
+
+            // Update tab panels
+            renderGridPreview();
+            renderBgPreview();
+            renderTilesPreview();
+            renderJsonPreview();
+        }
+
+        function updateStatusCard(card, { percent, value, meta }) {
+            card.querySelector('.status-bar-fill').style.width = percent + '%';
+            card.querySelector('.status-card-value').textContent = value;
+            card.querySelector('.status-card-meta').textContent = meta;
+            card.classList.toggle('empty', percent === 0);
+        }
+
+        function renderGridPreview() {
+            if (!state.levelData?.grid?.length) {
+                elements.gridPreview.innerHTML = `
+                    <div style="padding: 40px; text-align: center; color: var(--stone-mid); font-size: 11px;">
+                        No grid data. Open in Level Forge to design collision.
+                    </div>
+                `;
+                return;
+            }
+
+            const grid = state.levelData.grid;
+            const cellSize = Math.max(4, Math.min(12, Math.floor(600 / grid[0].length)));
+
+            elements.gridPreview.style.gridTemplateColumns = `repeat(${grid[0].length}, ${cellSize}px)`;
+            elements.gridPreview.innerHTML = grid.map(row =>
+                row.map(cell => {
+                    let cls = 'grid-preview-cell';
+                    if (cell === 1) cls += ' open';
+                    else if (cell === 2) cls += ' obstruction';
+                    else if (cell === 3) cls += ' spawn';
+                    return `<div class="${cls}"></div>`;
+                }).join('')
+            ).join('');
+        }
+
+        function renderBgPreview() {
+            if (!state.levelData?.backgrounds?.length) {
+                elements.bgPreview.innerHTML = `
+                    <div style="padding: 40px; text-align: center; color: var(--stone-mid); font-size: 11px; width: 100%;">
+                        No background layers. Open in Level Forge to add parallax backgrounds.
+                    </div>
+                `;
+                return;
+            }
+
+            elements.bgPreview.innerHTML = state.levelData.backgrounds.map(bg => `
+                <div class="bg-layer-card">
+                    <div class="bg-layer-thumb">
+                        ${bg.imageSrc ? `<img src="${bg.imageSrc}" alt="${bg.name}">` : ''}
+                    </div>
+                    <div class="bg-layer-name">${bg.name}</div>
+                    <div class="bg-layer-meta">Depth: ${bg.depth} • Scroll: ${bg.scrollRate}x</div>
+                </div>
+            `).join('');
+        }
+
+        function renderTilesPreview() {
+            const tileCount = state.levelData?.visualTiles?.length || 0;
+            if (tileCount === 0) {
+                elements.tilesPreview.innerHTML = `
+                    <div style="padding: 40px; text-align: center; color: var(--stone-mid); font-size: 11px;">
+                        No visual tiles placed. Open in Level Forge to paint tiles.
+                    </div>
+                `;
+                return;
+            }
+
+            elements.tilesPreview.innerHTML = `
+                <div style="font-size: 12px; color: var(--stone-bright);">${tileCount} tiles placed</div>
+                <div style="font-size: 11px; color: var(--stone-mid); margin-top: 8px;">
+                    Open in Level Forge to view and edit visual tile placement.
+                </div>
+            `;
+        }
+
+        function renderJsonPreview() {
+            elements.jsonOutput.textContent = JSON.stringify(state.levelData, null, 2);
+        }
+
+        function copyJson() {
+            navigator.clipboard.writeText(JSON.stringify(state.levelData, null, 2));
+            showToast('JSON copied to clipboard', 'success');
+        }
+
+        // =============================================
+        // DATA TABS
+        // =============================================
+
+        document.querySelectorAll('.data-tab').forEach(tab => {
+            tab.addEventListener('click', () => {
+                document.querySelectorAll('.data-tab').forEach(t => t.classList.remove('active'));
+                document.querySelectorAll('.data-panel').forEach(p => p.classList.remove('active'));
+
+                tab.classList.add('active');
+                document.getElementById(tab.dataset.tab + 'Panel').classList.add('active');
+            });
+        });
+
+        // =============================================
+        // EVENT LISTENERS
+        // =============================================
+
+        elements.projectSelect.addEventListener('change', (e) => {
+            selectProject(e.target.value);
+        });
+
+        elements.newProjectBtn.addEventListener('click', () => {
+            showModal(elements.newProjectModal);
+            elements.newProjectName.focus();
+        });
+
+        document.getElementById('cancelProjectBtn').addEventListener('click', () => {
+            hideModal(elements.newProjectModal);
+        });
+
+        document.getElementById('createProjectBtn').addEventListener('click', createProject);
+
+        elements.newLevelBtn.addEventListener('click', () => {
+            showModal(elements.newLevelModal);
+            elements.newLevelName.focus();
+        });
+
+        document.getElementById('cancelLevelBtn').addEventListener('click', () => {
+            hideModal(elements.newLevelModal);
+        });
+
+        document.getElementById('createLevelBtn').addEventListener('click', createLevel);
+
+        document.getElementById('copyJsonBtn').addEventListener('click', copyJson);
+        document.getElementById('copyJsonBtn2').addEventListener('click', copyJson);
+
+        document.getElementById('exportBtn').addEventListener('click', () => {
+            const blob = new Blob([JSON.stringify(state.levelData, null, 2)], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `${state.currentLevel.slug}.json`;
+            a.click();
+            URL.revokeObjectURL(url);
+            showToast('Level exported!', 'success');
+        });
+
+        // Close modals on overlay click
+        [elements.newProjectModal, elements.newLevelModal].forEach(modal => {
+            modal.addEventListener('click', (e) => {
+                if (e.target === modal) hideModal(modal);
+            });
+        });
+
+        // Keyboard shortcuts
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') {
+                hideModal(elements.newProjectModal);
+                hideModal(elements.newLevelModal);
+            }
+        });
+
+        // =============================================
+        // INITIALIZATION
+        // =============================================
+
+        async function init() {
+            const crucible = await getCrucible();
+
+            if (!crucible.isConfigured()) {
+                elements.configWarning.style.display = 'block';
+                showToast('Supabase not configured - see instructions', 'error');
+            }
+
+            await loadProjects();
+        }
+
+        init();
+    </script>
+</body>
+</html>
