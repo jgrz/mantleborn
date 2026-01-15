@@ -1067,12 +1067,13 @@ class CrucibleClient {
 
         if (fetchError) throw fetchError;
 
-        // Upload new image with same path (overwrites)
+        // Upload new image with same path (overwrites using upsert)
         const { error: uploadError } = await this.client.storage
             .from('spritesheets')
-            .update(sheet.file_path, imageBlob, {
+            .upload(sheet.file_path, imageBlob, {
                 contentType: 'image/png',
-                upsert: true
+                upsert: true,
+                cacheControl: '0'
             });
 
         if (uploadError) throw uploadError;

@@ -1177,6 +1177,7 @@
             sprites: [],
             animations: [],
             masterSheetImage: null,
+            spritesheetImages: {},  // Map of sheetId -> Image for multi-sheet support
             selectedSprite: null,
             customAnimationSlots: [],
             tags: [],
@@ -1370,18 +1371,22 @@
                 state.characters = await crucible.getCharacters(projectId);
                 renderCharacterLibrary();
 
-                // Load master spritesheet
+                // Load spritesheets
+                const spritesheets = await crucible.getSpritesheets(projectId);
+
+                // Try master sheet first, then fall back to first spritesheet with sprites
                 const project = await crucible.getProject(projectId);
                 if (project.master_sheet_png && project.master_sheet_atlas) {
                     await loadMasterSheet(project.master_sheet_png, project.master_sheet_atlas);
+                } else if (spritesheets.length > 0) {
+                    // Fall back to loading sprites from spritesheets
+                    await loadSpritesFromSheets(spritesheets);
                 } else {
                     state.sprites = [];
                     state.masterSheetImage = null;
+                    state.spritesheetImages = {};
                     renderSpriteGrid();
                 }
-
-                // Load animations from all spritesheets in project
-                const spritesheets = await crucible.getSpritesheets(projectId);
                 state.animations = [];
                 for (const sheet of spritesheets) {
                     const anims = await crucible.getAnimations(sheet.id);
@@ -1412,6 +1417,54 @@
                 };
                 img.src = pngData;
             });
+        }
+
+        async function loadSpritesFromSheets(spritesheets) {
+            state.sprites = [];
+            state.spritesheetImages = {};
+
+            // Load each spritesheet and collect sprites
+            const loadPromises = spritesheets.map(async (sheet) => {
+                if (!sheet.file_path) return;
+
+                const publicUrl = crucibleClient.client.storage
+                    .from('spritesheets')
+                    .getPublicUrl(sheet.file_path).data.publicUrl;
+
+                return new Promise((resolve) => {
+                    const img = new Image();
+                    img.crossOrigin = 'anonymous';
+                    img.onload = () => {
+                        state.spritesheetImages[sheet.id] = img;
+
+                        // Add sprites from this sheet
+                        const sprites = sheet.sprites || [];
+                        sprites.forEach(s => {
+                            state.sprites.push({
+                                ...s,
+                                sheetId: sheet.id,
+                                sheetName: sheet.name
+                            });
+                        });
+                        resolve();
+                    };
+                    img.onerror = () => {
+                        console.error('Failed to load spritesheet:', sheet.name);
+                        resolve();
+                    };
+                    img.src = publicUrl;
+                });
+            });
+
+            await Promise.all(loadPromises);
+
+            // Use first sheet as "master" for rendering if available
+            const firstSheetWithImage = spritesheets.find(s => state.spritesheetImages[s.id]);
+            if (firstSheetWithImage) {
+                state.masterSheetImage = state.spritesheetImages[firstSheetWithImage.id];
+            }
+
+            renderSpriteGrid();
         }
 
         function clearEditor() {
@@ -1578,20 +1631,27 @@
 
         function renderSpriteGrid() {
             if (state.sprites.length === 0) {
-                elements.spriteGrid.innerHTML = '<div class="sprite-empty">No sprites in master sheet</div>';
+                elements.spriteGrid.innerHTML = '<div class="sprite-empty">No sprites defined. Use Sprite Rite to define sprites on your spritesheet.</div>';
                 return;
             }
 
             elements.spriteGrid.innerHTML = state.sprites.map((sprite, index) => {
                 const isSelected = state.selectedSprite &&
                     state.selectedSprite.name === sprite.name;
-                return `<div class="sprite-tile ${isSelected ? 'selected' : ''}" data-index="${index}"></div>`;
+                return `<div class="sprite-tile ${isSelected ? 'selected' : ''}" data-index="${index}" title="${sprite.name}"></div>`;
             }).join('');
 
             // Render sprite thumbnails
             state.sprites.forEach((sprite, index) => {
                 const tile = elements.spriteGrid.querySelector(`[data-index="${index}"]`);
-                if (tile && state.masterSheetImage) {
+                if (!tile) return;
+
+                // Get the correct image source (sheet-specific or master)
+                const img = sprite.sheetId && state.spritesheetImages
+                    ? state.spritesheetImages[sprite.sheetId]
+                    : state.masterSheetImage;
+
+                if (img) {
                     const canvas = document.createElement('canvas');
                     const scale = Math.min(40 / sprite.width, 40 / sprite.height);
                     canvas.width = Math.floor(sprite.width * scale);
@@ -1599,7 +1659,7 @@
                     const ctx = canvas.getContext('2d');
                     ctx.imageSmoothingEnabled = false;
                     ctx.drawImage(
-                        state.masterSheetImage,
+                        img,
                         sprite.x, sprite.y, sprite.width, sprite.height,
                         0, 0, canvas.width, canvas.height
                     );
@@ -1630,7 +1690,14 @@
         }
 
         function renderPreview() {
-            if (!state.selectedSprite || !state.masterSheetImage) {
+            const sprite = state.selectedSprite;
+
+            // Get the correct image source
+            const img = sprite && sprite.sheetId && state.spritesheetImages
+                ? state.spritesheetImages[sprite.sheetId]
+                : state.masterSheetImage;
+
+            if (!sprite || !img) {
                 elements.previewEmpty.style.display = 'block';
                 elements.previewWrapper.style.display = 'none';
                 elements.previewLabel.textContent = '';
@@ -1640,7 +1707,6 @@
             elements.previewEmpty.style.display = 'none';
             elements.previewWrapper.style.display = 'block';
 
-            const sprite = state.selectedSprite;
             const canvas = elements.previewCanvas;
             const scale = Math.min(128 / sprite.width, 128 / sprite.height, 4);
             canvas.width = Math.floor(sprite.width * scale);
@@ -1650,7 +1716,7 @@
             ctx.imageSmoothingEnabled = false;
             ctx.clearRect(0, 0, canvas.width, canvas.height);
             ctx.drawImage(
-                state.masterSheetImage,
+                img,
                 sprite.x, sprite.y, sprite.width, sprite.height,
                 0, 0, canvas.width, canvas.height
             );
