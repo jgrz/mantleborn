@@ -2193,5 +2193,19 @@
         init();
         updateJsonPreview();
     </script>
+
+    <!-- Help Drawer -->
+    <script src="../shared/help-drawer.js"></script>
+    <script src="../shared/docs/sprite-rite-docs.js"></script>
+    <script>
+        // Initialize help drawer with Sprite-Rite docs
+        HelpDrawer.init({
+            toolId: 'sprite-rite',
+            toolName: 'Sprite-Rite',
+            toolIcon: '&#128123;',
+            accentColor: '#e07020',
+            docs: SPRITE_RITE_DOCS
+        });
+    </script>
 </body>
 </html>

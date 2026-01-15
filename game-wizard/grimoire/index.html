@@ -541,14 +541,14 @@
                         <a href="#tilesmith" class="nav-link">
                             <span class="nav-icon">&#129513;</span>
                             Tilesmith
-                            <span class="nav-badge">4</span>
+                            <span class="nav-badge">5</span>
                         </a>
                     </li>
                     <li class="nav-item">
                         <a href="#sprite-rite" class="nav-link">
                             <span class="nav-icon">&#128123;</span>
                             Sprite-Rite
-                            <span class="nav-badge">Soon</span>
+                            <span class="nav-badge">6</span>
                         </a>
                     </li>
                     <li class="nav-item">
@@ -614,16 +614,16 @@
                         <div class="tool-card-desc">
                             Create pixel art tiles with AI assistance. Support for multi-tile tilesets.
                         </div>
-                        <div class="tool-card-count">4 articles</div>
+                        <div class="tool-card-count">5 articles</div>
                     </a>
 
                     <a href="#sprite-rite" class="tool-card">
                         <div class="tool-card-icon">&#128123;</div>
                         <div class="tool-card-title">Sprite-Rite</div>
                         <div class="tool-card-desc">
-                            Manage and organize your game sprites and spritesheets.
+                            Import and manage sprite assets. Define regions and generate atlases.
                         </div>
-                        <div class="tool-card-count">Coming soon</div>
+                        <div class="tool-card-count">6 articles</div>
                     </a>
 
                     <a href="#animation-station" class="tool-card">
@@ -668,6 +668,7 @@
 
     <!-- Load documentation modules -->
     <script src="../shared/docs/tilesmith-docs.js"></script>
+    <script src="../shared/docs/sprite-rite-docs.js"></script>
 
     <script>
         // Simple client-side routing
@@ -675,30 +676,31 @@
             welcome: document.getElementById('page-welcome').innerHTML
         };
 
-        // Build Tilesmith page from docs
-        if (typeof TILESMITH_DOCS !== 'undefined') {
-            pages['tilesmith'] = `
+        // Helper to build tool documentation pages
+        function buildToolDocs(toolId, toolName, toolDesc, docs) {
+            if (!docs) return;
+
+            pages[toolId] = `
                 <div class="content-header">
-                    <h1 class="content-title">Tilesmith</h1>
-                    <p class="content-subtitle">Create pixel art tiles with AI assistance. Support for multi-tile tilesets and seamless integration with the master spritesheet.</p>
+                    <h1 class="content-title">${toolName}</h1>
+                    <p class="content-subtitle">${toolDesc}</p>
                 </div>
                 <nav class="article-nav">
-                    ${TILESMITH_DOCS.map(doc => `<a href="#tilesmith/${doc.id}" class="article-nav-link">${doc.title}</a>`).join('')}
+                    ${docs.map(doc => `<a href="#${toolId}/${doc.id}" class="article-nav-link">${doc.title}</a>`).join('')}
                 </nav>
                 <div class="article-list">
-                    ${TILESMITH_DOCS.map(doc => `
-                        <div class="article-card" data-article="tilesmith/${doc.id}">
+                    ${docs.map(doc => `
+                        <div class="article-card" data-article="${toolId}/${doc.id}">
                             <div class="article-card-title">${doc.title}</div>
                         </div>
                     `).join('')}
                 </div>
             `;
 
-            // Add individual article pages
-            TILESMITH_DOCS.forEach(doc => {
-                pages['tilesmith/' + doc.id] = `
+            docs.forEach(doc => {
+                pages[toolId + '/' + doc.id] = `
                     <div class="content-header">
-                        <a href="#tilesmith" class="back-link">← Back to Tilesmith</a>
+                        <a href="#${toolId}" class="back-link">← Back to ${toolName}</a>
                         <h1 class="content-title">${doc.title}</h1>
                     </div>
                     <div class="article">
@@ -707,6 +709,15 @@
                 `;
             });
         }
+
+        // Build documentation pages for each tool
+        buildToolDocs('tilesmith', 'Tilesmith',
+            'Create pixel art tiles with AI assistance. Support for multi-tile tilesets and seamless integration with the master spritesheet.',
+            typeof TILESMITH_DOCS !== 'undefined' ? TILESMITH_DOCS : null);
+
+        buildToolDocs('sprite-rite', 'Sprite-Rite',
+            'Import and manage sprite assets. Define sprite regions, generate atlas JSON, and publish to the master spritesheet.',
+            typeof SPRITE_RITE_DOCS !== 'undefined' ? SPRITE_RITE_DOCS : null);
 
         function navigateTo(hash) {
             const page = hash.replace('#', '') || 'welcome';
