@@ -3755,7 +3755,7 @@
             if (state.projectId && typeof crucibleClient !== 'undefined') {
                 try {
                     const settings = await crucibleClient.getProjectSettings(state.projectId);
-                    const style = settings.pixellab?.defaultStyle || {};
+                    const style = settings.pixellab?.characterStyle || {};
                     const charDefaults = settings.pixellab?.characterDefaults || {};
 
                     // Map outline values (project uses short form, modal uses long form)
@@ -3815,7 +3815,7 @@
             if (state.projectId && typeof crucibleClient !== 'undefined') {
                 try {
                     const settings = await crucibleClient.getProjectSettings(state.projectId);
-                    const style = settings.pixellab?.defaultStyle || {};
+                    const style = settings.pixellab?.characterStyle || {};
 
                     // Map outline values
                     if (style.outline) {

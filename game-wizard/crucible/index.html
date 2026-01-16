@@ -1105,6 +1105,90 @@
             color: var(--accent-gold);
             margin-right: 6px;
         }
+
+        .wizard-section-desc {
+            font-size: 11px;
+            color: var(--stone-mid);
+            margin-bottom: 12px;
+            margin-top: -8px;
+        }
+
+        .style-row {
+            display: flex;
+            gap: 32px;
+        }
+
+        .style-group {
+            flex: 1;
+        }
+
+        .style-group-label {
+            font-size: 10px;
+            color: var(--stone-mid);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 8px;
+        }
+
+        .style-options {
+            display: flex;
+            gap: 8px;
+        }
+
+        .style-option {
+            width: 48px;
+            height: 48px;
+            padding: 4px;
+            background: var(--bg-mid);
+            border: 2px solid var(--stone-dark);
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .style-option:hover {
+            border-color: var(--stone-mid);
+            background: var(--bg-surface);
+        }
+
+        .style-option.selected {
+            border-color: var(--accent-gold);
+            background: rgba(255, 165, 0, 0.1);
+        }
+
+        .style-swatch {
+            width: 100%;
+            height: 100%;
+            border-radius: 3px;
+        }
+
+        /* Outline swatches */
+        .style-swatch-nooutline {
+            background: linear-gradient(135deg, #e07840 25%, #c05820 75%);
+        }
+
+        .style-swatch-blackoutline {
+            background: linear-gradient(135deg, #e07840 25%, #c05820 75%);
+            box-shadow: inset 0 0 0 2px #1a1a2e, inset 0 0 0 3px #000;
+        }
+
+        .style-swatch-coloredoutline {
+            background: linear-gradient(135deg, #e07840 25%, #c05820 75%);
+            box-shadow: inset 0 0 0 2px #1a1a2e, inset 0 0 0 3px #8a4010;
+        }
+
+        /* Shading swatches */
+        .style-swatch-flat {
+            background: #5080c0;
+        }
+
+        .style-swatch-basic {
+            background: linear-gradient(135deg, #70a0e0 0%, #5080c0 50%, #3060a0 100%);
+        }
+
+        .style-swatch-detailed {
+            background: linear-gradient(135deg, #90c0f0 0%, #70a0e0 25%, #5080c0 50%, #3060a0 75%, #204080 100%);
+        }
     </style>
 </head>
 <body>
@@ -1355,13 +1439,6 @@
                             <div class="example-card-label">Top-Down</div>
                             <div class="example-card-desc">RPGs, adventure, puzzle games</div>
                         </div>
-                        <div class="example-card" data-value="isometric">
-                            <div class="example-card-visual">
-                                <div class="example-visual-iso"></div>
-                            </div>
-                            <div class="example-card-label">Isometric</div>
-                            <div class="example-card-desc">Strategy, sim, tactical RPGs</div>
-                        </div>
                     </div>
                 </div>
 
@@ -1378,62 +1455,78 @@
                 </div>
 
                 <div class="wizard-section">
-                    <div class="wizard-section-title">Outline Style</div>
-                    <div class="example-grid" id="outlineExamples">
-                        <div class="example-card" data-value="none">
-                            <div class="example-card-visual">
-                                <div class="example-outline-none"></div>
+                    <div class="wizard-section-title">Character Style</div>
+                    <div class="wizard-section-desc">For sprites, characters, and objects that need to stand out</div>
+                    <div class="style-row">
+                        <div class="style-group">
+                            <div class="style-group-label">Outline</div>
+                            <div class="style-options" id="charOutlineOptions">
+                                <button class="style-option" data-value="no_outline" title="No Outline">
+                                    <div class="style-swatch style-swatch-nooutline"></div>
+                                </button>
+                                <button class="style-option selected" data-value="single_color_black" title="Black Outline">
+                                    <div class="style-swatch style-swatch-blackoutline"></div>
+                                </button>
+                                <button class="style-option" data-value="single_color_colored" title="Colored Outline">
+                                    <div class="style-swatch style-swatch-coloredoutline"></div>
+                                </button>
                             </div>
-                            <div class="example-card-label">No Outline</div>
-                            <div class="example-card-desc">Soft, painterly look</div>
                         </div>
-                        <div class="example-card selected" data-value="single_color_black">
-                            <div class="example-card-visual">
-                                <div class="example-outline-black"></div>
+                        <div class="style-group">
+                            <div class="style-group-label">Shading</div>
+                            <div class="style-options" id="charShadingOptions">
+                                <button class="style-option" data-value="flat" title="Flat">
+                                    <div class="style-swatch style-swatch-flat"></div>
+                                </button>
+                                <button class="style-option selected" data-value="basic" title="Basic">
+                                    <div class="style-swatch style-swatch-basic"></div>
+                                </button>
+                                <button class="style-option" data-value="detailed" title="Detailed">
+                                    <div class="style-swatch style-swatch-detailed"></div>
+                                </button>
                             </div>
-                            <div class="example-card-label">Black Outline</div>
-                            <div class="example-card-desc">Classic pixel art style</div>
-                        </div>
-                        <div class="example-card" data-value="single_color_colored">
-                            <div class="example-card-visual">
-                                <div class="example-outline-colored"></div>
-                            </div>
-                            <div class="example-card-label">Colored Outline</div>
-                            <div class="example-card-desc">Softer, modern feel</div>
                         </div>
                     </div>
                 </div>
 
                 <div class="wizard-section">
-                    <div class="wizard-section-title">Shading</div>
-                    <div class="example-grid" id="shadingExamples">
-                        <div class="example-card" data-value="flat">
-                            <div class="example-card-visual">
-                                <div class="example-shading-flat"></div>
+                    <div class="wizard-section-title">Tile Style</div>
+                    <div class="wizard-section-desc">For backgrounds, terrain, and tilesets that need to blend seamlessly</div>
+                    <div class="style-row">
+                        <div class="style-group">
+                            <div class="style-group-label">Outline</div>
+                            <div class="style-options" id="tileOutlineOptions">
+                                <button class="style-option selected" data-value="no_outline" title="No Outline (Recommended)">
+                                    <div class="style-swatch style-swatch-nooutline"></div>
+                                </button>
+                                <button class="style-option" data-value="single_color_black" title="Black Outline">
+                                    <div class="style-swatch style-swatch-blackoutline"></div>
+                                </button>
+                                <button class="style-option" data-value="single_color_colored" title="Colored Outline">
+                                    <div class="style-swatch style-swatch-coloredoutline"></div>
+                                </button>
                             </div>
-                            <div class="example-card-label">Flat</div>
-                            <div class="example-card-desc">Simple, iconic, retro</div>
                         </div>
-                        <div class="example-card selected" data-value="basic">
-                            <div class="example-card-visual">
-                                <div class="example-shading-basic"></div>
+                        <div class="style-group">
+                            <div class="style-group-label">Shading</div>
+                            <div class="style-options" id="tileShadingOptions">
+                                <button class="style-option" data-value="flat" title="Flat">
+                                    <div class="style-swatch style-swatch-flat"></div>
+                                </button>
+                                <button class="style-option selected" data-value="basic" title="Basic">
+                                    <div class="style-swatch style-swatch-basic"></div>
+                                </button>
+                                <button class="style-option" data-value="detailed" title="Detailed">
+                                    <div class="style-swatch style-swatch-detailed"></div>
+                                </button>
                             </div>
-                            <div class="example-card-label">Basic</div>
-                            <div class="example-card-desc">Light depth, balanced</div>
-                        </div>
-                        <div class="example-card" data-value="detailed">
-                            <div class="example-card-visual">
-                                <div class="example-shading-detailed"></div>
-                            </div>
-                            <div class="example-card-label">Detailed</div>
-                            <div class="example-card-desc">Rich depth, realistic</div>
                         </div>
                     </div>
                 </div>
 
                 <div class="wizard-tip">
                     <span class="wizard-tip-icon">&#128161;</span>
-                    <strong>Tip:</strong> These defaults keep your game's art style consistent. When generating assets, you can still adjust settings for special cases (like a bonus level with a different look).
+                    <strong>Tip:</strong> Characters typically have outlines to "pop" against backgrounds, while tiles often don't to ensure seamless tiling.
                 </div>
 
                 <div class="modal-actions">
@@ -1879,16 +1972,21 @@
                 // Derive AI view setting from game view
                 let aiView = 'low_top_down';
                 if (wizardState.gameView === 'side-scroll') aiView = 'side';
-                else if (wizardState.gameView === 'isometric') aiView = 'isometric_thick';
                 else if (wizardState.gameView === 'top-down') aiView = 'low_top_down';
 
                 // Build settings from wizard choices
                 const settings = {
                     gameView: wizardState.gameView,
                     pixellab: {
-                        defaultStyle: {
-                            outline: wizardState.outline,
-                            shading: wizardState.shading,
+                        characterStyle: {
+                            outline: wizardState.charOutline,
+                            shading: wizardState.charShading,
+                            detail: 'medium',
+                            view: aiView
+                        },
+                        tileStyle: {
+                            outline: wizardState.tileOutline,
+                            shading: wizardState.tileShading,
                             detail: 'medium',
                             view: aiView
                         },
@@ -2220,8 +2318,10 @@
         const wizardState = {
             step: 1,
             gameView: 'side-scroll',
-            outline: 'single_color_black',
-            shading: 'basic'
+            charOutline: 'single_color_black',
+            charShading: 'basic',
+            tileOutline: 'no_outline',
+            tileShading: 'basic'
         };
 
         elements.newProjectBtn.addEventListener('click', () => {
@@ -2271,8 +2371,10 @@
         function resetWizard() {
             wizardState.step = 1;
             wizardState.gameView = 'side-scroll';
-            wizardState.outline = 'single_color_black';
-            wizardState.shading = 'basic';
+            wizardState.charOutline = 'single_color_black';
+            wizardState.charShading = 'basic';
+            wizardState.tileOutline = 'no_outline';
+            wizardState.tileShading = 'basic';
             elements.newProjectName.value = '';
             elements.newProjectDesc.value = '';
             updateWizardStep(1);
@@ -2281,15 +2383,23 @@
             document.querySelectorAll('#viewExamples .example-card').forEach(card => {
                 card.classList.toggle('selected', card.dataset.value === 'side-scroll');
             });
-            document.querySelectorAll('#outlineExamples .example-card').forEach(card => {
-                card.classList.toggle('selected', card.dataset.value === 'single_color_black');
+
+            // Reset style option selections
+            document.querySelectorAll('#charOutlineOptions .style-option').forEach(opt => {
+                opt.classList.toggle('selected', opt.dataset.value === 'single_color_black');
             });
-            document.querySelectorAll('#shadingExamples .example-card').forEach(card => {
-                card.classList.toggle('selected', card.dataset.value === 'basic');
+            document.querySelectorAll('#charShadingOptions .style-option').forEach(opt => {
+                opt.classList.toggle('selected', opt.dataset.value === 'basic');
+            });
+            document.querySelectorAll('#tileOutlineOptions .style-option').forEach(opt => {
+                opt.classList.toggle('selected', opt.dataset.value === 'no_outline');
+            });
+            document.querySelectorAll('#tileShadingOptions .style-option').forEach(opt => {
+                opt.classList.toggle('selected', opt.dataset.value === 'basic');
             });
         }
 
-        // Example card selection
+        // Example card selection (game view)
         document.querySelectorAll('#viewExamples .example-card').forEach(card => {
             card.addEventListener('click', () => {
                 document.querySelectorAll('#viewExamples .example-card').forEach(c => c.classList.remove('selected'));
@@ -2298,19 +2408,37 @@
             });
         });
 
-        document.querySelectorAll('#outlineExamples .example-card').forEach(card => {
-            card.addEventListener('click', () => {
-                document.querySelectorAll('#outlineExamples .example-card').forEach(c => c.classList.remove('selected'));
-                card.classList.add('selected');
-                wizardState.outline = card.dataset.value;
+        // Style option selection - Character
+        document.querySelectorAll('#charOutlineOptions .style-option').forEach(opt => {
+            opt.addEventListener('click', () => {
+                document.querySelectorAll('#charOutlineOptions .style-option').forEach(o => o.classList.remove('selected'));
+                opt.classList.add('selected');
+                wizardState.charOutline = opt.dataset.value;
             });
         });
 
-        document.querySelectorAll('#shadingExamples .example-card').forEach(card => {
-            card.addEventListener('click', () => {
-                document.querySelectorAll('#shadingExamples .example-card').forEach(c => c.classList.remove('selected'));
-                card.classList.add('selected');
-                wizardState.shading = card.dataset.value;
+        document.querySelectorAll('#charShadingOptions .style-option').forEach(opt => {
+            opt.addEventListener('click', () => {
+                document.querySelectorAll('#charShadingOptions .style-option').forEach(o => o.classList.remove('selected'));
+                opt.classList.add('selected');
+                wizardState.charShading = opt.dataset.value;
+            });
+        });
+
+        // Style option selection - Tile
+        document.querySelectorAll('#tileOutlineOptions .style-option').forEach(opt => {
+            opt.addEventListener('click', () => {
+                document.querySelectorAll('#tileOutlineOptions .style-option').forEach(o => o.classList.remove('selected'));
+                opt.classList.add('selected');
+                wizardState.tileOutline = opt.dataset.value;
+            });
+        });
+
+        document.querySelectorAll('#tileShadingOptions .style-option').forEach(opt => {
+            opt.addEventListener('click', () => {
+                document.querySelectorAll('#tileShadingOptions .style-option').forEach(o => o.classList.remove('selected'));
+                opt.classList.add('selected');
+                wizardState.tileShading = opt.dataset.value;
             });
         });
 

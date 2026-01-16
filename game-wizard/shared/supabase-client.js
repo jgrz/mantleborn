@@ -384,23 +384,36 @@ class CrucibleClient {
         if (error) throw error;
 
         // Return settings with sensible defaults
+        // Support both new (characterStyle/tileStyle) and old (defaultStyle) formats
         const settings = data?.settings || {};
+        const pl = settings.pixellab || {};
+
+        // For backwards compatibility, fall back to defaultStyle if new format not present
+        const charStyle = pl.characterStyle || pl.defaultStyle || {};
+        const tileStyle = pl.tileStyle || pl.defaultStyle || {};
+
         return {
             gameView: settings.gameView || 'top-down',
             pixellab: {
-                defaultStyle: {
-                    outline: settings.pixellab?.defaultStyle?.outline || 'single_color_black',
-                    shading: settings.pixellab?.defaultStyle?.shading || 'basic',
-                    detail: settings.pixellab?.defaultStyle?.detail || 'medium',
-                    view: settings.pixellab?.defaultStyle?.view || 'low_top_down'
+                characterStyle: {
+                    outline: charStyle.outline || 'single_color_black',
+                    shading: charStyle.shading || 'basic',
+                    detail: charStyle.detail || 'medium',
+                    view: charStyle.view || 'low_top_down'
+                },
+                tileStyle: {
+                    outline: tileStyle.outline || 'no_outline',
+                    shading: tileStyle.shading || 'basic',
+                    detail: tileStyle.detail || 'medium',
+                    view: tileStyle.view || 'low_top_down'
                 },
                 tileDefaults: {
-                    size: settings.pixellab?.tileDefaults?.size || 16,
-                    transitionSize: settings.pixellab?.tileDefaults?.transitionSize || 'medium'
+                    size: pl.tileDefaults?.size || 16,
+                    transitionSize: pl.tileDefaults?.transitionSize || 'medium'
                 },
                 characterDefaults: {
-                    size: settings.pixellab?.characterDefaults?.size || 32,
-                    directions: settings.pixellab?.characterDefaults?.directions || 4
+                    size: pl.characterDefaults?.size || 32,
+                    directions: pl.characterDefaults?.directions || 4
                 }
             }
         };

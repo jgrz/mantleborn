@@ -2367,7 +2367,7 @@
             if (state.projectId) {
                 try {
                     const settings = await crucibleClient.getProjectSettings(state.projectId);
-                    const style = settings.pixellab?.defaultStyle || {};
+                    const style = settings.pixellab?.tileStyle || {};
                     const tileDefaults = settings.pixellab?.tileDefaults || {};
 
                     // Pre-fill style settings
