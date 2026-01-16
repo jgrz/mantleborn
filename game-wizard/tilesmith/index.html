@@ -574,6 +574,49 @@
             font-style: italic;
         }
 
+        /* Context Menu */
+        .context-menu {
+            position: fixed;
+            background: var(--bg-surface);
+            border: 2px solid var(--stone-dark);
+            border-radius: 4px;
+            padding: 4px 0;
+            min-width: 150px;
+            z-index: 1000;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
+        }
+
+        .context-menu-item {
+            padding: 8px 12px;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 11px;
+            color: var(--stone-light);
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            transition: background 0.1s;
+        }
+
+        .context-menu-item:hover {
+            background: var(--stone-dark);
+        }
+
+        .context-menu-item.danger {
+            color: var(--fire-mid);
+        }
+
+        .context-menu-item.danger:hover {
+            background: var(--fire-dark);
+            color: var(--fire-bright);
+        }
+
+        .context-menu-separator {
+            height: 1px;
+            background: var(--stone-dark);
+            margin: 4px 0;
+        }
+
         .library-tile {
             width: 48px;
             height: 48px;
@@ -2835,8 +2878,12 @@
                     });
                     groupEl.appendChild(deleteBtn);
 
-                    groupEl.title = `${group.name} (${group.cols}×${group.rows})`;
+                    groupEl.title = `${group.name} (${group.cols}×${group.rows})\nRight-click for options`;
                     groupEl.addEventListener('click', () => loadGroup(group));
+                    groupEl.addEventListener('contextmenu', (e) => {
+                        e.preventDefault();
+                        showGroupContextMenu(group, e.clientX, e.clientY);
+                    });
 
                     elements.groupsGrid.appendChild(groupEl);
                 });
@@ -2863,6 +2910,104 @@
             } catch (err) {
                 console.error('Failed to delete group:', err);
                 showToast('Failed to delete group', true);
+            }
+        }
+
+        // Show context menu for a group
+        function showGroupContextMenu(group, x, y) {
+            hideContextMenu();
+
+            const menu = document.createElement('div');
+            menu.className = 'context-menu';
+            menu.id = 'groupContextMenu';
+
+            // Edit option
+            const editItem = document.createElement('div');
+            editItem.className = 'context-menu-item';
+            editItem.innerHTML = '✏️ Edit Group';
+            editItem.addEventListener('click', () => {
+                hideContextMenu();
+                loadGroup(group);
+            });
+            menu.appendChild(editItem);
+
+            // Create variation option
+            const variationItem = document.createElement('div');
+            variationItem.className = 'context-menu-item';
+            variationItem.innerHTML = '📋 Create Variation';
+            variationItem.addEventListener('click', () => {
+                hideContextMenu();
+                createGroupVariation(group);
+            });
+            menu.appendChild(variationItem);
+
+            // Separator
+            const sep = document.createElement('div');
+            sep.className = 'context-menu-separator';
+            menu.appendChild(sep);
+
+            // Delete option
+            const deleteItem = document.createElement('div');
+            deleteItem.className = 'context-menu-item danger';
+            deleteItem.innerHTML = '🗑️ Delete Group';
+            deleteItem.addEventListener('click', () => {
+                hideContextMenu();
+                handleGroupDelete(group);
+            });
+            menu.appendChild(deleteItem);
+
+            // Position menu
+            menu.style.left = `${x}px`;
+            menu.style.top = `${y}px`;
+
+            document.body.appendChild(menu);
+
+            // Adjust position if off-screen
+            const rect = menu.getBoundingClientRect();
+            if (rect.right > window.innerWidth) {
+                menu.style.left = `${x - rect.width}px`;
+            }
+            if (rect.bottom > window.innerHeight) {
+                menu.style.top = `${y - rect.height}px`;
+            }
+
+            // Close menu when clicking elsewhere
+            setTimeout(() => {
+                document.addEventListener('click', hideContextMenu, { once: true });
+                document.addEventListener('contextmenu', hideContextMenu, { once: true });
+            }, 0);
+        }
+
+        function hideContextMenu() {
+            const existingMenu = document.getElementById('groupContextMenu');
+            if (existingMenu) {
+                existingMenu.remove();
+            }
+        }
+
+        // Create a variation of an existing group
+        async function createGroupVariation(sourceGroup) {
+            const newName = prompt(
+                `Create variation of "${sourceGroup.name}".\n\nEnter a name for the new group:`,
+                `${sourceGroup.name}_v2`
+            );
+            if (!newName || newName.trim() === '') return;
+
+            try {
+                // Use the API method to duplicate the group
+                const newGroup = await crucibleClient.duplicateTileGroup(sourceGroup.id, newName.trim());
+
+                // Refresh groups
+                state.tileGroups = await crucibleClient.getTileGroups(state.projectId);
+                renderTileGroups();
+
+                // Load the new group
+                await loadGroup(newGroup);
+
+                showToast(`Created variation "${newName.trim()}"`);
+            } catch (err) {
+                console.error('Failed to create variation:', err);
+                showToast('Failed to create variation', true);
             }
         }
 
