@@ -16,8 +16,8 @@ const SPRITE_RITE_DOCS = [
             <div class="step">
                 <div class="step-num">1</div>
                 <div class="step-text">
-                    <strong>Select a Project</strong><br>
-                    Choose your project from the dropdown in the header. If you don't have one, create it in the Crucible of Code first.
+                    <strong>Log In & Select a Project</strong><br>
+                    Log in to save your work to the cloud. Choose your project from the dropdown in the header.
                 </div>
             </div>
 
@@ -25,37 +25,38 @@ const SPRITE_RITE_DOCS = [
                 <div class="step-num">2</div>
                 <div class="step-text">
                     <strong>Upload a Spritesheet</strong><br>
-                    Click "Upload" or drag-and-drop an image file onto the canvas area. Supported formats: PNG, JPG, GIF, WebP.
+                    Select an existing spritesheet from the dropdown, or upload a new one. Supported formats: PNG, JPG, GIF, WebP.
                 </div>
             </div>
 
             <div class="step">
                 <div class="step-num">3</div>
                 <div class="step-text">
-                    <strong>Define Sprites</strong><br>
-                    Click and drag on the canvas to create a selection box around a sprite. This defines the sprite's boundaries.
+                    <strong>Clean Up (Optional)</strong><br>
+                    Use the Background Remover tool to remove solid backgrounds with one click.
                 </div>
             </div>
 
             <div class="step">
                 <div class="step-num">4</div>
                 <div class="step-text">
-                    <strong>Name and Save</strong><br>
-                    Give your sprite a name in the panel that appears, then click "Save Sprite". Repeat for each sprite in the sheet.
+                    <strong>Define Sprites</strong><br>
+                    Use Auto-Detect to click on sprites and auto-select their bounds, or manually drag to create selections.
                 </div>
             </div>
 
             <div class="step">
                 <div class="step-num">5</div>
                 <div class="step-text">
-                    <strong>Publish to Master Sheet</strong><br>
-                    Once sprites are defined, they can be published to your project's master spritesheet for use in Level Forge and Animancer.
+                    <strong>Name and Save</strong><br>
+                    Give each sprite a name and click "Save Sprite". Your work auto-saves to the cloud when logged in.
                 </div>
             </div>
 
             <h2>Interface Overview</h2>
             <ul>
-                <li><strong>Canvas</strong> - Main area showing your spritesheet with grid overlay</li>
+                <li><strong>Canvas</strong> - Main area showing your spritesheet with zoom controls</li>
+                <li><strong>Toolbar</strong> - Background Remover and Auto-Detect tools</li>
                 <li><strong>Sprite List</strong> - Right panel showing all defined sprites</li>
                 <li><strong>Selection Panel</strong> - Appears when creating/editing a sprite</li>
                 <li><strong>JSON Preview</strong> - Shows the atlas data for your sprites</li>
@@ -63,7 +64,55 @@ const SPRITE_RITE_DOCS = [
 
             <div class="tip">
                 <div class="tip-label">Tip</div>
-                Use the grid overlay toggle to help align your selections with pixel boundaries.
+                Use Auto-Detect mode for quick sprite selection - just click on any sprite and it will automatically find its boundaries.
+            </div>
+        `
+    },
+    {
+        id: 'tools',
+        title: 'Tools',
+        content: `
+            <h1>Sprite-Rite Tools</h1>
+            <p>Sprite-Rite includes powerful tools to speed up your workflow.</p>
+
+            <h2>Background Remover</h2>
+            <p>One-click background removal for spritesheets with solid color backgrounds.</p>
+
+            <h3>How It Works</h3>
+            <ol>
+                <li>Click the <strong>Background Remover</strong> button in the toolbar</li>
+                <li>The tool automatically detects the background color from the image corners</li>
+                <li>All pixels matching that color become transparent</li>
+                <li>The modified image is saved to the cloud automatically</li>
+            </ol>
+
+            <div class="tip">
+                <div class="tip-label">Best For</div>
+                Spritesheets with solid color backgrounds (pink, green, white, etc.) commonly found in asset packs.
+            </div>
+
+            <h2>Auto-Detect Sprites</h2>
+            <p>Click on any sprite to automatically detect its boundaries using flood-fill detection.</p>
+
+            <h3>How It Works</h3>
+            <ol>
+                <li>Click the <strong>Auto-Detect</strong> button to enter detection mode</li>
+                <li>Click anywhere on a sprite in your spritesheet</li>
+                <li>The tool finds all connected non-transparent pixels (the "island")</li>
+                <li>A selection box is created around the detected sprite</li>
+                <li>Name it and save!</li>
+            </ol>
+
+            <h3>Tips for Best Results</h3>
+            <ul>
+                <li>Run Background Remover first to ensure clean transparency</li>
+                <li>Works best when sprites don't touch each other</li>
+                <li>Click near the center of the sprite for best detection</li>
+            </ul>
+
+            <div class="warning">
+                <div class="warning-label">Note</div>
+                If sprites are touching, they'll be detected as one island. Use manual selection for overlapping sprites.
             </div>
         `
     },
@@ -84,36 +133,31 @@ const SPRITE_RITE_DOCS = [
 
             <h2>How to Import</h2>
 
-            <h3>Drag and Drop</h3>
-            <p>Simply drag an image file from your file explorer and drop it onto the canvas area. The spritesheet will load automatically.</p>
+            <h3>From Your Project</h3>
+            <p>If you've previously uploaded spritesheets to this project, select them from the spritesheet dropdown.</p>
 
-            <h3>Upload Button</h3>
-            <p>Click the "Upload" button in the header to open a file picker. Select your spritesheet image.</p>
+            <h3>Upload New</h3>
+            <p>Click "Upload" to add a new spritesheet to your project. The image is stored in the cloud and linked to your project.</p>
 
-            <h2>Image Requirements</h2>
+            <h2>Image Recommendations</h2>
             <ul>
-                <li><strong>Size</strong> - No strict limit, but very large images may affect performance</li>
+                <li><strong>Size</strong> - Recommended max: 2048x2048 for best performance</li>
                 <li><strong>Resolution</strong> - Use pixel-perfect images for best results</li>
-                <li><strong>Background</strong> - Transparent backgrounds work best for game sprites</li>
+                <li><strong>Background</strong> - Solid colors work well with Background Remover</li>
             </ul>
 
-            <h2>Working with Existing Spritesheets</h2>
-            <p>If you have an existing spritesheet from another tool or asset pack:</p>
+            <h2>Working with Asset Packs</h2>
+            <p>Many asset packs come with solid color backgrounds. Here's the workflow:</p>
             <ol>
-                <li>Upload the image to Sprite-Rite</li>
-                <li>Define sprite regions using the selection tool</li>
-                <li>Export the JSON atlas for use in your game</li>
-                <li>Publish to the master sheet for use in other Game Wizard tools</li>
+                <li>Upload the spritesheet image</li>
+                <li>Click Background Remover to make the background transparent</li>
+                <li>Use Auto-Detect to quickly select each sprite</li>
+                <li>Name and save each sprite definition</li>
             </ol>
 
             <div class="tip">
                 <div class="tip-label">Tip</div>
-                If your spritesheet has a consistent grid (e.g., 32x32 tiles), use the grid overlay to quickly align selections.
-            </div>
-
-            <div class="warning">
-                <div class="warning-label">Note</div>
-                Sprite-Rite doesn't modify the original image. It only stores the coordinates and metadata for each sprite region.
+                The Background Remover saves the modified image, so you only need to remove the background once per spritesheet.
             </div>
         `
     },
@@ -124,22 +168,21 @@ const SPRITE_RITE_DOCS = [
             <h1>Defining Sprites</h1>
             <p>Learn how to create precise sprite definitions from your spritesheet image.</p>
 
-            <h2>Creating a Selection</h2>
+            <h2>Two Ways to Select</h2>
 
-            <h3>Basic Selection</h3>
+            <h3>Auto-Detect (Recommended)</h3>
             <ol>
-                <li>Click on the canvas where you want to start</li>
-                <li>Drag to the opposite corner of the sprite</li>
-                <li>Release to confirm the selection</li>
+                <li>Click the Auto-Detect button in the toolbar</li>
+                <li>Click on any sprite in the image</li>
+                <li>The selection automatically wraps the sprite</li>
             </ol>
 
-            <h3>Adjusting Selections</h3>
-            <p>After creating a selection, you can fine-tune it:</p>
-            <ul>
-                <li><strong>Move</strong> - Click inside the selection and drag</li>
-                <li><strong>Resize</strong> - Drag the corner or edge handles</li>
-                <li><strong>Cancel</strong> - Press Escape or click "Cancel"</li>
-            </ul>
+            <h3>Manual Selection</h3>
+            <ol>
+                <li>Make sure Auto-Detect is off</li>
+                <li>Click and drag on the canvas to create a selection</li>
+                <li>Adjust the selection by dragging corners or edges</li>
+            </ol>
 
             <h2>Naming Sprites</h2>
             <p>Good naming conventions make sprites easier to find and use:</p>
@@ -152,8 +195,8 @@ const SPRITE_RITE_DOCS = [
             <h3>Auto-Naming</h3>
             <p>If you don't provide a name, Sprite-Rite generates one based on the spritesheet name and a sequential number.</p>
 
-            <h2>Sprite Metadata</h2>
-            <p>Each sprite definition includes:</p>
+            <h2>Sprite Data</h2>
+            <p>Each sprite definition stores:</p>
             <ul>
                 <li><strong>Name</strong> - Unique identifier</li>
                 <li><strong>X, Y</strong> - Position in the spritesheet (top-left corner)</li>
@@ -161,74 +204,57 @@ const SPRITE_RITE_DOCS = [
             </ul>
 
             <h2>Editing Existing Sprites</h2>
-            <p>To modify a sprite you've already saved:</p>
+            <p>To modify a saved sprite:</p>
             <ol>
                 <li>Click the sprite in the Sprite List panel</li>
-                <li>The selection will appear on the canvas</li>
-                <li>Adjust position, size, or name as needed</li>
+                <li>The selection appears on the canvas</li>
+                <li>Adjust position, size, or name</li>
                 <li>Click "Save Sprite" to update</li>
             </ol>
 
             <div class="tip">
                 <div class="tip-label">Tip</div>
-                Hold Shift while dragging to constrain the selection to a square.
+                Sprites defined here can be used in Incarnum for character creation.
             </div>
         `
     },
     {
-        id: 'master-sheet',
-        title: 'Master Sheet Integration',
+        id: 'cloud-saving',
+        title: 'Cloud Saving',
         content: `
-            <h1>Master Sheet Integration</h1>
-            <p>Understand how Sprite-Rite connects with the project's master spritesheet system.</p>
+            <h1>Cloud Saving</h1>
+            <p>Your work is automatically saved to the cloud when you're logged in.</p>
 
-            <h2>What is the Master Sheet?</h2>
-            <p>Each Game Wizard project has a single master spritesheet that combines all sprites from different sources:</p>
+            <h2>What Gets Saved</h2>
             <ul>
-                <li><strong>Tilesmith</strong> - Tiles you create pixel-by-pixel</li>
-                <li><strong>Sprite-Rite</strong> - Sprites imported from external images</li>
+                <li><strong>Spritesheet Images</strong> - Uploaded to secure cloud storage</li>
+                <li><strong>Sprite Definitions</strong> - Names, positions, and dimensions</li>
+                <li><strong>Image Modifications</strong> - Background removal is saved to the image</li>
             </ul>
 
-            <h2>Why Use the Master Sheet?</h2>
+            <h2>Auto-Save</h2>
+            <p>When logged in, changes are automatically saved after a short delay. You'll see a save indicator in the header.</p>
+
+            <h2>Guest Mode</h2>
+            <p>If you're not logged in:</p>
             <ul>
-                <li>Single texture atlas for better game performance</li>
-                <li>Automatic sprite packing (no wasted space)</li>
-                <li>Consistent atlas format across all tools</li>
-                <li>Level Forge and Animancer automatically use it</li>
+                <li>You can still use all tools</li>
+                <li>Work is saved to browser local storage</li>
+                <li>Data may be lost if you clear browser data</li>
+                <li>Cannot access spritesheets across devices</li>
             </ul>
 
-            <h2>Publishing to Master Sheet</h2>
-            <p>After defining sprites in Sprite-Rite:</p>
-            <ol>
-                <li>Select the sprites you want to publish</li>
-                <li>Click "Publish to Master" (or similar action)</li>
-                <li>The sprites are added to your project's master sheet</li>
-                <li>They become available in Level Forge and Animancer</li>
-            </ol>
-
-            <h2>Tilesmith vs Sprite-Rite</h2>
-            <table>
-                <tr>
-                    <th>Use Tilesmith When...</th>
-                    <th>Use Sprite-Rite When...</th>
-                </tr>
-                <tr>
-                    <td>Creating new tiles from scratch</td>
-                    <td>Importing existing sprite assets</td>
-                </tr>
-                <tr>
-                    <td>Using AI to generate tiles</td>
-                    <td>Slicing up a downloaded spritesheet</td>
-                </tr>
-                <tr>
-                    <td>Editing pixel-by-pixel</td>
-                    <td>Defining regions in an image</td>
-                </tr>
-            </table>
+            <h2>Project Organization</h2>
+            <p>Spritesheets are organized by project:</p>
+            <ul>
+                <li>Select a project to see its spritesheets</li>
+                <li>Upload new sheets to add them to the current project</li>
+                <li>Each project has its own collection of sprites</li>
+            </ul>
 
             <div class="tip">
                 <div class="tip-label">Tip</div>
-                Both tools publish to the same master sheet, so you can mix hand-drawn tiles with imported sprites in your game.
+                Create your project in Crucible first, then select it in Sprite-Rite to start adding sprites.
             </div>
         `
     },
@@ -262,13 +288,10 @@ const SPRITE_RITE_DOCS = [
             <h2>Export Options</h2>
 
             <h3>Copy to Clipboard</h3>
-            <p>Click "Copy JSON" to copy the atlas data to your clipboard. Paste it into your game's asset configuration.</p>
+            <p>Click "Copy JSON" to copy the atlas data. Paste it into your game's asset configuration.</p>
 
             <h3>Download JSON File</h3>
-            <p>Click "Export JSON" to download a <code>.json</code> file you can include in your game project.</p>
-
-            <h3>Index Entry</h3>
-            <p>Generate an index entry for static asset systems. Useful when organizing multiple spritesheets.</p>
+            <p>Click "Export" to download a <code>.json</code> file for your game project.</p>
 
             <h2>Using in Game Engines</h2>
 
@@ -283,7 +306,7 @@ const SPRITE_RITE_DOCS = [
 
             <div class="tip">
                 <div class="tip-label">Tip</div>
-                The JSON preview panel updates in real-time as you define sprites, so you can see exactly what will be exported.
+                The JSON preview panel updates in real-time as you define sprites.
             </div>
         `
     },
@@ -304,27 +327,25 @@ const SPRITE_RITE_DOCS = [
             <h2>Navigation</h2>
             <ul>
                 <li><kbd>+</kbd> / <kbd>-</kbd> - Zoom in/out</li>
-                <li><kbd>0</kbd> - Reset zoom to fit</li>
-                <li><kbd>G</kbd> - Toggle grid overlay</li>
+                <li><kbd>Scroll</kbd> - Pan around the canvas</li>
+            </ul>
+
+            <h2>Tools</h2>
+            <ul>
+                <li><kbd>B</kbd> - Background Remover</li>
+                <li><kbd>A</kbd> - Auto-Detect mode</li>
             </ul>
 
             <h2>Actions</h2>
             <ul>
-                <li><kbd>Ctrl</kbd>+<kbd>S</kbd> - Save current work</li>
-                <li><kbd>Ctrl</kbd>+<kbd>C</kbd> - Copy JSON to clipboard</li>
+                <li><kbd>Ctrl/Cmd</kbd>+<kbd>S</kbd> - Save current work</li>
+                <li><kbd>Ctrl/Cmd</kbd>+<kbd>C</kbd> - Copy JSON to clipboard</li>
                 <li><kbd>?</kbd> - Toggle help panel</li>
-            </ul>
-
-            <h2>Selection Tips</h2>
-            <ul>
-                <li><strong>Shift + Drag</strong> - Constrain to square</li>
-                <li><strong>Arrow Keys</strong> - Nudge selection by 1 pixel</li>
-                <li><strong>Shift + Arrow</strong> - Nudge by 10 pixels</li>
             </ul>
 
             <div class="tip">
                 <div class="tip-label">Pro Tip</div>
-                Use the grid overlay with a size matching your sprite dimensions for quick, accurate selections.
+                Use Auto-Detect mode (A) for the fastest workflow when defining multiple sprites.
             </div>
         `
     }
