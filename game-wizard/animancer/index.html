@@ -661,12 +661,32 @@
             margin-bottom: 12px;
         }
 
-        /* Animation List */
+        /* Animation List - Now below timeline */
+        .animation-library-section {
+            padding: 16px;
+            border-top: 1px solid var(--stone-dark);
+            max-height: 220px;
+            overflow-y: auto;
+            background: var(--bg-mid);
+            flex-shrink: 0;
+        }
+
+        .animation-library-section::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        .animation-library-section::-webkit-scrollbar-thumb {
+            background: var(--stone-dark);
+            border-radius: 4px;
+        }
+
+        /* Animation List in right panel (legacy, hidden when library is below) */
         .animation-list-section {
             padding: 16px;
             border-bottom: 1px solid var(--stone-dark);
             max-height: 200px;
             overflow-y: auto;
+            display: none; /* Hidden - now using animation-library-section below timeline */
         }
 
         .animation-list-header {
@@ -730,6 +750,47 @@
 
         .animation-item-delete:hover {
             color: var(--accent-magma);
+        }
+
+        /* New Animation Indicator */
+        .new-animation-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            padding: 4px 10px;
+            background: linear-gradient(135deg, var(--accent-ember), var(--accent-magma));
+            color: white;
+            font-size: 10px;
+            font-weight: 600;
+            border-radius: 12px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .animation-editor-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 12px;
+            padding-bottom: 8px;
+            border-bottom: 1px solid var(--stone-dark);
+        }
+
+        .animation-editor-title {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .editing-animation-name {
+            font-size: 12px;
+            color: var(--stone-bright);
+            font-weight: 500;
+        }
+
+        .editing-animation-name.unsaved {
+            color: var(--accent-ember);
+            font-style: italic;
         }
 
         /* Export Section */
@@ -964,6 +1025,15 @@
                     </div>
                 </div>
             </div>
+
+            <!-- Animation Library (below timeline) -->
+            <div class="animation-library-section" id="animationLibrarySection" style="display: none;">
+                <div class="animation-list-header">
+                    <span class="section-header" style="margin-bottom: 0;">Saved Animations</span>
+                    <button class="btn btn-small btn-primary" id="newAnimationBtn">+ New</button>
+                </div>
+                <div class="animation-list" id="animationLibrary"></div>
+            </div>
         </div>
 
         <!-- Right Panel -->
@@ -989,20 +1059,13 @@
                 </div>
             </div>
 
-            <!-- Animation List -->
-            <div class="animation-list-section">
-                <div class="animation-list-header">
-                    <span class="section-header" style="margin-bottom: 0;">Animations</span>
-                    <div style="display: flex; gap: 6px;">
-                        <button class="btn btn-small btn-ai" id="generateAnimBtn" title="Generate animation with AI (requires PixelLab character)">&#10024; AI</button>
-                        <button class="btn btn-small btn-primary" id="newAnimationBtn">+ New</button>
-                    </div>
+            <!-- Current Animation Status -->
+            <div class="animation-editor-header" id="animationEditorHeader">
+                <div class="animation-editor-title">
+                    <span id="animationStatusBadge" class="new-animation-badge">New Animation</span>
+                    <span id="editingAnimationName" class="editing-animation-name unsaved"></span>
                 </div>
-                <div class="animation-list" id="animationList">
-                    <div class="empty-state-hint" style="padding: 12px; text-align: center;">
-                        No animations yet
-                    </div>
-                </div>
+                <button class="btn btn-small btn-ai" id="generateAnimBtn" title="Generate animation with AI (requires PixelLab character)">&#10024; AI</button>
             </div>
 
             <!-- Animation Settings -->
@@ -1100,8 +1163,8 @@
             user: null,
             projectId: null,
             sprites: [],
-            animations: [],
-            currentAnimationId: null,
+            animations: {}, // Now an object keyed by animation name
+            currentAnimationKey: null, // The key of the animation being edited
             frames: [],
             selectedFrameIndex: -1,
             isPlaying: false,
@@ -1143,8 +1206,13 @@
             stepBtn: document.getElementById('stepBtn'),
             speedMultiplier: document.getElementById('speedMultiplier'),
             previewInfo: document.getElementById('previewInfo'),
-            animationList: document.getElementById('animationList'),
+            // Animation library (below timeline)
+            animationLibrarySection: document.getElementById('animationLibrarySection'),
+            animationLibrary: document.getElementById('animationLibrary'),
             newAnimationBtn: document.getElementById('newAnimationBtn'),
+            // Animation status (right panel)
+            animationStatusBadge: document.getElementById('animationStatusBadge'),
+            editingAnimationName: document.getElementById('editingAnimationName'),
             animationName: document.getElementById('animationName'),
             defaultDuration: document.getElementById('defaultDuration'),
             uniformDuration: document.getElementById('uniformDuration'),
@@ -1190,6 +1258,7 @@
             updateJsonOutput();
             updatePreviewInfo();
             updateTimelineInfo();
+            updateAnimationStatus();
 
             // Initialize generation queue
             initGenerationQueue();
@@ -1290,8 +1359,8 @@
         async function selectProject(projectId) {
             state.projectId = projectId;
             state.sprites = [];
-            state.animations = [];
-            state.currentAnimationId = null;
+            state.animations = {};
+            state.currentAnimationKey = null;
             state.masterSheetAtlas = null;
             state.masterSheetImage = null;
             state.sourceFilter = '';
@@ -1304,7 +1373,8 @@
 
             if (!projectId) {
                 renderSpritePalette();
-                renderAnimationList();
+                renderAnimationLibrary();
+                updateAnimationStatus();
                 return;
             }
 
@@ -1353,17 +1423,13 @@
                     // Populate source filter with unique sources
                     populateSourceFilter();
 
-                    // Load project animations
-                    try {
-                        state.animations = await crucibleClient.getProjectAnimations(projectId);
-                    } catch (e) {
-                        console.warn('Could not load project animations:', e);
-                        state.animations = [];
-                    }
+                    // Load animations from master sprite sheet atlas
+                    state.animations = masterSheet.atlas.animations || {};
                 }
 
                 renderSpritePalette();
-                renderAnimationList();
+                renderAnimationLibrary();
+                updateAnimationStatus();
             } catch (err) {
                 console.error('Failed to load master sprite sheet:', err);
                 showToast('Failed to load master sprite sheet');
@@ -1514,24 +1580,25 @@
         }
 
         // ==========================================
-        // Animation List
+        // Animation Library (below timeline)
         // ==========================================
-        function renderAnimationList() {
-            elements.animationList.innerHTML = '';
+        function renderAnimationLibrary() {
+            const animKeys = Object.keys(state.animations);
 
-            if (state.animations.length === 0) {
-                elements.animationList.innerHTML = `
-                    <div class="empty-state-hint" style="padding: 12px; text-align: center;">
-                        No animations yet
-                    </div>
-                `;
+            // Show/hide library section based on whether there are animations
+            if (animKeys.length === 0) {
+                elements.animationLibrarySection.style.display = 'none';
                 return;
             }
 
-            state.animations.forEach(anim => {
+            elements.animationLibrarySection.style.display = 'block';
+            elements.animationLibrary.innerHTML = '';
+
+            animKeys.forEach(key => {
+                const anim = state.animations[key];
                 const item = document.createElement('div');
                 item.className = 'animation-item';
-                if (state.currentAnimationId === anim.id) {
+                if (state.currentAnimationKey === key) {
                     item.classList.add('active');
                 }
 
@@ -1539,83 +1606,109 @@
 
                 item.innerHTML = `
                     <div>
-                        <div class="animation-item-name">${anim.name}</div>
-                        <div class="animation-item-info">${frameCount} frames | ${anim.fps} fps</div>
+                        <div class="animation-item-name">${anim.name || key}</div>
+                        <div class="animation-item-info">${frameCount} frames | ${anim.fps || 12} fps</div>
                     </div>
                     <button class="animation-item-delete" title="Delete">&times;</button>
                 `;
 
                 item.querySelector('.animation-item-delete').addEventListener('click', async (e) => {
                     e.stopPropagation();
-                    await deleteAnimation(anim.id);
+                    await deleteAnimation(key);
                 });
 
-                item.addEventListener('click', () => loadAnimation(anim));
+                item.addEventListener('click', () => loadAnimation(key));
 
-                elements.animationList.appendChild(item);
+                elements.animationLibrary.appendChild(item);
             });
         }
 
-        async function loadAnimation(anim) {
-            state.currentAnimationId = anim.id;
+        function updateAnimationStatus() {
+            const isNew = !state.currentAnimationKey;
+            const name = elements.animationName.value.trim();
+
+            if (isNew) {
+                elements.animationStatusBadge.textContent = 'New Animation';
+                elements.animationStatusBadge.style.display = 'inline-flex';
+                elements.editingAnimationName.textContent = name ? `"${name}"` : '(unsaved)';
+                elements.editingAnimationName.classList.toggle('unsaved', !name);
+            } else {
+                elements.animationStatusBadge.textContent = 'Editing';
+                elements.animationStatusBadge.style.background = 'var(--mystic-glow)';
+                elements.editingAnimationName.textContent = state.animations[state.currentAnimationKey]?.name || state.currentAnimationKey;
+                elements.editingAnimationName.classList.remove('unsaved');
+            }
+        }
+
+        async function loadAnimation(key) {
+            const anim = state.animations[key];
+            if (!anim) return;
+
+            state.currentAnimationKey = key;
 
             // Convert stored frames back to editor format
             state.frames = (anim.frames || []).map(f => {
-                const sprite = state.sprites[f.spriteIndex] || state.sprites.find(s => s.name === f.spriteName);
+                // Find sprite by name
+                const sprite = state.sprites.find(s => s.name === f.spriteName) || state.sprites[f.spriteIndex];
                 return {
-                    sprite: sprite?.name || 'unknown',
-                    duration: f.duration / 1000 || 0.5,
-                    spriteData: sprite || { x: 0, y: 0, width: 32, height: 32, name: 'unknown' },
-                    spriteIndex: f.spriteIndex
+                    sprite: sprite?.name || f.spriteName || 'unknown',
+                    duration: (f.duration || 500) / 1000,
+                    spriteData: sprite || { x: 0, y: 0, width: 32, height: 32, name: f.spriteName || 'unknown' },
+                    spriteIndex: state.sprites.indexOf(sprite)
                 };
             });
 
-            elements.animationName.value = anim.name;
+            elements.animationName.value = anim.name || key;
             elements.loopAnimation.checked = anim.loop !== false;
 
             // Calculate default duration from first frame or fps
             if (state.frames.length > 0) {
                 elements.defaultDuration.value = state.frames[0].duration;
             } else {
-                elements.defaultDuration.value = (1 / anim.fps).toFixed(2);
+                elements.defaultDuration.value = (1 / (anim.fps || 12)).toFixed(2);
             }
 
             state.selectedFrameIndex = -1;
             stopPlayback();
 
             renderTimeline();
-            renderAnimationList();
+            renderAnimationLibrary();
+            updateAnimationStatus();
             updateJsonOutput();
             updateTimelineInfo();
             updateFrameEditor();
         }
 
         function newAnimation() {
-            state.currentAnimationId = null;
+            state.currentAnimationKey = null;
             state.frames = [];
             state.selectedFrameIndex = -1;
             elements.animationName.value = '';
             stopPlayback();
 
+            // Reset status badge color
+            elements.animationStatusBadge.style.background = '';
+
             renderTimeline();
-            renderAnimationList();
+            renderAnimationLibrary();
+            updateAnimationStatus();
             updateJsonOutput();
             updateTimelineInfo();
             updateFrameEditor();
         }
 
-        async function deleteAnimation(animId) {
+        async function deleteAnimation(key) {
             if (!confirm('Delete this animation?')) return;
 
             try {
-                await crucibleClient.deleteAnimation(animId);
-                state.animations = state.animations.filter(a => a.id !== animId);
+                await crucibleClient.deleteMasterSpriteSheetAnimation(state.projectId, key);
+                delete state.animations[key];
 
-                if (state.currentAnimationId === animId) {
+                if (state.currentAnimationKey === key) {
                     newAnimation();
                 }
 
-                renderAnimationList();
+                renderAnimationLibrary();
                 showToast('Animation deleted');
             } catch (err) {
                 console.error('Failed to delete animation:', err);
@@ -2026,7 +2119,9 @@
         }
 
         async function autoSaveAnimation() {
+            // Only auto-save if editing existing animation
             if (!state.user || !state.projectId || !state.masterSheetImage || state.frames.length === 0) return;
+            if (!state.currentAnimationKey) return; // Don't auto-save new unsaved animations
 
             const name = elements.animationName.value.trim();
             if (!name) return;
@@ -2056,39 +2151,37 @@
             const fps = Math.round(1 / (parseFloat(elements.defaultDuration.value) || 0.5));
             const loop = elements.loopAnimation.checked;
 
-            // Convert frames to storage format
+            // Convert frames to storage format (store sprite names for portability)
             const frames = state.frames.map(f => ({
-                spriteIndex: f.spriteIndex,
                 spriteName: f.sprite,
-                duration: Math.round(f.duration * 1000),
-                offsetX: 0,
-                offsetY: 0
+                duration: Math.round(f.duration * 1000)
             }));
 
-            if (state.currentAnimationId) {
-                // Update existing
-                await crucibleClient.updateAnimation(state.currentAnimationId, {
-                    name,
-                    frames,
-                    fps,
-                    loop
-                });
+            // Generate a key from the name (lowercase, replace spaces with dashes)
+            const animKey = state.currentAnimationKey || name.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '');
+
+            const animationData = {
+                name,
+                description: '', // Can be added later
+                frames,
+                fps,
+                loop
+            };
+
+            try {
+                await crucibleClient.saveMasterSpriteSheetAnimation(state.projectId, animKey, animationData);
 
                 // Update local cache
-                const idx = state.animations.findIndex(a => a.id === state.currentAnimationId);
-                if (idx >= 0) {
-                    state.animations[idx] = { ...state.animations[idx], name, frames, fps, loop };
-                }
-            } else {
-                // Create new animation on master sheet (project level)
-                const options = { fps, loop, projectId: state.projectId };
-                const newAnim = await crucibleClient.createAnimation('__master__', name, frames, options);
-                state.currentAnimationId = newAnim.id;
-                state.animations.push(newAnim);
-            }
+                state.animations[animKey] = animationData;
+                state.currentAnimationKey = animKey;
 
-            renderAnimationList();
-            showToast('Animation saved');
+                renderAnimationLibrary();
+                updateAnimationStatus();
+                showToast('Animation saved');
+            } catch (err) {
+                console.error('Failed to save animation:', err);
+                showToast('Failed to save animation');
+            }
         }
 
         // ==========================================
@@ -2185,6 +2278,7 @@
 
             elements.animationName.addEventListener('input', () => {
                 updateJsonOutput();
+                updateAnimationStatus();
                 scheduleAutoSave();
             });
 

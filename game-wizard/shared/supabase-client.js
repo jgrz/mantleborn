@@ -1814,9 +1814,14 @@ class CrucibleClient {
             .single();
 
         if (error) throw error;
+        const atlas = data.master_sprite_sheet_atlas || { size: { w: 0, h: 0 }, sprites: {} };
+        // Ensure animations object exists
+        if (!atlas.animations) {
+            atlas.animations = {};
+        }
         return {
             png: data.master_sprite_sheet_png,
-            atlas: data.master_sprite_sheet_atlas || { size: { w: 0, h: 0 }, sprites: {} },
+            atlas,
             updatedAt: data.master_sprite_sheet_updated_at
         };
     }
@@ -1902,6 +1907,70 @@ class CrucibleClient {
             }
         }
         return sprites;
+    }
+
+    // =============================================
+    // MASTER SPRITE SHEET ANIMATIONS
+    // =============================================
+    // Animations stored in master_sprite_sheet_atlas.animations
+
+    async getMasterSpriteSheetAnimations(projectId) {
+        const masterSheet = await this.getMasterSpriteSheet(projectId);
+        return masterSheet.atlas?.animations || {};
+    }
+
+    async saveMasterSpriteSheetAnimation(projectId, animationKey, animationData) {
+        if (!this.client) throw new Error('Crucible not initialized');
+
+        const masterSheet = await this.getMasterSpriteSheet(projectId);
+        const atlas = masterSheet.atlas || { size: { w: 0, h: 0 }, sprites: {}, animations: {} };
+
+        if (!atlas.animations) {
+            atlas.animations = {};
+        }
+
+        // Save/update animation
+        atlas.animations[animationKey] = {
+            name: animationData.name || animationKey,
+            description: animationData.description || '',
+            frames: animationData.frames || [],
+            fps: animationData.fps || 12,
+            loop: animationData.loop !== false,
+            updatedAt: new Date().toISOString()
+        };
+
+        // Save atlas back (keep png unchanged)
+        const { error } = await this.client
+            .from('projects')
+            .update({
+                master_sprite_sheet_atlas: atlas,
+                master_sprite_sheet_updated_at: new Date().toISOString()
+            })
+            .eq('id', projectId);
+
+        if (error) throw error;
+        return atlas.animations[animationKey];
+    }
+
+    async deleteMasterSpriteSheetAnimation(projectId, animationKey) {
+        if (!this.client) throw new Error('Crucible not initialized');
+
+        const masterSheet = await this.getMasterSpriteSheet(projectId);
+        const atlas = masterSheet.atlas || { size: { w: 0, h: 0 }, sprites: {}, animations: {} };
+
+        if (atlas.animations && atlas.animations[animationKey]) {
+            delete atlas.animations[animationKey];
+
+            const { error } = await this.client
+                .from('projects')
+                .update({
+                    master_sprite_sheet_atlas: atlas,
+                    master_sprite_sheet_updated_at: new Date().toISOString()
+                })
+                .eq('id', projectId);
+
+            if (error) throw error;
+        }
     }
 
     // =============================================
