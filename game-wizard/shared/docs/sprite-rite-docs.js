@@ -91,6 +91,25 @@ const SPRITE_RITE_DOCS = [
                 Spritesheets with solid color backgrounds (pink, green, white, etc.) commonly found in asset packs.
             </div>
 
+            <h2>Flip Horizontal</h2>
+            <p>Mirror your entire spritesheet horizontally. Essential for correcting sprite direction.</p>
+
+            <h3>Why Flip?</h3>
+            <p>Game development convention: <strong>all sprites should face right</strong>. Games flip sprites at runtime to show left-facing movement. If your sprites face left, use this tool to correct them.</p>
+
+            <h3>How It Works</h3>
+            <ol>
+                <li>Click the <strong>Flip H</strong> button in the toolbar</li>
+                <li>The entire spritesheet is mirrored horizontally</li>
+                <li>If you have existing sprite definitions, you'll be asked to clear them (positions become invalid after flip)</li>
+                <li>The modified image is saved to the cloud automatically</li>
+            </ol>
+
+            <div class="warning">
+                <div class="warning-label">Note</div>
+                Flipping invalidates any existing sprite definitions since their X positions are reversed. You'll need to redefine sprites after flipping.
+            </div>
+
             <h2>Auto-Detect Sprites</h2>
             <p>Click on any sprite to automatically detect its boundaries using flood-fill detection.</p>
 

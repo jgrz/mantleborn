@@ -882,6 +882,110 @@
             gap: 10px;
             justify-content: center;
         }
+
+        /* Sprite Direction Notice */
+        .sprite-direction-dialog {
+            max-width: 480px;
+            text-align: left;
+        }
+
+        .sprite-direction-content {
+            margin-bottom: 20px;
+        }
+
+        .direction-intro {
+            font-size: 13px;
+            color: var(--stone-light);
+            line-height: 1.6;
+            margin-bottom: 20px;
+        }
+
+        .direction-intro strong {
+            color: var(--accent-ember);
+        }
+
+        .direction-visual {
+            display: flex;
+            justify-content: center;
+            gap: 40px;
+            margin: 24px 0;
+        }
+
+        .direction-example {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 8px;
+            padding: 16px 24px;
+            border-radius: 8px;
+            background: var(--bg-surface);
+        }
+
+        .direction-example.correct {
+            border: 2px solid #4ade80;
+        }
+
+        .direction-example.incorrect {
+            border: 2px solid var(--accent-magma);
+        }
+
+        .direction-sprite {
+            font-size: 48px;
+            line-height: 1;
+        }
+
+        .direction-sprite.flipped {
+            transform: scaleX(-1);
+        }
+
+        .direction-label {
+            font-size: 11px;
+            color: var(--stone-mid);
+            text-transform: uppercase;
+        }
+
+        .direction-status {
+            font-size: 20px;
+        }
+
+        .direction-example.correct .direction-status {
+            color: #4ade80;
+        }
+
+        .direction-example.incorrect .direction-status {
+            color: var(--accent-magma);
+        }
+
+        .direction-tip {
+            font-size: 12px;
+            color: var(--stone-mid);
+            text-align: center;
+            margin-top: 16px;
+        }
+
+        .direction-tip strong {
+            color: var(--accent-ember);
+        }
+
+        .sprite-direction-dialog .dialog-actions {
+            flex-direction: column;
+            gap: 12px;
+            align-items: stretch;
+        }
+
+        .dont-show-again {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            font-size: 11px;
+            color: var(--stone-mid);
+            cursor: pointer;
+        }
+
+        .dont-show-again input {
+            cursor: pointer;
+        }
     </style>
 </head>
 <body>
@@ -942,6 +1046,9 @@
                 <div class="toolbar-group">
                     <button class="tool-btn" id="removeBgBtn" title="Click to pick background color, then remove">
                         <span>Remove BG</span>
+                    </button>
+                    <button class="tool-btn" id="flipHorizontalBtn" title="Flip the entire spritesheet horizontally (mirror)">
+                        <span>Flip H</span>
                     </button>
                     <button class="tool-btn" id="autoDetectBtn" title="Click on a sprite to auto-select its bounds">
                         <span>Auto-Detect</span>
@@ -1057,6 +1164,40 @@
         </div>
     </div>
 
+    <!-- Sprite Direction Educational Notice -->
+    <div class="dialog-overlay" id="spriteDirectionNotice">
+        <div class="dialog sprite-direction-dialog">
+            <div class="dialog-title">Sprite Direction Convention</div>
+            <div class="sprite-direction-content">
+                <p class="direction-intro">
+                    For consistent animations, <strong>all sprites should face right</strong>.
+                    Games flip sprites horizontally at runtime to show left-facing movement.
+                </p>
+                <div class="direction-visual">
+                    <div class="direction-example correct">
+                        <div class="direction-sprite">&#129374;</div>
+                        <div class="direction-label">Facing Right</div>
+                        <div class="direction-status">&#10004;</div>
+                    </div>
+                    <div class="direction-example incorrect">
+                        <div class="direction-sprite flipped">&#129374;</div>
+                        <div class="direction-label">Facing Left</div>
+                        <div class="direction-status">&#10008;</div>
+                    </div>
+                </div>
+                <p class="direction-tip">
+                    If your sprites face left, use the <strong>Flip H</strong> tool to mirror them.
+                </p>
+            </div>
+            <div class="dialog-actions">
+                <label class="dont-show-again">
+                    <input type="checkbox" id="dontShowAgain"> Don't show this again
+                </label>
+                <button class="btn btn-primary" id="dismissNotice">Got it!</button>
+            </div>
+        </div>
+    </div>
+
     <script src="../shared/supabase-client.js"></script>
     <script>
         /* ============================================
@@ -1129,6 +1270,7 @@
             zoomButtons: document.querySelectorAll('.zoom-btn'),
             gridToggle: document.getElementById('gridToggle'),
             removeBgBtn: document.getElementById('removeBgBtn'),
+            flipHorizontalBtn: document.getElementById('flipHorizontalBtn'),
             autoDetectBtn: document.getElementById('autoDetectBtn'),
             selectionInfo: document.getElementById('selectionInfo'),
             imageInfo: document.getElementById('imageInfo'),
@@ -1159,7 +1301,12 @@
             dialogTitle: document.getElementById('dialogTitle'),
             dialogMessage: document.getElementById('dialogMessage'),
             dialogConfirm: document.getElementById('dialogConfirm'),
-            dialogCancel: document.getElementById('dialogCancel')
+            dialogCancel: document.getElementById('dialogCancel'),
+
+            // Sprite Direction Notice
+            spriteDirectionNotice: document.getElementById('spriteDirectionNotice'),
+            dontShowAgain: document.getElementById('dontShowAgain'),
+            dismissNotice: document.getElementById('dismissNotice')
         };
 
         // ==========================================
@@ -1204,6 +1351,25 @@
             if (!state.selection) return 'sprite_01';
             const { x, y, w, h } = state.selection;
             return `sprite_${x}_${y}_${w}x${h}`;
+        }
+
+        // ==========================================
+        // Sprite Direction Notice
+        // ==========================================
+        function shouldShowSpriteDirectionNotice() {
+            return localStorage.getItem('spriteRite_hideDirectionNotice') !== 'true';
+        }
+
+        function showSpriteDirectionNotice() {
+            if (!shouldShowSpriteDirectionNotice()) return;
+            elements.spriteDirectionNotice.classList.add('show');
+        }
+
+        function dismissSpriteDirectionNotice() {
+            if (elements.dontShowAgain.checked) {
+                localStorage.setItem('spriteRite_hideDirectionNotice', 'true');
+            }
+            elements.spriteDirectionNotice.classList.remove('show');
         }
 
         // ==========================================
@@ -1450,6 +1616,9 @@
                 // Load it
                 await selectSpritesheet(sheet.id);
                 showToast('Sprite sheet uploaded!');
+
+                // Show educational notice about sprite direction
+                showSpriteDirectionNotice();
             } catch (error) {
                 console.error('Upload failed:', error);
                 showToast('Upload failed: ' + error.message, 'error');
@@ -1753,6 +1922,65 @@
                 } else {
                     showToast(`Removed ${removeCount} pixels.`);
                 }
+            };
+            newImg.src = tempCanvas.toDataURL('image/png');
+        }
+
+        function flipHorizontal() {
+            if (!state.image) return;
+
+            const tempCanvas = document.createElement('canvas');
+            tempCanvas.width = state.imageWidth;
+            tempCanvas.height = state.imageHeight;
+            const tempCtx = tempCanvas.getContext('2d');
+
+            // Flip horizontally by scaling -1 on X axis
+            tempCtx.translate(state.imageWidth, 0);
+            tempCtx.scale(-1, 1);
+            tempCtx.drawImage(state.image, 0, 0);
+
+            // Create new image from flipped canvas
+            const newImg = new Image();
+            newImg.onload = async () => {
+                state.image = newImg;
+                state.imageData = null; // Clear cache
+                state.islandMap = null; // Clear island cache
+
+                // Clear existing sprite definitions since their positions are now invalid
+                if (state.sprites.length > 0) {
+                    const confirmClear = confirm(
+                        'Flipping the image will invalidate existing sprite positions. ' +
+                        'Clear all sprite definitions?\n\n' +
+                        'Click OK to clear sprites, or Cancel to keep them (you\'ll need to redefine them).'
+                    );
+                    if (confirmClear) {
+                        state.sprites = [];
+                        state.selection = null;
+                        state.selectedSpriteIndex = -1;
+                        hideCreatePanel();
+                        updateSpriteList();
+                    }
+                }
+
+                render();
+
+                // Save modified image to cloud if logged in
+                if (state.spritesheetId && state.user) {
+                    try {
+                        showToast('Saving flipped image...');
+                        const blob = await new Promise(resolve => tempCanvas.toBlob(resolve, 'image/png'));
+                        await crucibleClient.updateSpritesheetImage(state.spritesheetId, blob);
+                        showToast('Image flipped and saved!');
+                        scheduleAutoSave(); // Save cleared sprites
+                    } catch (error) {
+                        console.error('Failed to save image:', error);
+                        showToast('Flipped image (save failed)', 'error');
+                    }
+                } else {
+                    showToast('Image flipped horizontally.');
+                }
+
+                updateJsonPreview();
             };
             newImg.src = tempCanvas.toDataURL('image/png');
         }
@@ -2464,6 +2692,11 @@
             removeBackground();
         });
 
+        elements.flipHorizontalBtn.addEventListener('click', () => {
+            if (!state.image) return;
+            flipHorizontal();
+        });
+
         elements.autoDetectBtn.addEventListener('click', () => {
             if (!state.image) return;
             setToolMode('autoDetect');
@@ -2495,6 +2728,9 @@
             pendingDeleteIndex = -1;
             elements.confirmDialog.classList.remove('show');
         });
+
+        // Sprite direction notice
+        elements.dismissNotice.addEventListener('click', dismissSpriteDirectionNotice);
 
         // Keyboard shortcuts
         window.addEventListener('keydown', (e) => {
