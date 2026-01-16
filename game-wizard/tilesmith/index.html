@@ -595,20 +595,22 @@
         }
 
         .current-color-hex {
-            font-size: 14px;
+            font-size: 13px;
             color: var(--stone-bright);
             font-weight: 600;
+            font-family: monospace;
         }
 
-        .current-color-label {
+        .current-color-family {
             font-size: 10px;
             color: var(--stone-mid);
+            margin-top: 1px;
         }
 
         .current-color-name {
             font-size: 12px;
             color: var(--emerald);
-            font-weight: 500;
+            font-weight: 600;
             margin-top: 2px;
         }
 
@@ -616,6 +618,60 @@
             font-size: 10px;
             color: var(--stone-mid);
             font-style: italic;
+        }
+
+        /* Color tooltip for hover info */
+        .color-tooltip {
+            position: fixed;
+            background: var(--stone-dark);
+            border: 1px solid var(--stone-mid);
+            border-radius: 4px;
+            padding: 8px 10px;
+            pointer-events: none;
+            z-index: 10000;
+            opacity: 0;
+            transition: opacity 0.15s;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.4);
+            min-width: 120px;
+        }
+
+        .color-tooltip.visible {
+            opacity: 1;
+        }
+
+        .color-tooltip-swatch {
+            width: 100%;
+            height: 20px;
+            border-radius: 2px;
+            margin-bottom: 6px;
+            border: 1px solid var(--stone-mid);
+        }
+
+        .color-tooltip-hex {
+            font-size: 11px;
+            font-family: monospace;
+            color: var(--stone-bright);
+            font-weight: 600;
+        }
+
+        .color-tooltip-family {
+            font-size: 9px;
+            color: var(--stone-mid);
+            margin-top: 2px;
+        }
+
+        .color-tooltip-name {
+            font-size: 11px;
+            color: var(--emerald);
+            font-weight: 600;
+            margin-top: 3px;
+        }
+
+        .color-tooltip-desc {
+            font-size: 9px;
+            color: var(--stone-mid);
+            font-style: italic;
+            margin-top: 1px;
         }
 
         .palette-presets {
@@ -974,7 +1030,7 @@
                         <button class="tool-btn active" data-tool="pencil" title="Pencil (P)">&#9998;</button>
                         <button class="tool-btn" data-tool="eraser" title="Eraser (E)">&#9003;</button>
                         <button class="tool-btn" data-tool="fill" title="Fill (F)">&#9699;</button>
-                        <button class="tool-btn" data-tool="picker" title="Color Picker (I)">&#128371;</button>
+                        <button class="tool-btn" data-tool="picker" title="Color Picker (I) - Hold Option/Alt to preview">&#128371;</button>
                         <button class="tool-btn" data-tool="line" title="Line (L)">&#9585;</button>
                         <button class="tool-btn" data-tool="rect" title="Rectangle (R)">&#9634;</button>
                     </div>
@@ -1016,8 +1072,9 @@
                     <input type="color" id="colorPicker" class="current-color-swatch" value="#40d080">
                     <div class="current-color-info">
                         <div class="current-color-hex" id="currentHex">#40D080</div>
-                        <div class="current-color-name" id="currentColorName">Green</div>
-                        <div class="current-color-desc" id="currentColorDesc">Vivid, medium tone</div>
+                        <div class="current-color-family" id="currentColorFamily">Green › Emerald</div>
+                        <div class="current-color-name" id="currentColorName">Seafoam</div>
+                        <div class="current-color-desc" id="currentColorDesc">Vivid, medium</div>
                     </div>
                 </div>
                 <div class="palette-presets">
@@ -1313,6 +1370,8 @@
 
             // Drawing
             tool: 'pencil',
+            previousTool: null,      // For temporary picker mode
+            tempPickerActive: false, // Alt-held temporary picker
             currentColor: '#40d080',
             palette: [...PALETTES.pico8],
             pixels: null, // ImageData for entire tileset
@@ -1358,8 +1417,10 @@
             newTileBtn: document.getElementById('newTileBtn'),
             colorPicker: document.getElementById('colorPicker'),
             currentHex: document.getElementById('currentHex'),
+            currentColorFamily: document.getElementById('currentColorFamily'),
             currentColorName: document.getElementById('currentColorName'),
             currentColorDesc: document.getElementById('currentColorDesc'),
+            colorTooltip: document.getElementById('colorTooltip'),
             palettePreset: document.getElementById('palettePreset'),
             paletteGrid: document.getElementById('paletteGrid'),
             paletteToggleBtn: document.getElementById('paletteToggleBtn'),
@@ -1407,6 +1468,7 @@
             renderTileSelector();
             initializeCanvas();
             renderPalette();
+            selectColor(state.currentColor); // Initialize color info display
             setupEventListeners();
 
             if (state.user) {
@@ -2029,8 +2091,10 @@
                     swatch.classList.add('active');
                 }
                 swatch.style.backgroundColor = color;
-                swatch.title = color;
                 swatch.addEventListener('click', () => selectColor(color));
+                swatch.addEventListener('mouseenter', (e) => showColorTooltip(color, e.clientX, e.clientY));
+                swatch.addEventListener('mousemove', (e) => showColorTooltip(color, e.clientX, e.clientY));
+                swatch.addEventListener('mouseleave', hideColorTooltip);
                 elements.paletteGrid.appendChild(swatch);
             });
 
@@ -2047,14 +2111,23 @@
                     swatch.classList.add('active');
                 }
                 swatch.style.backgroundColor = color;
-                swatch.title = color;
                 swatch.addEventListener('click', () => selectColor(color));
+                swatch.addEventListener('mouseenter', (e) => showColorTooltip(color, e.clientX, e.clientY));
+                swatch.addEventListener('mousemove', (e) => showColorTooltip(color, e.clientX, e.clientY));
+                swatch.addEventListener('mouseleave', hideColorTooltip);
                 elements.quickPaletteGrid.appendChild(swatch);
             });
         }
 
-        // Color accessibility - get color name and descriptor from hex
+        // Color accessibility - comprehensive color info from hex
+        // Returns: { hex, color (family), hue (specific), commonName (lightness-aware), descriptor }
         function getColorInfo(hex) {
+            // Normalize hex
+            hex = hex.toUpperCase();
+            if (hex.length === 4) {
+                hex = '#' + hex[1] + hex[1] + hex[2] + hex[2] + hex[3] + hex[3];
+            }
+
             // Convert hex to RGB
             const r = parseInt(hex.slice(1, 3), 16) / 255;
             const g = parseInt(hex.slice(3, 5), 16) / 255;
@@ -2077,57 +2150,225 @@
                 }
             }
 
-            const hue = h * 360;
+            const hueDeg = h * 360;
             const sat = s * 100;
             const light = l * 100;
 
-            // Get color name based on hue
-            let name;
-            if (sat < 10) {
-                // Achromatic colors
-                if (light < 15) name = 'Black';
-                else if (light < 35) name = 'Dark Gray';
-                else if (light < 65) name = 'Gray';
-                else if (light < 85) name = 'Light Gray';
-                else name = 'White';
+            // Determine if achromatic
+            const isGray = sat < 12;
+
+            // Color family (broad category)
+            let color;
+            if (isGray) {
+                color = 'Gray';
+            } else if (hueDeg < 15 || hueDeg >= 345) {
+                color = 'Red';
+            } else if (hueDeg < 45) {
+                color = 'Orange';
+            } else if (hueDeg < 75) {
+                color = 'Yellow';
+            } else if (hueDeg < 165) {
+                color = 'Green';
+            } else if (hueDeg < 195) {
+                color = 'Cyan';
+            } else if (hueDeg < 265) {
+                color = 'Blue';
+            } else if (hueDeg < 290) {
+                color = 'Purple';
             } else {
-                // Chromatic colors - hue-based names
-                if (hue < 15) name = 'Red';
-                else if (hue < 45) name = 'Orange';
-                else if (hue < 70) name = 'Yellow';
-                else if (hue < 90) name = 'Lime';
-                else if (hue < 150) name = 'Green';
-                else if (hue < 180) name = 'Teal';
-                else if (hue < 210) name = 'Cyan';
-                else if (hue < 250) name = 'Blue';
-                else if (hue < 290) name = 'Purple';
-                else if (hue < 330) name = 'Magenta';
-                else name = 'Red';
+                color = 'Pink';
             }
 
-            // Get descriptor based on lightness and saturation
+            // Specific hue name (more granular)
+            let hue;
+            if (isGray) {
+                if (light < 10) hue = 'Black';
+                else if (light < 25) hue = 'Charcoal';
+                else if (light < 40) hue = 'Dark Gray';
+                else if (light < 60) hue = 'Gray';
+                else if (light < 75) hue = 'Silver';
+                else if (light < 90) hue = 'Light Gray';
+                else hue = 'White';
+            } else if (hueDeg < 10 || hueDeg >= 350) {
+                hue = 'Red';
+            } else if (hueDeg < 20) {
+                hue = 'Scarlet';
+            } else if (hueDeg < 35) {
+                hue = 'Vermilion';
+            } else if (hueDeg < 45) {
+                hue = 'Orange';
+            } else if (hueDeg < 55) {
+                hue = 'Amber';
+            } else if (hueDeg < 65) {
+                hue = 'Gold';
+            } else if (hueDeg < 75) {
+                hue = 'Yellow';
+            } else if (hueDeg < 85) {
+                hue = 'Lime';
+            } else if (hueDeg < 100) {
+                hue = 'Chartreuse';
+            } else if (hueDeg < 140) {
+                hue = 'Green';
+            } else if (hueDeg < 165) {
+                hue = 'Emerald';
+            } else if (hueDeg < 180) {
+                hue = 'Teal';
+            } else if (hueDeg < 195) {
+                hue = 'Cyan';
+            } else if (hueDeg < 210) {
+                hue = 'Sky';
+            } else if (hueDeg < 230) {
+                hue = 'Azure';
+            } else if (hueDeg < 250) {
+                hue = 'Blue';
+            } else if (hueDeg < 265) {
+                hue = 'Indigo';
+            } else if (hueDeg < 280) {
+                hue = 'Violet';
+            } else if (hueDeg < 295) {
+                hue = 'Purple';
+            } else if (hueDeg < 320) {
+                hue = 'Magenta';
+            } else if (hueDeg < 335) {
+                hue = 'Pink';
+            } else if (hueDeg < 350) {
+                hue = 'Rose';
+            } else {
+                hue = 'Red';
+            }
+
+            // Common name (lightness and saturation aware - familiar names)
+            let commonName;
+            if (isGray) {
+                commonName = hue; // Use hue name for grays
+            } else {
+                // Special common names based on hue + lightness + saturation
+                const isDark = light < 35;
+                const isLight = light > 70;
+                const isPale = isLight && sat < 50;
+                const isMuted = sat < 35;
+
+                if (color === 'Red') {
+                    if (isDark) commonName = 'Maroon';
+                    else if (isPale) commonName = 'Blush';
+                    else if (isLight) commonName = 'Salmon';
+                    else if (isMuted) commonName = 'Brick';
+                    else commonName = hue;
+                } else if (color === 'Orange') {
+                    if (isDark) commonName = 'Brown';
+                    else if (isPale) commonName = 'Peach';
+                    else if (isLight) commonName = 'Apricot';
+                    else if (isMuted) commonName = 'Rust';
+                    else commonName = hue;
+                } else if (color === 'Yellow') {
+                    if (isDark) commonName = 'Olive';
+                    else if (isPale) commonName = 'Cream';
+                    else if (isLight) commonName = 'Lemon';
+                    else if (isMuted) commonName = 'Khaki';
+                    else commonName = hue;
+                } else if (color === 'Green') {
+                    if (isDark) commonName = 'Forest';
+                    else if (isPale) commonName = 'Mint';
+                    else if (isLight) commonName = 'Seafoam';
+                    else if (isMuted) commonName = 'Sage';
+                    else commonName = hue;
+                } else if (color === 'Cyan') {
+                    if (isDark) commonName = 'Petrol';
+                    else if (isPale) commonName = 'Aqua';
+                    else if (isLight) commonName = 'Ice';
+                    else if (isMuted) commonName = 'Slate';
+                    else commonName = hue;
+                } else if (color === 'Blue') {
+                    if (isDark) commonName = 'Navy';
+                    else if (isPale) commonName = 'Powder';
+                    else if (isLight) commonName = 'Sky';
+                    else if (isMuted) commonName = 'Steel';
+                    else commonName = hue;
+                } else if (color === 'Purple') {
+                    if (isDark) commonName = 'Plum';
+                    else if (isPale) commonName = 'Lavender';
+                    else if (isLight) commonName = 'Lilac';
+                    else if (isMuted) commonName = 'Mauve';
+                    else commonName = hue;
+                } else if (color === 'Pink') {
+                    if (isDark) commonName = 'Wine';
+                    else if (isPale) commonName = 'Blush';
+                    else if (isLight) commonName = 'Rose';
+                    else if (isMuted) commonName = 'Dusty Rose';
+                    else commonName = hue;
+                } else {
+                    commonName = hue;
+                }
+            }
+
+            // Descriptor (saturation + lightness description)
             let lightDesc, satDesc;
 
-            if (light < 25) lightDesc = 'very dark';
-            else if (light < 40) lightDesc = 'dark';
-            else if (light < 60) lightDesc = 'medium';
-            else if (light < 75) lightDesc = 'light';
+            if (light < 20) lightDesc = 'very dark';
+            else if (light < 35) lightDesc = 'dark';
+            else if (light < 50) lightDesc = 'medium-dark';
+            else if (light < 65) lightDesc = 'medium';
+            else if (light < 80) lightDesc = 'light';
             else lightDesc = 'very light';
 
-            if (sat < 20) satDesc = 'muted';
+            if (sat < 15) satDesc = 'neutral';
+            else if (sat < 30) satDesc = 'muted';
             else if (sat < 50) satDesc = 'soft';
-            else if (sat < 80) satDesc = 'vivid';
+            else if (sat < 70) satDesc = 'moderate';
+            else if (sat < 85) satDesc = 'vivid';
             else satDesc = 'intense';
 
             // Build descriptor string
-            let desc;
-            if (sat < 10) {
-                desc = `Neutral ${lightDesc} tone`;
+            let descriptor;
+            if (isGray) {
+                descriptor = `Neutral, ${lightDesc}`;
             } else {
-                desc = `${satDesc.charAt(0).toUpperCase() + satDesc.slice(1)}, ${lightDesc} tone`;
+                descriptor = `${satDesc.charAt(0).toUpperCase() + satDesc.slice(1)}, ${lightDesc}`;
             }
 
-            return { name, desc };
+            return { hex, color, hue, commonName, descriptor };
+        }
+
+        // Format color info for tooltip display
+        function formatColorTooltip(hex) {
+            const info = getColorInfo(hex);
+            return `${info.hex}\n${info.color} › ${info.hue}\n${info.commonName}\n${info.descriptor}`;
+        }
+
+        // Show color tooltip at position
+        function showColorTooltip(hex, x, y) {
+            const info = getColorInfo(hex);
+            const tooltip = elements.colorTooltip;
+
+            document.getElementById('tooltipSwatch').style.backgroundColor = hex;
+            document.getElementById('tooltipHex').textContent = info.hex;
+            document.getElementById('tooltipFamily').textContent = `${info.color} › ${info.hue}`;
+            document.getElementById('tooltipName').textContent = info.commonName;
+            document.getElementById('tooltipDesc').textContent = info.descriptor;
+
+            // Position tooltip - offset from cursor, keep on screen
+            const offsetX = 15;
+            const offsetY = 15;
+            let left = x + offsetX;
+            let top = y + offsetY;
+
+            // Prevent going off right edge
+            if (left + 150 > window.innerWidth) {
+                left = x - 150 - offsetX;
+            }
+            // Prevent going off bottom
+            if (top + 100 > window.innerHeight) {
+                top = y - 100 - offsetY;
+            }
+
+            tooltip.style.left = left + 'px';
+            tooltip.style.top = top + 'px';
+            tooltip.classList.add('visible');
+        }
+
+        // Hide color tooltip
+        function hideColorTooltip() {
+            elements.colorTooltip.classList.remove('visible');
         }
 
         function selectColor(color) {
@@ -2137,10 +2378,11 @@
             elements.currentHex.textContent = color.toUpperCase();
             elements.colorDot.style.backgroundColor = color;
 
-            // Update color name and descriptor for accessibility
+            // Update color info for accessibility
             const colorInfo = getColorInfo(color);
-            elements.currentColorName.textContent = colorInfo.name;
-            elements.currentColorDesc.textContent = colorInfo.desc;
+            elements.currentColorFamily.textContent = `${colorInfo.color} › ${colorInfo.hue}`;
+            elements.currentColorName.textContent = colorInfo.commonName;
+            elements.currentColorDesc.textContent = colorInfo.descriptor;
 
             renderPalette();
         }
@@ -2890,7 +3132,10 @@
             elements.mainCanvas.addEventListener('mousedown', handleMouseDown);
             elements.mainCanvas.addEventListener('mousemove', handleMouseMove);
             elements.mainCanvas.addEventListener('mouseup', handleMouseUp);
-            elements.mainCanvas.addEventListener('mouseleave', handleMouseUp);
+            elements.mainCanvas.addEventListener('mouseleave', (e) => {
+                handleMouseUp(e);
+                hideColorTooltip();
+            });
             elements.mainCanvas.addEventListener('contextmenu', (e) => e.preventDefault());
 
             // Zoom buttons
@@ -3031,6 +3276,15 @@
             window.addEventListener('keydown', (e) => {
                 if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
 
+                // Alt key for temporary picker mode (hold to preview colors)
+                if (e.key === 'Alt' && !state.tempPickerActive && state.tool !== 'picker') {
+                    e.preventDefault();
+                    state.tempPickerActive = true;
+                    state.previousTool = state.tool;
+                    selectTool('picker', true); // true = from temp picker
+                    return;
+                }
+
                 if (e.key === 'z' && (e.ctrlKey || e.metaKey)) {
                     e.preventDefault();
                     if (e.shiftKey) redo();
@@ -3040,7 +3294,12 @@
                 if (e.key === 'p') selectTool('pencil');
                 if (e.key === 'e') selectTool('eraser');
                 if (e.key === 'f') selectTool('fill');
-                if (e.key === 'i') selectTool('picker');
+                if (e.key === 'i') {
+                    // Pressing 'i' makes picker permanent (not temporary)
+                    state.tempPickerActive = false;
+                    state.previousTool = null;
+                    selectTool('picker');
+                }
                 if (e.key === 'l') selectTool('line');
                 if (e.key === 'r') selectTool(e.shiftKey ? 'rectfill' : 'rect');
                 if (e.key === 'c') {
@@ -3048,15 +3307,38 @@
                     elements.paletteToggleBtn.classList.toggle('active');
                 }
             });
+
+            // Alt key release - restore previous tool
+            window.addEventListener('keyup', (e) => {
+                if (e.key === 'Alt' && state.tempPickerActive) {
+                    state.tempPickerActive = false;
+                    if (state.previousTool) {
+                        selectTool(state.previousTool);
+                        state.previousTool = null;
+                    }
+                    hideColorTooltip();
+                }
+            });
         }
 
-        function selectTool(tool) {
+        function selectTool(tool, fromTempPicker = false) {
+            // If selecting a different tool while not in temp picker mode, clear temp state
+            if (!fromTempPicker && tool !== 'picker') {
+                state.tempPickerActive = false;
+                state.previousTool = null;
+            }
+
             state.tool = tool;
             document.querySelectorAll('.tool-btn[data-tool]').forEach(b => {
                 if (b.dataset.tool !== 'clear') {
                     b.classList.toggle('active', b.dataset.tool === tool);
                 }
             });
+
+            // Hide color tooltip when switching away from picker
+            if (tool !== 'picker') {
+                hideColorTooltip();
+            }
         }
 
         function handleMouseDown(e) {
@@ -3095,9 +3377,24 @@
         }
 
         function handleMouseMove(e) {
-            if (!state.isDrawing) return;
-
             const { x, y } = getPixelPos(e);
+
+            // Show color tooltip ONLY when picker tool is active (permanent or temporary)
+            if (state.tool === 'picker') {
+                if (x >= 0 && x < state.width && y >= 0 && y < state.height) {
+                    const pixel = getPixel(x, y);
+                    if (pixel && pixel.a > 0) {
+                        const hex = rgbToHex(pixel.r, pixel.g, pixel.b);
+                        showColorTooltip(hex, e.clientX, e.clientY);
+                    } else {
+                        hideColorTooltip();
+                    }
+                } else {
+                    hideColorTooltip();
+                }
+            }
+
+            if (!state.isDrawing) return;
 
             if (state.tool === 'pencil') {
                 drawLine(state.lastX, state.lastY, x, y, state.currentColor);
@@ -3174,6 +3471,15 @@
         // ==========================================
         init();
     </script>
+
+    <!-- Color Tooltip -->
+    <div class="color-tooltip" id="colorTooltip">
+        <div class="color-tooltip-swatch" id="tooltipSwatch"></div>
+        <div class="color-tooltip-hex" id="tooltipHex">#000000</div>
+        <div class="color-tooltip-family" id="tooltipFamily">Gray › Black</div>
+        <div class="color-tooltip-name" id="tooltipName">Black</div>
+        <div class="color-tooltip-desc" id="tooltipDesc">Neutral, very dark</div>
+    </div>
 
     <!-- Help Drawer -->
     <script src="../shared/help-drawer.js"></script>
