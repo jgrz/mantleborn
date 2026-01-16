@@ -1040,6 +1040,284 @@
             color: #4ade80;
             font-size: 10px;
         }
+
+        /* AI Generate Dropdown */
+        .dropdown-container {
+            position: relative;
+            display: inline-block;
+        }
+
+        .dropdown-btn {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .dropdown-btn::after {
+            content: '▼';
+            font-size: 8px;
+            opacity: 0.7;
+        }
+
+        .dropdown-menu {
+            position: absolute;
+            top: 100%;
+            left: 0;
+            margin-top: 4px;
+            min-width: 180px;
+            background: var(--bg-surface);
+            border: 1px solid var(--stone-dark);
+            border-radius: 4px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+            z-index: 1000;
+            display: none;
+        }
+
+        .dropdown-menu.open {
+            display: block;
+        }
+
+        .dropdown-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 10px 14px;
+            font-size: 12px;
+            color: var(--stone-light);
+            cursor: pointer;
+            transition: background 0.15s;
+            border: none;
+            background: none;
+            width: 100%;
+            text-align: left;
+            font-family: inherit;
+        }
+
+        .dropdown-item:hover {
+            background: var(--stone-dark);
+            color: var(--accent-ember);
+        }
+
+        .dropdown-item:first-child {
+            border-radius: 4px 4px 0 0;
+        }
+
+        .dropdown-item:last-child {
+            border-radius: 0 0 4px 4px;
+        }
+
+        .dropdown-divider {
+            height: 1px;
+            background: var(--stone-dark);
+            margin: 4px 0;
+        }
+
+        /* AI Generation Modal */
+        .ai-modal-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(13, 13, 20, 0.9);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 2000;
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity 0.2s, visibility 0.2s;
+        }
+
+        .ai-modal-overlay.open {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        .ai-modal {
+            background: var(--bg-mid);
+            border: 1px solid var(--stone-dark);
+            border-radius: 8px;
+            width: 90%;
+            max-width: 800px;
+            max-height: 90vh;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
+        }
+
+        .ai-modal-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 16px 20px;
+            background: var(--bg-surface);
+            border-bottom: 1px solid var(--stone-dark);
+        }
+
+        .ai-modal-title {
+            font-family: 'Press Start 2P', cursive;
+            font-size: 10px;
+            color: var(--accent-ember);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .ai-modal-close {
+            background: none;
+            border: none;
+            font-size: 20px;
+            color: var(--stone-mid);
+            cursor: pointer;
+            padding: 4px;
+        }
+
+        .ai-modal-close:hover {
+            color: var(--accent-ember);
+        }
+
+        .ai-modal-body {
+            padding: 20px;
+            overflow-y: auto;
+            flex: 1;
+        }
+
+        .ai-modal-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+        }
+
+        .ai-form-section {
+            background: var(--bg-surface);
+            border-radius: 6px;
+            padding: 16px;
+        }
+
+        .ai-form-section h3 {
+            font-size: 11px;
+            font-weight: 600;
+            color: var(--stone-bright);
+            margin-bottom: 12px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .ai-form-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+            margin-bottom: 12px;
+        }
+
+        .ai-form-group {
+            margin-bottom: 12px;
+        }
+
+        .ai-form-group:last-child {
+            margin-bottom: 0;
+        }
+
+        .ai-form-label {
+            display: block;
+            font-size: 10px;
+            color: var(--stone-mid);
+            text-transform: uppercase;
+            margin-bottom: 6px;
+        }
+
+        .ai-form-input,
+        .ai-form-select,
+        .ai-form-textarea {
+            width: 100%;
+            padding: 8px 10px;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 12px;
+            background: var(--bg-deep);
+            border: 1px solid var(--stone-dark);
+            border-radius: 4px;
+            color: var(--stone-bright);
+        }
+
+        .ai-form-textarea {
+            resize: vertical;
+            min-height: 80px;
+        }
+
+        .ai-form-input:focus,
+        .ai-form-select:focus,
+        .ai-form-textarea:focus {
+            outline: none;
+            border-color: var(--accent-ember);
+            box-shadow: 0 0 0 2px rgba(224, 112, 32, 0.2);
+        }
+
+        .ai-skeleton-container {
+            background: var(--bg-deep);
+            border-radius: 4px;
+            padding: 12px;
+            margin-top: 8px;
+        }
+
+        .ai-skeleton-controls {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 12px;
+            flex-wrap: wrap;
+        }
+
+        .ai-skeleton-preset {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 10px;
+            padding: 4px 10px;
+            background: var(--bg-surface);
+            border: 1px solid var(--stone-dark);
+            border-radius: 4px;
+            color: var(--stone-light);
+            cursor: pointer;
+        }
+
+        .ai-skeleton-preset:hover {
+            border-color: var(--mystic-glow);
+            color: var(--mystic-glow);
+        }
+
+        .ai-skeleton-preset.active {
+            background: var(--mystic-glow);
+            border-color: var(--mystic-glow);
+            color: var(--bg-deep);
+        }
+
+        .ai-modal-footer {
+            display: flex;
+            justify-content: flex-end;
+            gap: 10px;
+            padding: 16px 20px;
+            background: var(--bg-surface);
+            border-top: 1px solid var(--stone-dark);
+        }
+
+        .ai-modal-footer .btn {
+            min-width: 120px;
+        }
+
+        /* Generation Queue Panel */
+        .generation-queue-panel {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            width: 320px;
+            max-height: 400px;
+            background: var(--bg-mid);
+            border: 1px solid var(--stone-dark);
+            border-radius: 8px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
+            z-index: 1500;
+            display: none;
+        }
+
+        .generation-queue-panel.visible {
+            display: block;
+        }
     </style>
 </head>
 <body>
@@ -1068,6 +1346,21 @@
             <button class="btn btn-danger" id="deleteSheetBtn" disabled title="Delete the currently selected spritesheet">Delete Sheet</button>
             <input type="file" id="importInput" class="hidden-input" accept=".json">
             <button class="btn" id="importJsonBtn">Import JSON</button>
+            <div class="dropdown-container">
+                <button class="btn btn-primary dropdown-btn" id="generateDropdownBtn">Generate</button>
+                <div class="dropdown-menu" id="generateDropdownMenu">
+                    <button class="dropdown-item" id="generateCharacterBtn">
+                        <span>&#129493;</span> Character
+                    </button>
+                    <button class="dropdown-item" id="generateMapObjectBtn">
+                        <span>&#127795;</span> Map Object
+                    </button>
+                    <div class="dropdown-divider"></div>
+                    <button class="dropdown-item" id="viewQueueBtn">
+                        <span>&#128203;</span> View Queue
+                    </button>
+                </div>
+            </div>
             <span class="save-indicator" id="saveIndicator"></span>
             <div class="auth-indicator" id="authIndicator">
                 <span class="auth-dot"></span>
@@ -1254,8 +1547,191 @@
         </div>
     </div>
 
+    <!-- AI Character Generation Modal -->
+    <div class="ai-modal-overlay" id="characterModal">
+        <div class="ai-modal">
+            <div class="ai-modal-header">
+                <div class="ai-modal-title">
+                    <span>&#129493;</span> Generate Character
+                </div>
+                <button class="ai-modal-close" id="closeCharacterModal">&times;</button>
+            </div>
+            <div class="ai-modal-body">
+                <div class="ai-modal-grid">
+                    <!-- Left Column - Description & Settings -->
+                    <div class="ai-form-column">
+                        <div class="ai-form-section">
+                            <h3>Description</h3>
+                            <div class="ai-form-group">
+                                <label class="ai-form-label">Character Description *</label>
+                                <textarea class="ai-form-textarea" id="aiCharacterDesc" placeholder="A brave knight in silver armor with a red cape, holding a sword and shield"></textarea>
+                            </div>
+                            <div class="ai-form-group">
+                                <label class="ai-form-label">Negative Prompt</label>
+                                <input type="text" class="ai-form-input" id="aiNegativePrompt" placeholder="blurry, distorted, extra limbs">
+                            </div>
+                        </div>
+
+                        <div class="ai-form-section">
+                            <h3>Settings</h3>
+                            <div class="ai-form-row">
+                                <div class="ai-form-group">
+                                    <label class="ai-form-label">Directions</label>
+                                    <select class="ai-form-select" id="aiDirections">
+                                        <option value="1">1 (Front only)</option>
+                                        <option value="4">4 (Cardinal)</option>
+                                        <option value="8" selected>8 (All directions)</option>
+                                    </select>
+                                </div>
+                                <div class="ai-form-group">
+                                    <label class="ai-form-label">Size</label>
+                                    <select class="ai-form-select" id="aiSize">
+                                        <option value="32">32x32</option>
+                                        <option value="48" selected>48x48</option>
+                                        <option value="64">64x64</option>
+                                        <option value="96">96x96</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="ai-form-row">
+                                <div class="ai-form-group">
+                                    <label class="ai-form-label">Outline</label>
+                                    <select class="ai-form-select" id="aiOutline">
+                                        <option value="single_color_black_outline">Black Outline</option>
+                                        <option value="single_color_outline">Single Color</option>
+                                        <option value="colored_outline">Colored Outline</option>
+                                        <option value="no_outline">No Outline</option>
+                                    </select>
+                                </div>
+                                <div class="ai-form-group">
+                                    <label class="ai-form-label">Shading</label>
+                                    <select class="ai-form-select" id="aiShading">
+                                        <option value="flat_shading">Flat</option>
+                                        <option value="basic_shading" selected>Basic</option>
+                                        <option value="detailed_shading">Detailed</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Right Column - Skeleton Editor -->
+                    <div class="ai-form-column">
+                        <div class="ai-form-section">
+                            <h3>Pose (Optional)</h3>
+                            <p style="font-size: 11px; color: var(--stone-mid); margin-bottom: 12px;">
+                                Drag joints to set the character's pose. Leave default for a standard idle pose.
+                            </p>
+                            <div class="ai-skeleton-container">
+                                <div class="ai-skeleton-controls">
+                                    <button class="ai-skeleton-preset active" data-pose="idle">Idle</button>
+                                    <button class="ai-skeleton-preset" data-pose="walk1">Walk 1</button>
+                                    <button class="ai-skeleton-preset" data-pose="walk2">Walk 2</button>
+                                    <button class="ai-skeleton-preset" data-pose="attack">Attack</button>
+                                    <button class="ai-skeleton-preset" data-pose="jump">Jump</button>
+                                </div>
+                                <div id="skeletonEditorContainer"></div>
+                                <div class="ai-form-group" style="margin-top: 12px;">
+                                    <label class="ai-form-label">Skeleton Guidance</label>
+                                    <input type="range" class="ai-form-input" id="aiSkeletonGuidance" min="0" max="5" step="0.1" value="2">
+                                    <div style="display: flex; justify-content: space-between; font-size: 10px; color: var(--stone-mid);">
+                                        <span>None (0)</span>
+                                        <span id="guidanceValue">2.0</span>
+                                        <span>Strong (5)</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="ai-modal-footer">
+                <button class="btn" id="cancelCharacterGen">Cancel</button>
+                <button class="btn btn-primary" id="submitCharacterGen">Queue Generation</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- AI Map Object Generation Modal -->
+    <div class="ai-modal-overlay" id="mapObjectModal">
+        <div class="ai-modal" style="max-width: 500px;">
+            <div class="ai-modal-header">
+                <div class="ai-modal-title">
+                    <span>&#127795;</span> Generate Map Object
+                </div>
+                <button class="ai-modal-close" id="closeMapObjectModal">&times;</button>
+            </div>
+            <div class="ai-modal-body">
+                <div class="ai-form-section">
+                    <h3>Description</h3>
+                    <div class="ai-form-group">
+                        <label class="ai-form-label">Object Description *</label>
+                        <textarea class="ai-form-textarea" id="aiMapObjectDesc" placeholder="A wooden treasure chest with gold trim and a large lock"></textarea>
+                    </div>
+                    <div class="ai-form-group">
+                        <label class="ai-form-label">Negative Prompt</label>
+                        <input type="text" class="ai-form-input" id="aiMapObjectNegative" placeholder="blurry, distorted">
+                    </div>
+                </div>
+
+                <div class="ai-form-section">
+                    <h3>Settings</h3>
+                    <div class="ai-form-row">
+                        <div class="ai-form-group">
+                            <label class="ai-form-label">Width</label>
+                            <select class="ai-form-select" id="aiMapObjectWidth">
+                                <option value="16">16px</option>
+                                <option value="32" selected>32px</option>
+                                <option value="48">48px</option>
+                                <option value="64">64px</option>
+                            </select>
+                        </div>
+                        <div class="ai-form-group">
+                            <label class="ai-form-label">Height</label>
+                            <select class="ai-form-select" id="aiMapObjectHeight">
+                                <option value="16">16px</option>
+                                <option value="32" selected>32px</option>
+                                <option value="48">48px</option>
+                                <option value="64">64px</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="ai-form-row">
+                        <div class="ai-form-group">
+                            <label class="ai-form-label">Outline</label>
+                            <select class="ai-form-select" id="aiMapObjectOutline">
+                                <option value="single_color_black_outline">Black Outline</option>
+                                <option value="single_color_outline">Single Color</option>
+                                <option value="colored_outline">Colored Outline</option>
+                                <option value="no_outline">No Outline</option>
+                            </select>
+                        </div>
+                        <div class="ai-form-group">
+                            <label class="ai-form-label">View</label>
+                            <select class="ai-form-select" id="aiMapObjectView">
+                                <option value="high_top_down">High Top-Down</option>
+                                <option value="low_top_down" selected>Low Top-Down</option>
+                                <option value="side">Side View</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="ai-modal-footer">
+                <button class="btn" id="cancelMapObjectGen">Cancel</button>
+                <button class="btn btn-primary" id="submitMapObjectGen">Queue Generation</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Generation Queue Panel -->
+    <div class="generation-queue-panel" id="generationQueuePanel"></div>
+
     <script src="../shared/supabase-client.js"></script>
     <script src="../shared/master-sheet.js"></script>
+    <script src="../shared/pixellab-client.js"></script>
+    <script src="../shared/skeleton-editor.js"></script>
+    <script src="../shared/generation-queue.js"></script>
     <script>
         /* ============================================
            MANTLEBORN SPRITE-RITE - JavaScript
@@ -1304,7 +1780,11 @@
             masterSheetSprites: [], // Sprites already saved to master (from this spritesheet)
             masterSheetData: null,  // { png, atlas, spriteCount } for preview
             masterSheetImage: null, // Cached Image object for redrawing
-            masterSheetScale: 1     // Scale factor for preview canvas
+            masterSheetScale: 1,    // Scale factor for preview canvas
+
+            // AI Generation
+            skeletonEditor: null,   // SkeletonEditor instance
+            generationQueue: null   // GenerationQueue instance
         };
 
         // ==========================================
@@ -1369,7 +1849,44 @@
             // Sprite Direction Notice
             spriteDirectionNotice: document.getElementById('spriteDirectionNotice'),
             dontShowAgain: document.getElementById('dontShowAgain'),
-            dismissNotice: document.getElementById('dismissNotice')
+            dismissNotice: document.getElementById('dismissNotice'),
+
+            // AI Generation
+            generateDropdownBtn: document.getElementById('generateDropdownBtn'),
+            generateDropdownMenu: document.getElementById('generateDropdownMenu'),
+            generateCharacterBtn: document.getElementById('generateCharacterBtn'),
+            generateMapObjectBtn: document.getElementById('generateMapObjectBtn'),
+            viewQueueBtn: document.getElementById('viewQueueBtn'),
+
+            // Character Modal
+            characterModal: document.getElementById('characterModal'),
+            closeCharacterModal: document.getElementById('closeCharacterModal'),
+            aiCharacterDesc: document.getElementById('aiCharacterDesc'),
+            aiNegativePrompt: document.getElementById('aiNegativePrompt'),
+            aiDirections: document.getElementById('aiDirections'),
+            aiSize: document.getElementById('aiSize'),
+            aiOutline: document.getElementById('aiOutline'),
+            aiShading: document.getElementById('aiShading'),
+            skeletonEditorContainer: document.getElementById('skeletonEditorContainer'),
+            aiSkeletonGuidance: document.getElementById('aiSkeletonGuidance'),
+            guidanceValue: document.getElementById('guidanceValue'),
+            cancelCharacterGen: document.getElementById('cancelCharacterGen'),
+            submitCharacterGen: document.getElementById('submitCharacterGen'),
+
+            // Map Object Modal
+            mapObjectModal: document.getElementById('mapObjectModal'),
+            closeMapObjectModal: document.getElementById('closeMapObjectModal'),
+            aiMapObjectDesc: document.getElementById('aiMapObjectDesc'),
+            aiMapObjectNegative: document.getElementById('aiMapObjectNegative'),
+            aiMapObjectWidth: document.getElementById('aiMapObjectWidth'),
+            aiMapObjectHeight: document.getElementById('aiMapObjectHeight'),
+            aiMapObjectOutline: document.getElementById('aiMapObjectOutline'),
+            aiMapObjectView: document.getElementById('aiMapObjectView'),
+            cancelMapObjectGen: document.getElementById('cancelMapObjectGen'),
+            submitMapObjectGen: document.getElementById('submitMapObjectGen'),
+
+            // Generation Queue
+            generationQueuePanel: document.getElementById('generationQueuePanel')
         };
 
         // ==========================================
@@ -1466,6 +1983,9 @@
                 elements.projectSelect.value = projectId;
                 await selectProject(projectId);
             }
+
+            // Initialize AI Generation components
+            initAIGeneration();
 
             // Set initial button states
             updateToolButtonStates();
@@ -3123,6 +3643,305 @@
 
         // Sprite direction notice
         elements.dismissNotice.addEventListener('click', dismissSpriteDirectionNotice);
+
+        // ==========================================
+        // AI Generation Functions
+        // ==========================================
+        function initAIGeneration() {
+            // Initialize skeleton editor
+            if (typeof SkeletonEditor !== 'undefined') {
+                state.skeletonEditor = new SkeletonEditor(elements.skeletonEditorContainer, {
+                    width: 280,
+                    height: 280,
+                    showControls: false // We have our own preset buttons
+                });
+            }
+
+            // Initialize generation queue
+            if (typeof GenerationQueue !== 'undefined') {
+                state.generationQueue = new GenerationQueue(elements.generationQueuePanel, {
+                    onImport: handleGeneratedAsset,
+                    onError: (error) => showToast(error, 'error')
+                });
+            }
+
+            // Setup event listeners
+            setupAIEventListeners();
+        }
+
+        function setupAIEventListeners() {
+            // Dropdown toggle
+            elements.generateDropdownBtn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                elements.generateDropdownMenu.classList.toggle('open');
+            });
+
+            // Close dropdown on outside click
+            document.addEventListener('click', () => {
+                elements.generateDropdownMenu.classList.remove('open');
+            });
+
+            // Dropdown menu items
+            elements.generateCharacterBtn.addEventListener('click', () => {
+                elements.generateDropdownMenu.classList.remove('open');
+                openCharacterModal();
+            });
+
+            elements.generateMapObjectBtn.addEventListener('click', () => {
+                elements.generateDropdownMenu.classList.remove('open');
+                openMapObjectModal();
+            });
+
+            elements.viewQueueBtn.addEventListener('click', () => {
+                elements.generateDropdownMenu.classList.remove('open');
+                if (state.generationQueue) {
+                    state.generationQueue.toggle();
+                }
+            });
+
+            // Character modal
+            elements.closeCharacterModal.addEventListener('click', closeCharacterModal);
+            elements.cancelCharacterGen.addEventListener('click', closeCharacterModal);
+            elements.characterModal.addEventListener('click', (e) => {
+                if (e.target === elements.characterModal) closeCharacterModal();
+            });
+            elements.submitCharacterGen.addEventListener('click', submitCharacterGeneration);
+
+            // Skeleton presets
+            document.querySelectorAll('.ai-skeleton-preset').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    document.querySelectorAll('.ai-skeleton-preset').forEach(b => b.classList.remove('active'));
+                    btn.classList.add('active');
+                    const pose = btn.dataset.pose;
+                    if (state.skeletonEditor && typeof PixelLabClient !== 'undefined') {
+                        state.skeletonEditor.loadPreset(pose);
+                    }
+                });
+            });
+
+            // Skeleton guidance slider
+            elements.aiSkeletonGuidance.addEventListener('input', () => {
+                elements.guidanceValue.textContent = parseFloat(elements.aiSkeletonGuidance.value).toFixed(1);
+            });
+
+            // Map object modal
+            elements.closeMapObjectModal.addEventListener('click', closeMapObjectModal);
+            elements.cancelMapObjectGen.addEventListener('click', closeMapObjectModal);
+            elements.mapObjectModal.addEventListener('click', (e) => {
+                if (e.target === elements.mapObjectModal) closeMapObjectModal();
+            });
+            elements.submitMapObjectGen.addEventListener('click', submitMapObjectGeneration);
+        }
+
+        function openCharacterModal() {
+            elements.characterModal.classList.add('open');
+            // Reset form
+            elements.aiCharacterDesc.value = '';
+            elements.aiNegativePrompt.value = '';
+            elements.aiDirections.value = '8';
+            elements.aiSize.value = '48';
+            elements.aiOutline.value = 'single_color_black_outline';
+            elements.aiShading.value = 'basic_shading';
+            elements.aiSkeletonGuidance.value = '2';
+            elements.guidanceValue.textContent = '2.0';
+
+            // Reset skeleton to idle
+            document.querySelectorAll('.ai-skeleton-preset').forEach(b => b.classList.remove('active'));
+            document.querySelector('.ai-skeleton-preset[data-pose="idle"]')?.classList.add('active');
+            if (state.skeletonEditor) {
+                state.skeletonEditor.loadPreset('idle');
+            }
+        }
+
+        function closeCharacterModal() {
+            elements.characterModal.classList.remove('open');
+        }
+
+        function openMapObjectModal() {
+            elements.mapObjectModal.classList.add('open');
+            // Reset form
+            elements.aiMapObjectDesc.value = '';
+            elements.aiMapObjectNegative.value = '';
+            elements.aiMapObjectWidth.value = '32';
+            elements.aiMapObjectHeight.value = '32';
+            elements.aiMapObjectOutline.value = 'single_color_black_outline';
+            elements.aiMapObjectView.value = 'low_top_down';
+        }
+
+        function closeMapObjectModal() {
+            elements.mapObjectModal.classList.remove('open');
+        }
+
+        async function submitCharacterGeneration() {
+            const description = elements.aiCharacterDesc.value.trim();
+            if (!description) {
+                showToast('Please enter a character description', 'error');
+                return;
+            }
+
+            if (!state.projectId) {
+                showToast('Please select a project first', 'error');
+                return;
+            }
+
+            if (typeof PixelLabClient === 'undefined') {
+                showToast('PixelLab client not available', 'error');
+                return;
+            }
+
+            const options = {
+                directions: parseInt(elements.aiDirections.value),
+                size: parseInt(elements.aiSize.value),
+                outline: elements.aiOutline.value,
+                shading: elements.aiShading.value,
+                negative_prompt: elements.aiNegativePrompt.value.trim() || undefined
+            };
+
+            // Add skeleton if guidance > 0
+            const guidance = parseFloat(elements.aiSkeletonGuidance.value);
+            if (guidance > 0 && state.skeletonEditor) {
+                options.skeleton = state.skeletonEditor.getKeypoints();
+                options.skeleton_guidance = guidance;
+            }
+
+            closeCharacterModal();
+            showToast('Queuing character generation...', 'info');
+
+            try {
+                const client = new PixelLabClient();
+                const result = await client.createCharacter(description, options);
+
+                if (result.job_id) {
+                    // Save to database and add to queue
+                    if (state.generationQueue) {
+                        await state.generationQueue.addJob({
+                            pixellab_job_id: result.job_id,
+                            job_type: 'character',
+                            prompt: description,
+                            parameters: options,
+                            skeleton_keypoints: options.skeleton,
+                            project_id: state.projectId,
+                            user_id: state.user?.id
+                        });
+                        state.generationQueue.show();
+                    }
+                    showToast('Character generation queued!', 'success');
+                } else if (result.character_id) {
+                    // Immediate result (rare)
+                    showToast('Character generated!', 'success');
+                }
+            } catch (error) {
+                console.error('Character generation error:', error);
+                showToast('Generation failed: ' + error.message, 'error');
+            }
+        }
+
+        async function submitMapObjectGeneration() {
+            const description = elements.aiMapObjectDesc.value.trim();
+            if (!description) {
+                showToast('Please enter an object description', 'error');
+                return;
+            }
+
+            if (!state.projectId) {
+                showToast('Please select a project first', 'error');
+                return;
+            }
+
+            if (typeof PixelLabClient === 'undefined') {
+                showToast('PixelLab client not available', 'error');
+                return;
+            }
+
+            const options = {
+                width: parseInt(elements.aiMapObjectWidth.value),
+                height: parseInt(elements.aiMapObjectHeight.value),
+                outline: elements.aiMapObjectOutline.value,
+                view: elements.aiMapObjectView.value,
+                negative_prompt: elements.aiMapObjectNegative.value.trim() || undefined
+            };
+
+            closeMapObjectModal();
+            showToast('Queuing map object generation...', 'info');
+
+            try {
+                const client = new PixelLabClient();
+                const result = await client.createMapObject(description, options);
+
+                if (result.job_id) {
+                    if (state.generationQueue) {
+                        await state.generationQueue.addJob({
+                            pixellab_job_id: result.job_id,
+                            job_type: 'map_object',
+                            prompt: description,
+                            parameters: options,
+                            project_id: state.projectId,
+                            user_id: state.user?.id
+                        });
+                        state.generationQueue.show();
+                    }
+                    showToast('Map object generation queued!', 'success');
+                }
+            } catch (error) {
+                console.error('Map object generation error:', error);
+                showToast('Generation failed: ' + error.message, 'error');
+            }
+        }
+
+        async function handleGeneratedAsset(job) {
+            // Called when a generation is complete and user clicks Import
+            if (!job.result_url) {
+                showToast('No result URL available', 'error');
+                return;
+            }
+
+            try {
+                showToast('Importing generated asset...', 'info');
+
+                // Fetch the image
+                const response = await fetch(job.result_url);
+                const blob = await response.blob();
+
+                // Create image from blob
+                const img = new Image();
+                const url = URL.createObjectURL(blob);
+
+                img.onload = () => {
+                    URL.revokeObjectURL(url);
+
+                    // Load into editor
+                    state.image = img;
+                    state.imageWidth = img.width;
+                    state.imageHeight = img.height;
+                    state.imageName = `generated_${job.job_type}_${Date.now()}.png`;
+                    state.sprites = [];
+                    state.selectedSpriteIndex = -1;
+
+                    // Update UI
+                    elements.canvasContainer.style.display = 'block';
+                    elements.dropZone.style.display = 'none';
+                    setupCanvases();
+                    drawImage();
+                    drawGrid();
+                    clearSelection();
+                    updateSpriteList();
+                    updateSpriteCount();
+                    elements.imageInfo.textContent = `${img.width} x ${img.height}`;
+
+                    showToast('Asset imported! Auto-detect sprites or select manually.', 'success');
+                };
+
+                img.onerror = () => {
+                    URL.revokeObjectURL(url);
+                    showToast('Failed to load generated image', 'error');
+                };
+
+                img.src = url;
+            } catch (error) {
+                console.error('Import error:', error);
+                showToast('Failed to import asset: ' + error.message, 'error');
+            }
+        }
 
         // Keyboard shortcuts
         window.addEventListener('keydown', (e) => {

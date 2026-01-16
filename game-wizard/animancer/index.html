@@ -839,6 +839,71 @@
             font-size: 10px;
             color: var(--stone-dark);
         }
+
+        /* AI Generation */
+        .btn-ai {
+            background: linear-gradient(135deg, #3a2a4a, #4a3a5a);
+            border-color: var(--mystic-glow);
+            color: var(--mystic-glow);
+        }
+
+        .btn-ai:hover {
+            background: var(--mystic-glow);
+            color: white;
+        }
+
+        .generation-queue-panel {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            width: 320px;
+            max-height: 400px;
+            background: var(--bg-mid);
+            border: 1px solid var(--stone-dark);
+            border-radius: 8px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
+            z-index: 1500;
+            display: none;
+        }
+
+        .generation-queue-panel.visible {
+            display: block;
+        }
+
+        .view-queue-btn {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            padding: 10px 16px;
+            background: var(--bg-surface);
+            border: 1px solid var(--stone-dark);
+            border-radius: 6px;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 11px;
+            color: var(--stone-light);
+            cursor: pointer;
+            z-index: 1400;
+            display: none;
+        }
+
+        .view-queue-btn:hover {
+            border-color: var(--accent-ember);
+            color: var(--accent-ember);
+        }
+
+        .view-queue-btn.has-jobs {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .queue-count {
+            background: var(--accent-ember);
+            color: white;
+            padding: 2px 6px;
+            border-radius: 10px;
+            font-size: 10px;
+        }
     </style>
 </head>
 <body>
@@ -926,7 +991,10 @@
             <div class="animation-list-section">
                 <div class="animation-list-header">
                     <span class="section-header" style="margin-bottom: 0;">Animations</span>
-                    <button class="btn btn-small btn-primary" id="newAnimationBtn">+ New</button>
+                    <div style="display: flex; gap: 6px;">
+                        <button class="btn btn-small btn-ai" id="generateAnimBtn" title="Generate animation with AI (requires PixelLab character)">&#10024; AI</button>
+                        <button class="btn btn-small btn-primary" id="newAnimationBtn">+ New</button>
+                    </div>
                 </div>
                 <div class="animation-list" id="animationList">
                     <div class="empty-state-hint" style="padding: 12px; text-align: center;">
@@ -1005,8 +1073,18 @@
     <!-- Toast -->
     <div class="toast" id="toast"></div>
 
+    <!-- Generation Queue Panel -->
+    <div class="generation-queue-panel" id="generationQueuePanel"></div>
+
+    <!-- View Queue Button -->
+    <button class="view-queue-btn" id="viewQueueBtn">
+        <span>&#128203;</span> Queue <span class="queue-count" id="queueCount">0</span>
+    </button>
+
     <script src="../shared/supabase-client.js"></script>
     <script src="../shared/master-sheet.js"></script>
+    <script src="../shared/pixellab-client.js"></script>
+    <script src="../shared/generation-queue.js"></script>
     <script>
         /* ============================================
            ANIMANCER - JavaScript
@@ -1036,7 +1114,8 @@
             saveTimeout: null,
             isDirty: false,
             masterSheetAtlas: null,
-            masterSheetImage: null
+            masterSheetImage: null,
+            generationQueue: null
         };
 
         let animationLoop = null;
@@ -1078,7 +1157,11 @@
             saveAnimationBtn: document.getElementById('saveAnimationBtn'),
             copyJsonBtn: document.getElementById('copyJsonBtn'),
             jsonOutput: document.getElementById('jsonOutput'),
-            toast: document.getElementById('toast')
+            toast: document.getElementById('toast'),
+            generateAnimBtn: document.getElementById('generateAnimBtn'),
+            generationQueuePanel: document.getElementById('generationQueuePanel'),
+            viewQueueBtn: document.getElementById('viewQueueBtn'),
+            queueCount: document.getElementById('queueCount')
         };
 
         const previewCtx = elements.previewCanvas.getContext('2d');
@@ -1102,6 +1185,60 @@
             updateJsonOutput();
             updatePreviewInfo();
             updateTimelineInfo();
+
+            // Initialize generation queue
+            initGenerationQueue();
+        }
+
+        // ==========================================
+        // AI Generation Queue
+        // ==========================================
+        function initGenerationQueue() {
+            if (typeof GenerationQueue !== 'undefined' && elements.generationQueuePanel) {
+                state.generationQueue = new GenerationQueue(elements.generationQueuePanel, {
+                    onImport: handleGeneratedAnimation,
+                    onError: (error) => showToast(error, 'error'),
+                    onJobsChange: updateQueueCount
+                });
+            }
+
+            // Generate animation button
+            if (elements.generateAnimBtn) {
+                elements.generateAnimBtn.addEventListener('click', showAnimationGenerationInfo);
+            }
+
+            // View queue button
+            if (elements.viewQueueBtn) {
+                elements.viewQueueBtn.addEventListener('click', () => {
+                    if (state.generationQueue) {
+                        state.generationQueue.toggle();
+                    }
+                });
+            }
+        }
+
+        function updateQueueCount(jobs) {
+            const pending = jobs.filter(j => j.status === 'pending' || j.status === 'processing').length;
+            if (elements.queueCount) {
+                elements.queueCount.textContent = pending;
+            }
+            if (elements.viewQueueBtn) {
+                elements.viewQueueBtn.classList.toggle('has-jobs', pending > 0);
+            }
+        }
+
+        function showAnimationGenerationInfo() {
+            showToast('Generate characters in Incarnum first, then animations will be available for those characters.', 'info');
+        }
+
+        async function handleGeneratedAnimation(job) {
+            if (!job.result_url) {
+                showToast('No result URL available', 'error');
+                return;
+            }
+            // Animation results would be handled here
+            // For now, show a message
+            showToast('Animation ready! Import frames from the result.', 'success');
         }
 
         function updateAuthIndicator() {

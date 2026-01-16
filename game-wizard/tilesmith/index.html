@@ -795,6 +795,25 @@
         ::-webkit-scrollbar-track {
             background: var(--bg-deep);
         }
+
+        /* Generation Queue Panel */
+        .generation-queue-panel {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            width: 320px;
+            max-height: 400px;
+            background: var(--bg-mid);
+            border: 1px solid var(--stone-dark);
+            border-radius: 8px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
+            z-index: 1500;
+            display: none;
+        }
+
+        .generation-queue-panel.visible {
+            display: block;
+        }
     </style>
 </head>
 <body>
@@ -1083,8 +1102,13 @@
     <!-- Toast -->
     <div class="toast" id="toast"></div>
 
+    <!-- Generation Queue Panel -->
+    <div class="generation-queue-panel" id="generationQueuePanel"></div>
+
     <script src="../shared/supabase-client.js"></script>
     <script src="../shared/master-sheet.js"></script>
+    <script src="../shared/pixellab-client.js"></script>
+    <script src="../shared/generation-queue.js"></script>
     <script>
         /* ============================================
            TILESMITH - JavaScript
@@ -1169,7 +1193,10 @@
 
             // Save
             saveTimeout: null,
-            isDirty: false
+            isDirty: false,
+
+            // Generation queue
+            generationQueue: null
         };
 
         // ==========================================
@@ -1209,7 +1236,8 @@
             downloadPngBtn: document.getElementById('downloadPngBtn'),
             publishMasterBtn: document.getElementById('publishMasterBtn'),
             masterSheetStatus: document.getElementById('masterSheetStatus'),
-            toast: document.getElementById('toast')
+            toast: document.getElementById('toast'),
+            generationQueuePanel: document.getElementById('generationQueuePanel')
         };
 
         const ctx = elements.mainCanvas.getContext('2d');
@@ -1232,6 +1260,20 @@
 
             if (state.user) {
                 await loadProjects();
+            }
+
+            // Initialize generation queue for cross-tool visibility
+            initGenerationQueue();
+        }
+
+        function initGenerationQueue() {
+            if (typeof GenerationQueue !== 'undefined' && elements.generationQueuePanel) {
+                state.generationQueue = new GenerationQueue(elements.generationQueuePanel, {
+                    onImport: (job) => {
+                        showToast('Import completed generation in Sprite-Rite');
+                    },
+                    onError: (error) => showToast(error, true)
+                });
             }
         }
 

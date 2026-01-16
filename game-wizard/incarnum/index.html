@@ -930,6 +930,183 @@
         ::-webkit-scrollbar-track {
             background: var(--bg-deep);
         }
+
+        /* Engine Selector */
+        .engine-selector {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 16px;
+            padding: 8px;
+            background: var(--bg-deep);
+            border-radius: 6px;
+        }
+
+        .engine-option {
+            flex: 1;
+            padding: 10px 12px;
+            background: var(--bg-surface);
+            border: 1px solid var(--stone-dark);
+            border-radius: 4px;
+            cursor: pointer;
+            transition: all 0.2s;
+            text-align: center;
+        }
+
+        .engine-option:hover {
+            border-color: var(--stone-mid);
+        }
+
+        .engine-option.active {
+            border-color: var(--accent-pink);
+            background: rgba(255, 107, 157, 0.1);
+        }
+
+        .engine-option input {
+            display: none;
+        }
+
+        .engine-label {
+            font-size: 11px;
+            font-weight: 600;
+            color: var(--stone-bright);
+        }
+
+        .engine-option.active .engine-label {
+            color: var(--accent-pink);
+        }
+
+        .engine-desc {
+            font-size: 9px;
+            color: var(--stone-mid);
+            margin-top: 4px;
+        }
+
+        /* Engine Forms */
+        .claude-form {
+            display: none;
+        }
+
+        .claude-form.active {
+            display: block;
+        }
+
+        .pixellab-form {
+            display: none;
+        }
+
+        .pixellab-form.active {
+            display: block;
+        }
+
+        .pixellab-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 16px;
+        }
+
+        .pixellab-section {
+            background: var(--bg-surface);
+            border-radius: 6px;
+            padding: 12px;
+        }
+
+        .pixellab-section h4 {
+            font-size: 10px;
+            font-weight: 600;
+            color: var(--stone-bright);
+            text-transform: uppercase;
+            margin-bottom: 10px;
+        }
+
+        .skeleton-container {
+            background: var(--bg-deep);
+            border-radius: 4px;
+            padding: 8px;
+            margin-top: 8px;
+        }
+
+        .skeleton-presets {
+            display: flex;
+            gap: 6px;
+            margin-bottom: 10px;
+            flex-wrap: wrap;
+        }
+
+        .skeleton-preset-btn {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 9px;
+            padding: 4px 8px;
+            background: var(--bg-surface);
+            border: 1px solid var(--stone-dark);
+            border-radius: 3px;
+            color: var(--stone-light);
+            cursor: pointer;
+        }
+
+        .skeleton-preset-btn:hover {
+            border-color: var(--accent-purple);
+        }
+
+        .skeleton-preset-btn.active {
+            background: var(--accent-purple);
+            border-color: var(--accent-purple);
+            color: white;
+        }
+
+        /* Generation Queue Panel */
+        .generation-queue-panel {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            width: 320px;
+            max-height: 400px;
+            background: var(--bg-mid);
+            border: 1px solid var(--stone-dark);
+            border-radius: 8px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
+            z-index: 1500;
+            display: none;
+        }
+
+        .generation-queue-panel.visible {
+            display: block;
+        }
+
+        /* View Queue Button */
+        .view-queue-btn {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            padding: 10px 16px;
+            background: var(--bg-surface);
+            border: 1px solid var(--stone-dark);
+            border-radius: 6px;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 11px;
+            color: var(--stone-light);
+            cursor: pointer;
+            z-index: 1400;
+            display: none;
+        }
+
+        .view-queue-btn:hover {
+            border-color: var(--accent-pink);
+            color: var(--accent-pink);
+        }
+
+        .view-queue-btn.has-jobs {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .queue-count {
+            background: var(--accent-pink);
+            color: white;
+            padding: 2px 6px;
+            border-radius: 10px;
+            font-size: 10px;
+        }
     </style>
 </head>
 <body>
@@ -1080,58 +1257,151 @@
                 <button class="modal-close" id="closeGenerateModal">&times;</button>
             </div>
             <div class="modal-body" id="generateForm">
-                <div class="form-group">
-                    <label class="form-label">Character Description</label>
-                    <textarea class="form-textarea" id="genPrompt" placeholder="A brave knight with silver armor, blue cape, and a glowing sword..."></textarea>
-                    <div class="form-hint">Describe your character's appearance, colors, and style</div>
+                <!-- Engine Selector -->
+                <div class="engine-selector">
+                    <label class="engine-option active" id="engineClaude">
+                        <input type="radio" name="genEngine" value="claude" checked>
+                        <div class="engine-label">Claude AI</div>
+                        <div class="engine-desc">Built-in generation</div>
+                    </label>
+                    <label class="engine-option" id="enginePixelLab">
+                        <input type="radio" name="genEngine" value="pixellab">
+                        <div class="engine-label">PixelLab</div>
+                        <div class="engine-desc">Professional pixel art</div>
+                    </label>
                 </div>
 
-                <div class="form-row">
+                <!-- Claude Form (existing) -->
+                <div id="claudeForm" class="claude-form active">
                     <div class="form-group">
-                        <label class="form-label">Sprite Size</label>
-                        <select class="form-select" id="genSize">
-                            <option value="16">16x16</option>
-                            <option value="24" selected>24x24</option>
-                            <option value="32">32x32</option>
-                        </select>
+                        <label class="form-label">Character Description</label>
+                        <textarea class="form-textarea" id="genPrompt" placeholder="A brave knight with silver armor, blue cape, and a glowing sword..."></textarea>
+                        <div class="form-hint">Describe your character's appearance, colors, and style</div>
                     </div>
-                    <div class="form-group">
-                        <label class="form-label">Art Style</label>
-                        <select class="form-select" id="genStyle">
-                            <option value="pixel_8bit">8-bit Retro</option>
-                            <option value="pixel_16bit" selected>16-bit Classic</option>
-                            <option value="pixel_32bit">32-bit Detailed</option>
-                        </select>
-                    </div>
-                </div>
 
-                <div class="form-row">
-                    <div class="form-group">
-                        <label class="form-label">Perspective</label>
-                        <select class="form-select" id="genPerspective">
-                            <option value="side_view" selected>Side View (Platformer)</option>
-                            <option value="top_down">Top Down (RPG)</option>
-                        </select>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label class="form-label">Sprite Size</label>
+                            <select class="form-select" id="genSize">
+                                <option value="16">16x16</option>
+                                <option value="24" selected>24x24</option>
+                                <option value="32">32x32</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Art Style</label>
+                            <select class="form-select" id="genStyle">
+                                <option value="pixel_8bit">8-bit Retro</option>
+                                <option value="pixel_16bit" selected>16-bit Classic</option>
+                                <option value="pixel_32bit">32-bit Detailed</option>
+                            </select>
+                        </div>
                     </div>
-                    <div class="form-group">
-                        <label class="form-label">Palette Size</label>
-                        <select class="form-select" id="genPalette">
-                            <option value="8">8 Colors</option>
-                            <option value="16" selected>16 Colors</option>
-                            <option value="32">32 Colors</option>
-                        </select>
-                    </div>
-                </div>
 
-                <div class="form-group">
-                    <label class="form-label">Character Type</label>
-                    <select class="form-select" id="genCharType">
-                        <option value="humanoid" selected>Humanoid</option>
-                        <option value="creature">Creature/Monster</option>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label class="form-label">Perspective</label>
+                            <select class="form-select" id="genPerspective">
+                                <option value="side_view" selected>Side View (Platformer)</option>
+                                <option value="top_down">Top Down (RPG)</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Palette Size</label>
+                            <select class="form-select" id="genPalette">
+                                <option value="8">8 Colors</option>
+                                <option value="16" selected>16 Colors</option>
+                                <option value="32">32 Colors</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">Character Type</label>
+                        <select class="form-select" id="genCharType">
+                            <option value="humanoid" selected>Humanoid</option>
+                            <option value="creature">Creature/Monster</option>
                         <option value="robot">Robot/Mech</option>
                         <option value="animal">Animal</option>
                         <option value="fantasy">Fantasy Being</option>
                     </select>
+                    </div>
+                </div>
+
+                <!-- PixelLab Form -->
+                <div id="pixellabForm" class="pixellab-form">
+                    <div class="pixellab-grid">
+                        <div class="pixellab-section">
+                            <h4>Description</h4>
+                            <div class="form-group">
+                                <label class="form-label">Character Description *</label>
+                                <textarea class="form-textarea" id="plPrompt" placeholder="A brave knight in silver armor with a red cape"></textarea>
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">Negative Prompt</label>
+                                <input type="text" class="form-input" id="plNegative" placeholder="blurry, distorted">
+                            </div>
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label class="form-label">Directions</label>
+                                    <select class="form-select" id="plDirections">
+                                        <option value="1">1 (Front)</option>
+                                        <option value="4">4 (Cardinal)</option>
+                                        <option value="8" selected>8 (All)</option>
+                                    </select>
+                                </div>
+                                <div class="form-group">
+                                    <label class="form-label">Size</label>
+                                    <select class="form-select" id="plSize">
+                                        <option value="32">32x32</option>
+                                        <option value="48" selected>48x48</option>
+                                        <option value="64">64x64</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label class="form-label">Outline</label>
+                                    <select class="form-select" id="plOutline">
+                                        <option value="single_color_black_outline">Black</option>
+                                        <option value="colored_outline">Colored</option>
+                                        <option value="no_outline">None</option>
+                                    </select>
+                                </div>
+                                <div class="form-group">
+                                    <label class="form-label">Shading</label>
+                                    <select class="form-select" id="plShading">
+                                        <option value="flat_shading">Flat</option>
+                                        <option value="basic_shading" selected>Basic</option>
+                                        <option value="detailed_shading">Detailed</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="pixellab-section">
+                            <h4>Pose (Optional)</h4>
+                            <p style="font-size: 10px; color: var(--stone-mid); margin-bottom: 8px;">Drag joints to set the idle pose</p>
+                            <div class="skeleton-container">
+                                <div class="skeleton-presets">
+                                    <button class="skeleton-preset-btn active" data-pose="idle">Idle</button>
+                                    <button class="skeleton-preset-btn" data-pose="walk1">Walk</button>
+                                    <button class="skeleton-preset-btn" data-pose="attack">Attack</button>
+                                    <button class="skeleton-preset-btn" data-pose="jump">Jump</button>
+                                </div>
+                                <div id="plSkeletonContainer"></div>
+                            </div>
+                            <div class="form-group" style="margin-top: 10px;">
+                                <label class="form-label">Skeleton Guidance</label>
+                                <input type="range" class="form-input" id="plGuidance" min="0" max="5" step="0.5" value="2">
+                                <div style="display: flex; justify-content: space-between; font-size: 9px; color: var(--stone-mid);">
+                                    <span>None</span>
+                                    <span id="plGuidanceValue">2.0</span>
+                                    <span>Strong</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
 
@@ -1156,15 +1426,29 @@
             <div class="modal-footer" id="generateFooter">
                 <button class="btn" id="cancelGenerate">Cancel</button>
                 <button class="btn btn-ai" id="startGenerate">&#10024; Generate Preview</button>
+                <button class="btn btn-ai" id="startPixelLabGen" style="display: none;">&#10024; Queue Generation</button>
             </div>
         </div>
     </div>
+
+    <!-- Generation Queue Panel -->
+    <div class="generation-queue-panel" id="generationQueuePanel"></div>
+
+    <!-- View Queue Button -->
+    <button class="view-queue-btn" id="viewQueueBtn">
+        <span>&#128203;</span> Queue <span class="queue-count" id="queueCount">0</span>
+    </button>
 
     <script src="../shared/help-drawer.js"></script>
     <script src="../shared/docs/incarnum-docs.js"></script>
 
     <!-- Supabase Client -->
     <script src="../shared/supabase-client.js"></script>
+
+    <!-- PixelLab AI Generation -->
+    <script src="../shared/pixellab-client.js"></script>
+    <script src="../shared/skeleton-editor.js"></script>
+    <script src="../shared/generation-queue.js"></script>
 
     <script>
         // ==========================================
@@ -1188,7 +1472,12 @@
             // Generation preview state
             previewResult: null,
             previewRequest: null,
-            previewAnimationFrame: null
+            previewAnimationFrame: null,
+
+            // PixelLab integration
+            selectedEngine: 'claude',
+            skeletonEditor: null,
+            generationQueue: null
         };
 
         // Animation presets by perspective
@@ -1284,7 +1573,30 @@
             addPropertyBtn: document.getElementById('addPropertyBtn'),
             saveCharacterBtn: document.getElementById('saveCharacterBtn'),
             deleteCharacterBtn: document.getElementById('deleteCharacterBtn'),
-            toast: document.getElementById('toast')
+            toast: document.getElementById('toast'),
+
+            // Engine selector
+            engineClaude: document.getElementById('engineClaude'),
+            enginePixelLab: document.getElementById('enginePixelLab'),
+            claudeForm: document.getElementById('claudeForm'),
+            pixellabForm: document.getElementById('pixellabForm'),
+            startPixelLabGen: document.getElementById('startPixelLabGen'),
+
+            // PixelLab form elements
+            plPrompt: document.getElementById('plPrompt'),
+            plNegative: document.getElementById('plNegative'),
+            plDirections: document.getElementById('plDirections'),
+            plSize: document.getElementById('plSize'),
+            plOutline: document.getElementById('plOutline'),
+            plShading: document.getElementById('plShading'),
+            plSkeletonContainer: document.getElementById('plSkeletonContainer'),
+            plGuidance: document.getElementById('plGuidance'),
+            plGuidanceValue: document.getElementById('plGuidanceValue'),
+
+            // Generation queue
+            generationQueuePanel: document.getElementById('generationQueuePanel'),
+            viewQueueBtn: document.getElementById('viewQueueBtn'),
+            queueCount: document.getElementById('queueCount')
         };
 
         // ==========================================
@@ -1313,10 +1625,183 @@
                 updateAuthIndicator();
                 await loadProjects();
                 setupEventListeners();
+
+                // Initialize PixelLab components
+                initPixelLab();
             } catch (err) {
                 console.error('Failed to initialize:', err);
                 showToast('Failed to initialize', 'error');
             }
+        }
+
+        // ==========================================
+        // PixelLab Integration
+        // ==========================================
+        function initPixelLab() {
+            // Initialize skeleton editor
+            if (typeof SkeletonEditor !== 'undefined' && elements.plSkeletonContainer) {
+                state.skeletonEditor = new SkeletonEditor(elements.plSkeletonContainer, {
+                    width: 220,
+                    height: 220,
+                    showControls: false
+                });
+            }
+
+            // Initialize generation queue
+            if (typeof GenerationQueue !== 'undefined' && elements.generationQueuePanel) {
+                state.generationQueue = new GenerationQueue(elements.generationQueuePanel, {
+                    onImport: handlePixelLabImport,
+                    onError: (error) => showToast(error, 'error'),
+                    onJobsChange: updateQueueCount
+                });
+            }
+
+            // Setup engine toggle
+            setupEngineToggle();
+
+            // Setup skeleton presets
+            document.querySelectorAll('.skeleton-preset-btn').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    document.querySelectorAll('.skeleton-preset-btn').forEach(b => b.classList.remove('active'));
+                    btn.classList.add('active');
+                    if (state.skeletonEditor) {
+                        state.skeletonEditor.loadPreset(btn.dataset.pose);
+                    }
+                });
+            });
+
+            // Guidance slider
+            if (elements.plGuidance) {
+                elements.plGuidance.addEventListener('input', () => {
+                    elements.plGuidanceValue.textContent = parseFloat(elements.plGuidance.value).toFixed(1);
+                });
+            }
+
+            // View queue button
+            if (elements.viewQueueBtn) {
+                elements.viewQueueBtn.addEventListener('click', () => {
+                    if (state.generationQueue) {
+                        state.generationQueue.toggle();
+                    }
+                });
+            }
+
+            // PixelLab generate button
+            if (elements.startPixelLabGen) {
+                elements.startPixelLabGen.addEventListener('click', startPixelLabGeneration);
+            }
+        }
+
+        function setupEngineToggle() {
+            const claudeOption = elements.engineClaude;
+            const pixelLabOption = elements.enginePixelLab;
+
+            if (!claudeOption || !pixelLabOption) return;
+
+            claudeOption.addEventListener('click', () => {
+                state.selectedEngine = 'claude';
+                claudeOption.classList.add('active');
+                pixelLabOption.classList.remove('active');
+                elements.claudeForm.classList.add('active');
+                elements.pixellabForm.classList.remove('active');
+                elements.startGenerate.style.display = '';
+                elements.startPixelLabGen.style.display = 'none';
+            });
+
+            pixelLabOption.addEventListener('click', () => {
+                state.selectedEngine = 'pixellab';
+                pixelLabOption.classList.add('active');
+                claudeOption.classList.remove('active');
+                elements.pixellabForm.classList.add('active');
+                elements.claudeForm.classList.remove('active');
+                elements.startGenerate.style.display = 'none';
+                elements.startPixelLabGen.style.display = '';
+            });
+        }
+
+        function updateQueueCount(jobs) {
+            const pending = jobs.filter(j => j.status === 'pending' || j.status === 'processing').length;
+            if (elements.queueCount) {
+                elements.queueCount.textContent = pending;
+            }
+            if (elements.viewQueueBtn) {
+                elements.viewQueueBtn.classList.toggle('has-jobs', pending > 0);
+            }
+        }
+
+        async function startPixelLabGeneration() {
+            const prompt = elements.plPrompt.value.trim();
+            if (!prompt) {
+                showToast('Enter a character description', 'error');
+                elements.plPrompt.focus();
+                return;
+            }
+
+            if (!state.projectId) {
+                showToast('Select a project first', 'error');
+                return;
+            }
+
+            if (typeof PixelLabClient === 'undefined') {
+                showToast('PixelLab client not available', 'error');
+                return;
+            }
+
+            const options = {
+                directions: parseInt(elements.plDirections.value),
+                size: parseInt(elements.plSize.value),
+                outline: elements.plOutline.value,
+                shading: elements.plShading.value,
+                negative_prompt: elements.plNegative.value.trim() || undefined
+            };
+
+            // Add skeleton if guidance > 0
+            const guidance = parseFloat(elements.plGuidance.value);
+            if (guidance > 0 && state.skeletonEditor) {
+                options.skeleton = state.skeletonEditor.getKeypoints();
+                options.skeleton_guidance = guidance;
+            }
+
+            closeGenerateModal();
+            showToast('Queuing character generation...', '');
+
+            try {
+                const client = new PixelLabClient();
+                const result = await client.createCharacter(prompt, options);
+
+                if (result.job_id) {
+                    if (state.generationQueue) {
+                        await state.generationQueue.addJob({
+                            pixellab_job_id: result.job_id,
+                            job_type: 'character',
+                            prompt: prompt,
+                            parameters: options,
+                            skeleton_keypoints: options.skeleton,
+                            project_id: state.projectId,
+                            user_id: state.user?.id
+                        });
+                        state.generationQueue.show();
+                    }
+                    showToast('Character generation queued!', '');
+                }
+            } catch (error) {
+                console.error('PixelLab generation error:', error);
+                showToast('Generation failed: ' + error.message, 'error');
+            }
+        }
+
+        async function handlePixelLabImport(job) {
+            if (!job.result_url) {
+                showToast('No result URL available', 'error');
+                return;
+            }
+
+            showToast('Generated character ready! Open Sprite-Rite to import.', '');
+
+            // Could redirect to Sprite-Rite with the job info
+            // For now, show a link
+            const spriteRiteUrl = `/game-wizard/sprite-rite/?project=${state.projectId}`;
+            console.log('Import in Sprite-Rite:', spriteRiteUrl, job);
         }
 
         function updateAuthIndicator() {

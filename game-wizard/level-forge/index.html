@@ -1368,6 +1368,52 @@
             font-size: 11px;
             color: var(--stone-light);
         }
+
+        /* AI Generation */
+        .btn-ai {
+            background: linear-gradient(135deg, #3a2a4a, #4a3a5a);
+            border-color: var(--mystic-glow);
+            color: var(--mystic-glow);
+        }
+
+        .btn-ai:hover {
+            background: var(--mystic-glow);
+            color: white;
+        }
+
+        .generation-queue-panel {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            width: 320px;
+            max-height: 400px;
+            background: var(--bg-mid);
+            border: 1px solid var(--stone-dark);
+            border-radius: 8px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
+            z-index: 1500;
+            display: none;
+        }
+
+        .generation-queue-panel.visible {
+            display: block;
+        }
+
+        .palette-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .palette-header-actions {
+            display: flex;
+            gap: 4px;
+        }
+
+        .btn-tiny {
+            font-size: 9px;
+            padding: 3px 6px;
+        }
     </style>
 </head>
 <body>
@@ -1479,7 +1525,12 @@
                                 <canvas id="tileCanvas"></canvas>
                             </div>
                             <div class="sprite-palette">
-                                <div class="palette-header">Sprite Palette</div>
+                                <div class="palette-header">
+                                    <span>Sprite Palette</span>
+                                    <div class="palette-header-actions">
+                                        <button class="btn btn-tiny btn-ai" id="generateTilesetBtn" title="Generate tileset with AI">&#10024;</button>
+                                    </div>
+                                </div>
                                 <div class="palette-sheet-select">
                                     <select class="form-input" id="spriteSheetSelect">
                                         <option value="">-- Select Sheet --</option>
@@ -1759,9 +1810,14 @@
     <!-- Toast -->
     <div class="toast" id="toast"></div>
 
+    <!-- Generation Queue Panel -->
+    <div class="generation-queue-panel" id="generationQueuePanel"></div>
+
     <!-- Supabase Client -->
     <script src="../shared/supabase-client.js"></script>
     <script src="../shared/master-sheet.js"></script>
+    <script src="../shared/pixellab-client.js"></script>
+    <script src="../shared/generation-queue.js"></script>
     <script src="../shared/help-drawer.js"></script>
     <script src="../shared/docs/level-forge-docs.js"></script>
 
@@ -1826,7 +1882,10 @@
             returnMetadata: {},  // { "x,y": { name, direction } }
             spawnCount: 0,
             exitCount: 0,
-            returnCount: 0
+            returnCount: 0,
+
+            // AI Generation
+            generationQueue: null
         };
 
         const TILE_STATES = ['undefined', 'open', 'obstruction', 'spawn', 'exit', 'return'];
@@ -1915,7 +1974,11 @@
             spawnCountDisplay: document.getElementById('spawnCountDisplay'),
             exitCountDisplay: document.getElementById('exitCountDisplay'),
             returnCountDisplay: document.getElementById('returnCountDisplay'),
-            unconfiguredList: document.getElementById('unconfiguredList')
+            unconfiguredList: document.getElementById('unconfiguredList'),
+
+            // AI Generation
+            generateTilesetBtn: document.getElementById('generateTilesetBtn'),
+            generationQueuePanel: document.getElementById('generationQueuePanel')
         };
 
         // ==========================================
@@ -4510,6 +4573,36 @@
         initVisualTiles();
         loadSpriteIndex();
         loadProjects();
+        initGenerationQueue();
+
+        // ==========================================
+        // AI Generation Queue
+        // ==========================================
+        function initGenerationQueue() {
+            if (typeof GenerationQueue !== 'undefined' && elements.generationQueuePanel) {
+                state.generationQueue = new GenerationQueue(elements.generationQueuePanel, {
+                    onImport: handleGeneratedTileset,
+                    onError: (error) => showToast(error)
+                });
+            }
+
+            // Generate tileset button
+            if (elements.generateTilesetBtn) {
+                elements.generateTilesetBtn.addEventListener('click', showTilesetGenerationInfo);
+            }
+        }
+
+        function showTilesetGenerationInfo() {
+            showToast('Tileset generation coming soon! Use Tilesmith for single tiles.');
+        }
+
+        async function handleGeneratedTileset(job) {
+            if (!job.result_url) {
+                showToast('No result URL available');
+                return;
+            }
+            showToast('Tileset ready! Import via Sprite-Rite.');
+        }
 
         // Initialize help drawer
         if (typeof HelpDrawer !== 'undefined' && typeof LEVEL_FORGE_DOCS !== 'undefined') {
