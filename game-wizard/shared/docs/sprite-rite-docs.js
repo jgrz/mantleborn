@@ -49,17 +49,17 @@ const SPRITE_RITE_DOCS = [
                 <div class="step-num">5</div>
                 <div class="step-text">
                     <strong>Name and Save</strong><br>
-                    Give each sprite a name and click "Save Sprite". Your work auto-saves to the cloud when logged in.
+                    Give each sprite a name and click "Save Sprite". The sprite is automatically added to your project's master sheet.
                 </div>
             </div>
 
             <h2>Interface Overview</h2>
             <ul>
                 <li><strong>Canvas</strong> - Main area showing your spritesheet with zoom controls</li>
-                <li><strong>Toolbar</strong> - Background Remover and Auto-Detect tools</li>
-                <li><strong>Sprite List</strong> - Right panel showing all defined sprites</li>
-                <li><strong>Selection Panel</strong> - Appears when creating/editing a sprite</li>
-                <li><strong>JSON Preview</strong> - Shows the atlas data for your sprites</li>
+                <li><strong>Toolbar</strong> - Background Remover, Flip H, and Auto-Detect tools</li>
+                <li><strong>Saved Sprites</strong> - Right panel showing sprites saved from this sheet</li>
+                <li><strong>Selection Panel</strong> - Appears when creating a new sprite</li>
+                <li><strong>Master Sheet Preview</strong> - Shows the combined master sheet with all sprites</li>
             </ul>
 
             <div class="tip">
@@ -278,54 +278,48 @@ const SPRITE_RITE_DOCS = [
         `
     },
     {
-        id: 'exporting',
-        title: 'Exporting & JSON',
+        id: 'master-sheet',
+        title: 'Master Sheet',
         content: `
-            <h1>Exporting & JSON</h1>
-            <p>Export your sprite definitions for use in game engines or other tools.</p>
+            <h1>Master Sheet</h1>
+            <p>Every project has a master spritesheet—a single combined image containing all your game's sprites.</p>
+
+            <h2>How It Works</h2>
+            <p>When you save a sprite in Sprite-Rite, it's automatically:</p>
+            <ul>
+                <li>Extracted from your source spritesheet</li>
+                <li>Packed into the project's master sheet</li>
+                <li>Added to the master sheet atlas (JSON data)</li>
+            </ul>
+
+            <h2>Master Sheet Preview</h2>
+            <p>The right sidebar shows a preview of your master sheet with a count of total sprites. This updates in real-time as you save sprites.</p>
+
+            <h2>Saved Sprites</h2>
+            <p>When you select a spritesheet, any sprites you've already saved from it appear with green outlines. This prevents duplicate saves and shows your progress.</p>
 
             <h2>Atlas JSON Format</h2>
-            <p>Sprite-Rite generates a JSON atlas that describes all sprite positions:</p>
+            <p>Click "Copy Atlas JSON" to copy the master sheet data:</p>
 
             <pre><code>{
-  "frames": {
-    "player_idle": {
-      "frame": { "x": 0, "y": 0, "w": 32, "h": 32 },
-      "sourceSize": { "w": 32, "h": 32 }
-    },
-    "player_run_1": {
-      "frame": { "x": 32, "y": 0, "w": 32, "h": 32 },
-      "sourceSize": { "w": 32, "h": 32 }
-    }
-  },
-  "meta": {
-    "image": "spritesheet.png",
-    "size": { "w": 256, "h": 256 }
+  "size": { "w": 256, "h": 256 },
+  "sprites": {
+    "player_idle": { "x": 0, "y": 0, "w": 32, "h": 32 },
+    "player_run_1": { "x": 33, "y": 0, "w": 32, "h": 32 }
   }
 }</code></pre>
 
-            <h2>Export Options</h2>
-
-            <h3>Copy to Clipboard</h3>
-            <p>Click "Copy JSON" to copy the atlas data. Paste it into your game's asset configuration.</p>
-
-            <h3>Download JSON File</h3>
-            <p>Click "Export" to download a <code>.json</code> file for your game project.</p>
-
-            <h2>Using in Game Engines</h2>
-
-            <h3>Phaser</h3>
-            <pre><code>this.load.atlas('sprites', 'spritesheet.png', 'atlas.json');</code></pre>
-
-            <h3>PixiJS</h3>
-            <pre><code>await PIXI.Assets.load('atlas.json');</code></pre>
-
-            <h3>Custom Engines</h3>
-            <p>Parse the JSON and use the frame coordinates to render sprite regions from the source image.</p>
+            <h2>Using in Other Tools</h2>
+            <p>The master sheet is automatically available in:</p>
+            <ul>
+                <li><strong>Animancer</strong> - Create animations from master sheet sprites</li>
+                <li><strong>Level Forge</strong> - Paint levels with master sheet sprites</li>
+                <li><strong>Incarnum</strong> - Assign sprites to characters</li>
+            </ul>
 
             <div class="tip">
                 <div class="tip-label">Tip</div>
-                The JSON preview panel updates in real-time as you define sprites.
+                You don't need to export anything—the master sheet is shared automatically across all Game Wizard tools.
             </div>
         `
     },
@@ -339,7 +333,6 @@ const SPRITE_RITE_DOCS = [
             <h2>Selection</h2>
             <ul>
                 <li><kbd>Escape</kbd> - Cancel current selection</li>
-                <li><kbd>Delete</kbd> - Delete selected sprite</li>
                 <li><kbd>Enter</kbd> - Confirm and save selection</li>
             </ul>
 

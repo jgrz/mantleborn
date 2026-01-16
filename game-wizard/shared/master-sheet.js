@@ -429,7 +429,9 @@ if (typeof crucibleClient !== 'undefined') {
      * @param {ImageData|HTMLCanvasElement|HTMLImageElement} imageData
      * @param {number} width
      * @param {number} height
-     * @param {string} source - 'tilesmith' or 'sprite-rite'
+     * @param {Object|string} source - Source info object or legacy string
+     *   For sprite-rite: { type: 'sprite-rite', spritesheetId, originalX, originalY, originalW, originalH }
+     *   For tilesmith: { type: 'tilesmith' } or just 'tilesmith'
      */
     crucibleClient.publishToMasterSheet = async function(projectId, name, imageData, width, height, source) {
         // Get existing master sheet
@@ -447,6 +449,40 @@ if (typeof crucibleClient !== 'undefined') {
         await this.saveMasterSheet(projectId, result.png, result.atlas);
 
         return result;
+    };
+
+    /**
+     * Get sprites from master sheet that originated from a specific spritesheet
+     * @param {string} projectId
+     * @param {string} spritesheetId
+     * @returns {Array} Array of sprite definitions that came from this spritesheet
+     */
+    crucibleClient.getMasterSheetSpritesFromSource = async function(projectId, spritesheetId) {
+        const masterSheet = await this.getMasterSheet(projectId);
+        if (!masterSheet.atlas || !masterSheet.atlas.sprites) {
+            return [];
+        }
+
+        const sprites = [];
+        for (const [name, def] of Object.entries(masterSheet.atlas.sprites)) {
+            // Check if source is an object with spritesheetId
+            if (def.source && typeof def.source === 'object' && def.source.spritesheetId === spritesheetId) {
+                sprites.push({
+                    name,
+                    masterX: def.x,
+                    masterY: def.y,
+                    masterW: def.w,
+                    masterH: def.h,
+                    // Original position on source spritesheet
+                    x: def.source.originalX,
+                    y: def.source.originalY,
+                    width: def.source.originalW,
+                    height: def.source.originalH
+                });
+            }
+        }
+
+        return sprites;
     };
 
     /**

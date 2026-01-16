@@ -986,6 +986,58 @@
         .dont-show-again input {
             cursor: pointer;
         }
+
+        /* Master Sheet Section */
+        .master-sheet-section {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            min-height: 0;
+        }
+
+        .master-sheet-preview {
+            background: repeating-conic-gradient(
+                var(--bg-surface) 0% 25%,
+                var(--bg-mid) 0% 50%
+            ) 50% / 16px 16px;
+            border: 1px solid var(--stone-dark);
+            border-radius: 4px;
+            min-height: 100px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 12px;
+            overflow: hidden;
+        }
+
+        .master-sheet-preview canvas {
+            image-rendering: pixelated;
+            image-rendering: crisp-edges;
+        }
+
+        .master-sheet-empty {
+            text-align: center;
+            font-size: 11px;
+            color: var(--stone-mid);
+            padding: 20px;
+        }
+
+        .master-sheet-actions {
+            display: flex;
+            gap: 8px;
+        }
+
+        .master-sheet-actions .btn {
+            flex: 1;
+            font-size: 11px;
+        }
+
+        /* Saved sprite indicator in list */
+        .sprite-item.saved-to-master .sprite-name::after {
+            content: ' ✓';
+            color: #4ade80;
+            font-size: 10px;
+        }
     </style>
 </head>
 <body>
@@ -1118,32 +1170,33 @@
                 </div>
             </div>
 
-            <!-- Sprite Directory -->
+            <!-- Saved Sprites from this sheet -->
             <div class="sidebar-section">
                 <div class="sidebar-header">
-                    Sprite Directory
+                    Saved Sprites
                     <span id="spriteCount">0</span>
                 </div>
                 <div class="sprite-list" id="spriteList">
-                    <div class="empty-state">No sprites defined yet.<br>Select an area to create one.</div>
+                    <div class="empty-state">No sprites saved yet.<br>Select an area to save one.</div>
                 </div>
             </div>
 
-            <!-- Export Section -->
-            <div class="sidebar-section export-section">
-                <div class="export-actions">
-                    <button class="btn btn-primary" id="copyIndexEntry">Copy for Index</button>
-                    <button class="btn" id="copyJson">Copy JSON</button>
+            <!-- Master Sheet Section -->
+            <div class="sidebar-section master-sheet-section">
+                <div class="sidebar-header">
+                    Master Sheet
+                    <span id="masterSheetCount">0</span>
                 </div>
-                <div class="export-hint">
-                    Copy and paste into <code>sprite-index.json</code> to persist
-                </div>
-                <div class="json-preview" id="jsonPreview">
-                    <div class="json-preview-header" id="jsonPreviewToggle">
-                        <span>JSON Preview</span>
-                        <span class="json-preview-toggle">&#9660;</span>
+                <div class="sidebar-content">
+                    <div class="master-sheet-preview">
+                        <canvas id="masterSheetPreviewCanvas" class="preview-canvas" style="display: none;"></canvas>
+                        <div class="master-sheet-empty" id="masterSheetEmpty">
+                            No sprites on master sheet yet.<br>Save sprites to add them.
+                        </div>
                     </div>
-                    <div class="json-preview-content" id="jsonContent">{}</div>
+                    <div class="master-sheet-actions">
+                        <button class="btn" id="copyMasterJson">Copy Atlas JSON</button>
+                    </div>
                 </div>
             </div>
         </aside>
@@ -1199,6 +1252,7 @@
     </div>
 
     <script src="../shared/supabase-client.js"></script>
+    <script src="../shared/master-sheet.js"></script>
     <script>
         /* ============================================
            MANTLEBORN SPRITE-RITE - JavaScript
@@ -1241,7 +1295,11 @@
             // Tool modes
             toolMode: null, // 'removeBg', 'autoDetect', or null
             imageData: null, // Cached pixel data for analysis
-            islandMap: null  // Cached island labels for auto-detect
+            islandMap: null, // Cached island labels for auto-detect
+
+            // Master sheet
+            masterSheetSprites: [], // Sprites already saved to master (from this spritesheet)
+            masterSheetData: null   // { png, atlas, spriteCount } for preview
         };
 
         // ==========================================
@@ -1288,12 +1346,11 @@
             spriteList: document.getElementById('spriteList'),
             spriteCount: document.getElementById('spriteCount'),
 
-            // Export
-            copyIndexEntry: document.getElementById('copyIndexEntry'),
-            copyJson: document.getElementById('copyJson'),
-            jsonPreview: document.getElementById('jsonPreview'),
-            jsonPreviewToggle: document.getElementById('jsonPreviewToggle'),
-            jsonContent: document.getElementById('jsonContent'),
+            // Master Sheet
+            masterSheetCount: document.getElementById('masterSheetCount'),
+            masterSheetPreviewCanvas: document.getElementById('masterSheetPreviewCanvas'),
+            masterSheetEmpty: document.getElementById('masterSheetEmpty'),
+            copyMasterJson: document.getElementById('copyMasterJson'),
 
             // Toast & Dialog
             toast: document.getElementById('toast'),
@@ -1488,6 +1545,9 @@
                 if (sheets.length === 0) {
                     showToast('No sprite sheets yet. Upload one!');
                 }
+
+                // Load master sheet preview
+                updateMasterSheetPreview();
             } catch (error) {
                 console.error('Failed to load spritesheets:', error);
                 showToast('Failed to load sprite sheets', 'error');
@@ -1505,8 +1565,23 @@
                 state.spritesheetId = sheet.id;
                 state.spritesheetRecord = sheet;
 
-                // Load the image
-                loadSpriteSheetImage(sheet.name, sheet.publicUrl, sheet.sprites || []);
+                // Load sprites already saved to master sheet from this spritesheet
+                if (state.projectId) {
+                    try {
+                        state.masterSheetSprites = await crucibleClient.getMasterSheetSpritesFromSource(
+                            state.projectId,
+                            spritesheetId
+                        );
+                    } catch (e) {
+                        console.warn('Could not load master sheet sprites:', e);
+                        state.masterSheetSprites = [];
+                    }
+                } else {
+                    state.masterSheetSprites = [];
+                }
+
+                // Load the image - use master sheet sprites instead of local sprites array
+                loadSpriteSheetImage(sheet.name, sheet.publicUrl, state.masterSheetSprites);
             } catch (error) {
                 console.error('Failed to load spritesheet:', error);
                 showToast('Failed to load sprite sheet', 'error');
@@ -1524,6 +1599,7 @@
             state.imageData = null;
             state.islandMap = null;
             state.toolMode = null;
+            state.masterSheetSprites = [];
             hideCreatePanel();
 
             elements.dropZone.style.display = 'flex';
@@ -1746,17 +1822,25 @@
         function renderSelection() {
             ctx.selection.clearRect(0, 0, elements.selectionCanvas.width, elements.selectionCanvas.height);
 
-            // Draw saved sprites as outlines
+            // Draw saved sprites as solid green outlines (saved to master sheet)
             state.sprites.forEach((sprite, index) => {
                 const isSelected = index === state.selectedSpriteIndex;
-                ctx.selection.strokeStyle = isSelected ? '#e07020' : 'rgba(128, 96, 192, 0.5)';
-                ctx.selection.lineWidth = isSelected ? 2 : 1;
+                // Saved sprites: solid green outline
+                ctx.selection.strokeStyle = isSelected ? '#e07020' : '#4ade80';
+                ctx.selection.lineWidth = isSelected ? 2 : 2;
                 ctx.selection.strokeRect(
                     sprite.x * state.zoom + 0.5,
                     sprite.y * state.zoom + 0.5,
                     sprite.width * state.zoom - 1,
                     sprite.height * state.zoom - 1
                 );
+
+                // Add a small "saved" indicator
+                if (!isSelected) {
+                    ctx.selection.fillStyle = '#4ade80';
+                    ctx.selection.font = '10px sans-serif';
+                    ctx.selection.fillText('✓', sprite.x * state.zoom + 4, sprite.y * state.zoom + 12);
+                }
             });
 
             // Draw current selection
@@ -2285,6 +2369,9 @@
         // ==========================================
         function showCreatePanel() {
             elements.createPanel.classList.add('active');
+            // Default to enabled save button for new sprites
+            elements.saveSprite.textContent = 'Save Sprite';
+            elements.saveSprite.disabled = false;
         }
 
         function hideCreatePanel() {
@@ -2292,6 +2379,9 @@
             elements.spriteName.value = '';
             elements.spriteDesc.value = '';
             state.editingSpriteIndex = -1;
+            // Reset save button
+            elements.saveSprite.textContent = 'Save Sprite';
+            elements.saveSprite.disabled = false;
         }
 
         function updatePreviews() {
@@ -2314,7 +2404,7 @@
             ctx4.drawImage(state.image, x, y, w, h, 0, 0, w * 4, h * 4);
         }
 
-        function saveSprite() {
+        async function saveSprite() {
             const name = elements.spriteName.value.trim();
             const desc = elements.spriteDesc.value.trim();
 
@@ -2333,29 +2423,75 @@
                 return;
             }
 
-            const sprite = {
-                name,
-                description: desc,
-                x: state.selection.x,
-                y: state.selection.y,
-                width: state.selection.w,
-                height: state.selection.h
-            };
-
-            if (state.editingSpriteIndex >= 0) {
-                state.sprites[state.editingSpriteIndex] = sprite;
-                showToast('Sprite updated!');
-            } else {
-                state.sprites.push(sprite);
-                showToast('Sprite saved!');
+            if (!state.projectId) {
+                showToast('Please select a project first', 'error');
+                return;
             }
 
-            state.selection = null;
-            hideCreatePanel();
-            updateSpriteList();
-            updateJsonPreview();
-            scheduleAutoSave();
-            render();
+            if (!state.user) {
+                showToast('Please login to save sprites to master sheet', 'error');
+                return;
+            }
+
+            // Check if this sprite is already on the master sheet (editing existing)
+            if (state.editingSpriteIndex >= 0) {
+                showToast('Editing saved sprites not yet supported', 'error');
+                return;
+            }
+
+            const { x, y, w, h } = state.selection;
+
+            // Extract the sprite image data from the source spritesheet
+            const tempCanvas = document.createElement('canvas');
+            tempCanvas.width = w;
+            tempCanvas.height = h;
+            const tempCtx = tempCanvas.getContext('2d');
+            tempCtx.imageSmoothingEnabled = false;
+            tempCtx.drawImage(state.image, x, y, w, h, 0, 0, w, h);
+
+            try {
+                showToast('Publishing to master sheet...');
+
+                // Publish to master sheet with source tracking
+                await crucibleClient.publishToMasterSheet(
+                    state.projectId,
+                    name,
+                    tempCanvas, // Pass the canvas as imageData
+                    w,
+                    h,
+                    {
+                        type: 'sprite-rite',
+                        spritesheetId: state.spritesheetId,
+                        originalX: x,
+                        originalY: y,
+                        originalW: w,
+                        originalH: h
+                    }
+                );
+
+                // Add to local state
+                const sprite = {
+                    name,
+                    description: desc,
+                    x: x,
+                    y: y,
+                    width: w,
+                    height: h
+                };
+                state.sprites.push(sprite);
+                state.masterSheetSprites.push(sprite);
+
+                state.selection = null;
+                hideCreatePanel();
+                updateSpriteList();
+                updateMasterSheetPreview();
+                render();
+
+                showToast(`Sprite "${name}" saved to master sheet!`);
+            } catch (error) {
+                console.error('Failed to save sprite:', error);
+                showToast('Failed to save: ' + error.message, 'error');
+            }
         }
 
         function cancelSprite() {
@@ -2373,14 +2509,15 @@
             elements.spriteCount.textContent = state.sprites.length;
 
             if (state.sprites.length === 0) {
-                elements.spriteList.innerHTML = '<div class="empty-state">No sprites defined yet.<br>Select an area to create one.</div>';
+                elements.spriteList.innerHTML = '<div class="empty-state">No sprites saved yet.<br>Select an area to save one.</div>';
                 return;
             }
 
             elements.spriteList.innerHTML = state.sprites.map((sprite, index) => {
                 const isSelected = index === state.selectedSpriteIndex;
+                // All sprites in the list are saved to master sheet
                 return `
-                    <div class="sprite-item ${isSelected ? 'selected' : ''}" data-index="${index}">
+                    <div class="sprite-item saved-to-master ${isSelected ? 'selected' : ''}" data-index="${index}">
                         <div class="sprite-thumb">
                             <canvas width="32" height="32" data-sprite-index="${index}"></canvas>
                         </div>
@@ -2388,7 +2525,6 @@
                             <div class="sprite-name">${sprite.name}</div>
                             <div class="sprite-coords">(${sprite.x},${sprite.y}) ${sprite.width}×${sprite.height}</div>
                         </div>
-                        <button class="sprite-delete" data-index="${index}">×</button>
                     </div>
                 `;
             }).join('');
@@ -2416,20 +2552,11 @@
                 }
             });
 
-            // Add click handlers
+            // Add click handlers - just for viewing/highlighting saved sprites
             elements.spriteList.querySelectorAll('.sprite-item').forEach(item => {
                 item.addEventListener('click', (e) => {
-                    if (e.target.classList.contains('sprite-delete')) return;
                     const index = parseInt(item.dataset.index);
                     selectSprite(index);
-                });
-            });
-
-            elements.spriteList.querySelectorAll('.sprite-delete').forEach(btn => {
-                btn.addEventListener('click', (e) => {
-                    e.stopPropagation();
-                    const index = parseInt(btn.dataset.index);
-                    confirmDeleteSprite(index);
                 });
             });
         }
@@ -2438,7 +2565,7 @@
             state.selectedSpriteIndex = index;
             const sprite = state.sprites[index];
 
-            // Set up for editing
+            // Show selection (view-only for saved sprites)
             state.selection = {
                 x: sprite.x,
                 y: sprite.y,
@@ -2450,7 +2577,10 @@
             elements.spriteName.value = sprite.name;
             elements.spriteDesc.value = sprite.description || '';
 
+            // Saved sprites - show panel but disable save button
             showCreatePanel();
+            elements.saveSprite.textContent = 'Already Saved';
+            elements.saveSprite.disabled = true;
             updateSelectionInfo();
             updatePreviews();
             updateSpriteList();
@@ -2529,8 +2659,69 @@
         }
 
         function updateJsonPreview() {
-            const json = generateJson(true);
-            elements.jsonContent.textContent = JSON.stringify(json, null, 2);
+            // Legacy function - now updates master sheet preview
+            updateMasterSheetPreview();
+        }
+
+        async function updateMasterSheetPreview() {
+            if (!state.projectId) {
+                elements.masterSheetCount.textContent = '0';
+                elements.masterSheetPreviewCanvas.style.display = 'none';
+                elements.masterSheetEmpty.style.display = 'block';
+                return;
+            }
+
+            try {
+                const masterSheet = await crucibleClient.getMasterSheet(state.projectId);
+                if (masterSheet.atlas && masterSheet.atlas.sprites) {
+                    const count = Object.keys(masterSheet.atlas.sprites).length;
+                    elements.masterSheetCount.textContent = count;
+                    state.masterSheetData = masterSheet;
+
+                    // Draw preview if we have image data
+                    if (masterSheet.png && count > 0) {
+                        elements.masterSheetEmpty.style.display = 'none';
+                        const img = new Image();
+                        img.onload = () => {
+                            const canvas = elements.masterSheetPreviewCanvas;
+                            const ctx = canvas.getContext('2d');
+                            ctx.imageSmoothingEnabled = false;
+
+                            // Scale to fit in preview area
+                            const maxSize = 260;
+                            const scale = Math.min(maxSize / img.width, maxSize / img.height, 1);
+                            canvas.width = img.width * scale;
+                            canvas.height = img.height * scale;
+                            canvas.style.display = 'block';
+
+                            ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+                        };
+                        img.src = masterSheet.png;
+                    } else {
+                        elements.masterSheetPreviewCanvas.style.display = 'none';
+                        elements.masterSheetEmpty.style.display = 'block';
+                    }
+                } else {
+                    elements.masterSheetCount.textContent = '0';
+                    elements.masterSheetPreviewCanvas.style.display = 'none';
+                    elements.masterSheetEmpty.style.display = 'block';
+                }
+            } catch (e) {
+                console.warn('Could not load master sheet preview:', e);
+                elements.masterSheetCount.textContent = '0';
+                elements.masterSheetPreviewCanvas.style.display = 'none';
+                elements.masterSheetEmpty.style.display = 'block';
+            }
+        }
+
+        function copyMasterSheetJson() {
+            if (!state.masterSheetData || !state.masterSheetData.atlas) {
+                showToast('No master sheet data', 'error');
+                return;
+            }
+            navigator.clipboard.writeText(JSON.stringify(state.masterSheetData.atlas, null, 2))
+                .then(() => showToast('Master sheet JSON copied!'))
+                .catch(() => showToast('Failed to copy', 'error'));
         }
 
         function exportJson() {
@@ -2711,16 +2902,8 @@
         elements.saveSprite.addEventListener('click', saveSprite);
         elements.cancelSprite.addEventListener('click', cancelSprite);
 
-        // Export
-        elements.copyIndexEntry.addEventListener('click', copyIndexEntry);
-        elements.copyJson.addEventListener('click', copyJson);
-
-        // JSON preview toggle
-        elements.jsonPreviewToggle.addEventListener('click', () => {
-            elements.jsonPreview.classList.toggle('collapsed');
-            elements.jsonPreviewToggle.querySelector('.json-preview-toggle').textContent =
-                elements.jsonPreview.classList.contains('collapsed') ? '▶' : '▼';
-        });
+        // Master sheet
+        elements.copyMasterJson.addEventListener('click', copyMasterSheetJson);
 
         // Confirm dialog
         elements.dialogConfirm.addEventListener('click', deleteSprite);
