@@ -664,11 +664,11 @@
             margin-bottom: 12px;
         }
 
-        /* Animation List - Now below timeline */
+        /* Animation Library - Below timeline */
         .animation-library-section {
-            padding: 16px;
+            padding: 12px 16px;
             border-top: 1px solid var(--stone-dark);
-            max-height: 220px;
+            max-height: 200px;
             overflow-y: auto;
             background: var(--bg-mid);
             flex-shrink: 0;
@@ -683,76 +683,109 @@
             border-radius: 4px;
         }
 
-        /* Animation List in right panel (legacy, hidden when library is below) */
-        .animation-list-section {
-            padding: 16px;
-            border-bottom: 1px solid var(--stone-dark);
-            max-height: 200px;
-            overflow-y: auto;
-            display: none; /* Hidden - now using animation-library-section below timeline */
-        }
-
         .animation-list-header {
             display: flex;
             align-items: center;
             justify-content: space-between;
-            margin-bottom: 8px;
+            margin-bottom: 10px;
         }
 
-        .animation-list {
+        /* Animation Cards Grid */
+        .animation-card-grid {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        .animation-card {
             display: flex;
             flex-direction: column;
-            gap: 4px;
-        }
-
-        .animation-item {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            padding: 8px 10px;
+            width: 140px;
+            padding: 10px;
             background: var(--bg-surface);
-            border: 1px solid var(--stone-dark);
-            border-radius: 4px;
+            border: 2px solid var(--stone-dark);
+            border-radius: 6px;
             cursor: pointer;
             transition: all 0.15s;
+            position: relative;
         }
 
-        .animation-item:hover {
-            border-color: var(--stone-mid);
-        }
-
-        .animation-item.active {
+        .animation-card:hover {
             border-color: var(--mystic-glow);
             background: var(--mystic-deep);
         }
 
-        .animation-item-name {
-            font-size: 11px;
-            color: var(--stone-light);
+        .animation-card.active {
+            border-color: var(--accent-ember);
+            box-shadow: 0 0 8px rgba(224, 112, 32, 0.3);
         }
 
-        .animation-item-info {
+        .animation-card-preview {
+            width: 120px;
+            height: 80px;
+            background: repeating-conic-gradient(
+                var(--bg-mid) 0% 25%,
+                var(--bg-deep) 0% 50%
+            ) 50% / 8px 8px;
+            border-radius: 4px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 8px;
+            overflow: hidden;
+        }
+
+        .animation-card-preview canvas {
+            image-rendering: pixelated;
+        }
+
+        .animation-card-name {
+            font-size: 11px;
+            font-weight: 500;
+            color: var(--stone-bright);
+            margin-bottom: 4px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .animation-card-meta {
+            display: flex;
+            justify-content: space-between;
             font-size: 9px;
             color: var(--stone-mid);
         }
 
-        .animation-item-delete {
-            background: none;
+        .animation-card-delete {
+            position: absolute;
+            top: 4px;
+            right: 4px;
+            width: 18px;
+            height: 18px;
+            background: var(--accent-magma);
             border: none;
-            color: var(--stone-mid);
+            border-radius: 3px;
+            color: white;
+            font-size: 12px;
             cursor: pointer;
-            font-size: 14px;
-            padding: 2px 6px;
             opacity: 0;
             transition: opacity 0.15s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
         }
 
-        .animation-item:hover .animation-item-delete {
+        .animation-card:hover .animation-card-delete {
             opacity: 1;
         }
 
-        .animation-item-delete:hover {
-            color: var(--accent-magma);
+        .animation-card-delete:hover {
+            background: #ff4444;
+        }
+
+        /* Legacy list style hidden */
+        .animation-list-section {
+            display: none;
         }
 
         /* New Animation Indicator */
@@ -1035,7 +1068,7 @@
                     <span class="section-header" style="margin-bottom: 0;">Saved Animations</span>
                     <button class="btn btn-small btn-primary" id="newAnimationBtn">+ New</button>
                 </div>
-                <div class="animation-list" id="animationLibrary"></div>
+                <div class="animation-card-grid" id="animationLibrary"></div>
             </div>
         </div>
 
@@ -1585,8 +1618,16 @@
         // ==========================================
         // Animation Library (below timeline)
         // ==========================================
+
+        // Track hover animation intervals
+        const hoverAnimations = new Map();
+
         function renderAnimationLibrary() {
             const animKeys = Object.keys(state.animations);
+
+            // Clear any existing hover animations
+            hoverAnimations.forEach(interval => clearInterval(interval));
+            hoverAnimations.clear();
 
             // Show/hide library section based on whether there are animations
             if (animKeys.length === 0) {
@@ -1599,31 +1640,111 @@
 
             animKeys.forEach(key => {
                 const anim = state.animations[key];
-                const item = document.createElement('div');
-                item.className = 'animation-item';
+                const frameCount = anim.frames?.length || 0;
+                const fps = anim.fps || 12;
+                const totalDuration = frameCount > 0 ? (anim.frames.reduce((sum, f) => sum + (f.duration || 1000/fps), 0) / 1000).toFixed(1) : '0.0';
+
+                const card = document.createElement('div');
+                card.className = 'animation-card';
                 if (state.currentAnimationKey === key) {
-                    item.classList.add('active');
+                    card.classList.add('active');
                 }
 
-                const frameCount = anim.frames?.length || 0;
+                // Create preview container
+                const preview = document.createElement('div');
+                preview.className = 'animation-card-preview';
 
-                item.innerHTML = `
-                    <div>
-                        <div class="animation-item-name">${anim.name || key}</div>
-                        <div class="animation-item-info">${frameCount} frames | ${anim.fps || 12} fps</div>
-                    </div>
-                    <button class="animation-item-delete" title="Delete">&times;</button>
-                `;
+                // Create canvas for thumbnail
+                const canvas = document.createElement('canvas');
+                canvas.width = 64;
+                canvas.height = 64;
+                const ctx = canvas.getContext('2d');
+                ctx.imageSmoothingEnabled = false;
 
-                item.querySelector('.animation-item-delete').addEventListener('click', async (e) => {
+                // Draw first frame as static preview
+                drawAnimationFrame(ctx, anim, 0);
+
+                preview.appendChild(canvas);
+
+                // Name
+                const nameEl = document.createElement('div');
+                nameEl.className = 'animation-card-name';
+                nameEl.textContent = anim.name || key;
+                nameEl.title = anim.name || key;
+
+                // Meta info
+                const metaEl = document.createElement('div');
+                metaEl.className = 'animation-card-meta';
+                metaEl.innerHTML = `<span>${frameCount} frames</span><span>${totalDuration}s</span>`;
+
+                // Delete button
+                const deleteBtn = document.createElement('button');
+                deleteBtn.className = 'animation-card-delete';
+                deleteBtn.innerHTML = '&times;';
+                deleteBtn.title = 'Delete';
+                deleteBtn.addEventListener('click', async (e) => {
                     e.stopPropagation();
                     await deleteAnimation(key);
                 });
 
-                item.addEventListener('click', () => loadAnimation(key));
+                card.appendChild(preview);
+                card.appendChild(nameEl);
+                card.appendChild(metaEl);
+                card.appendChild(deleteBtn);
 
-                elements.animationLibrary.appendChild(item);
+                // Hover animation playback
+                let hoverFrame = 0;
+                card.addEventListener('mouseenter', () => {
+                    if (frameCount <= 1) return;
+                    hoverFrame = 0;
+                    const interval = setInterval(() => {
+                        hoverFrame = (hoverFrame + 1) % frameCount;
+                        drawAnimationFrame(ctx, anim, hoverFrame);
+                    }, 1000 / fps);
+                    hoverAnimations.set(key, interval);
+                });
+
+                card.addEventListener('mouseleave', () => {
+                    const interval = hoverAnimations.get(key);
+                    if (interval) {
+                        clearInterval(interval);
+                        hoverAnimations.delete(key);
+                    }
+                    // Reset to first frame
+                    drawAnimationFrame(ctx, anim, 0);
+                });
+
+                // Click to load
+                card.addEventListener('click', () => loadAnimation(key));
+
+                elements.animationLibrary.appendChild(card);
             });
+        }
+
+        function drawAnimationFrame(ctx, anim, frameIndex) {
+            ctx.clearRect(0, 0, 64, 64);
+
+            if (!anim.frames || anim.frames.length === 0 || !state.masterSheetImage) return;
+
+            const frame = anim.frames[frameIndex];
+            if (!frame) return;
+
+            // Find sprite by name
+            const sprite = state.sprites.find(s => s.name === frame.spriteName);
+            if (!sprite) return;
+
+            // Scale to fit canvas while maintaining aspect ratio
+            const scale = Math.min(60 / sprite.width, 60 / sprite.height);
+            const destW = Math.floor(sprite.width * scale);
+            const destH = Math.floor(sprite.height * scale);
+            const destX = Math.floor((64 - destW) / 2);
+            const destY = Math.floor((64 - destH) / 2);
+
+            ctx.drawImage(
+                state.masterSheetImage,
+                sprite.x, sprite.y, sprite.width, sprite.height,
+                destX, destY, destW, destH
+            );
         }
 
         function updateAnimationStatus() {
