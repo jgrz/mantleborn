@@ -276,6 +276,86 @@ const ANIMANCER_DOCS = [
         `
     },
     {
+        id: 'ai-generation',
+        title: 'AI Generation',
+        content: `
+            <h1>AI Animation Generation</h1>
+            <p>Generate character animations using PixelLab AI. Create walk cycles, idle animations, and action sequences from existing characters.</p>
+
+            <h2>Generating Animations</h2>
+            <p>Click the <strong>AI Generate</strong> button in the toolbar to open the generation panel.</p>
+
+            <div class="step">
+                <div class="step-num">1</div>
+                <div class="step-text">
+                    <strong>Select a Character</strong><br>
+                    Choose an existing character from Incarnum that has a PixelLab character ID.
+                </div>
+            </div>
+
+            <div class="step">
+                <div class="step-num">2</div>
+                <div class="step-text">
+                    <strong>Choose Animation Template</strong><br>
+                    Select a template: Walk, Run, Idle, Attack, Jump, etc.
+                </div>
+            </div>
+
+            <div class="step">
+                <div class="step-num">3</div>
+                <div class="step-text">
+                    <strong>Add Custom Description (Optional)</strong><br>
+                    Describe any modifications: "swinging a sword", "casting a spell", etc.
+                </div>
+            </div>
+
+            <div class="step">
+                <div class="step-num">4</div>
+                <div class="step-text">
+                    <strong>Queue Generation</strong><br>
+                    Click Generate. The job takes 2-5 minutes.
+                </div>
+            </div>
+
+            <h2>Generation Queue</h2>
+            <p>Track all your generation jobs in the queue panel (bottom-right corner):</p>
+            <ul>
+                <li><strong>⏳ Processing</strong> - Animation is being generated</li>
+                <li><strong>✅ Complete</strong> - Ready to import to timeline</li>
+                <li><strong>❌ Failed</strong> - Click Retry to try again</li>
+            </ul>
+
+            <p>The queue is shared across all Game Wizard tools. Jobs started in other tools (like Incarnum or Sprite-Rite) appear here too.</p>
+
+            <h2>Importing Generated Animations</h2>
+            <p>When a generation completes:</p>
+            <ol>
+                <li>Click <strong>Import</strong> on the completed job</li>
+                <li>Animation frames populate the timeline automatically</li>
+                <li>Preview and adjust timing as needed</li>
+                <li>Save the animation to your project</li>
+            </ol>
+
+            <h2>Character Requirements</h2>
+            <p>For AI animation generation to work, the character must:</p>
+            <ul>
+                <li>Exist in Incarnum</li>
+                <li>Have been generated via PixelLab (not imported sprites)</li>
+                <li>Have a valid PixelLab character ID linked</li>
+            </ul>
+
+            <div class="tip">
+                <div class="tip-label">Tip</div>
+                Generate the base character in Incarnum with PixelLab first, then come to Animancer to create all its animation sequences.
+            </div>
+
+            <div class="warning">
+                <div class="warning-label">Note</div>
+                Animation generation maintains style consistency with the original character. The AI remembers the character's appearance and animates it accordingly.
+            </div>
+        `
+    },
+    {
         id: 'shortcuts',
         title: 'Shortcuts',
         content: `

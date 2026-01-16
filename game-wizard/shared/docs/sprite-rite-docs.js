@@ -340,6 +340,108 @@ const SPRITE_RITE_DOCS = [
         `
     },
     {
+        id: 'ai-generation',
+        title: 'AI Generation',
+        content: `
+            <h1>AI Generation</h1>
+            <p>Generate pixel art characters and map objects using PixelLab AI directly within Sprite-Rite.</p>
+
+            <h2>Getting Started</h2>
+            <p>Click the <strong>Generate</strong> dropdown in the header to access AI generation options:</p>
+            <ul>
+                <li><strong>Character</strong> - Generate a multi-directional character spritesheet</li>
+                <li><strong>Map Object</strong> - Generate a single sprite object (props, items, decorations)</li>
+            </ul>
+
+            <h2>Generating Characters</h2>
+            <p>Create complete character spritesheets with directional views:</p>
+
+            <div class="step">
+                <div class="step-num">1</div>
+                <div class="step-text">
+                    <strong>Describe Your Character</strong><br>
+                    Enter a detailed description like "brave knight with silver armor and red cape" or "small forest fairy with glowing wings".
+                </div>
+            </div>
+
+            <div class="step">
+                <div class="step-num">2</div>
+                <div class="step-text">
+                    <strong>Set the Pose (Optional)</strong><br>
+                    Use the skeleton editor to adjust the character's pose. Drag joints to position arms, legs, and body. Select from preset poses like Idle, Walk, or Attack.
+                </div>
+            </div>
+
+            <div class="step">
+                <div class="step-num">3</div>
+                <div class="step-text">
+                    <strong>Configure Options</strong><br>
+                    Choose the number of directions (4 or 8), sprite size (32, 48, or 64px), and style settings.
+                </div>
+            </div>
+
+            <div class="step">
+                <div class="step-num">4</div>
+                <div class="step-text">
+                    <strong>Queue Generation</strong><br>
+                    Click "Generate" to add the job to the queue. Generation takes 2-5 minutes.
+                </div>
+            </div>
+
+            <h2>Skeleton Editor</h2>
+            <p>The skeleton editor lets you precisely control character pose:</p>
+            <ul>
+                <li><strong>Drag joints</strong> - Click and drag any joint (head, shoulders, elbows, hands, hips, knees, feet) to reposition</li>
+                <li><strong>Preset poses</strong> - Select from Idle, Walk 1, Walk 2, Attack, or Jump presets</li>
+                <li><strong>Reset</strong> - Return to default pose</li>
+                <li><strong>Guidance strength</strong> - Adjust how strictly the AI follows your pose (0 = ignore, 5 = strict)</li>
+            </ul>
+
+            <h2>Generating Map Objects</h2>
+            <p>Create single sprites for props and decorations:</p>
+            <ol>
+                <li>Select "Map Object" from the Generate dropdown</li>
+                <li>Enter a description ("wooden treasure chest", "glowing crystal")</li>
+                <li>Set the size and style options</li>
+                <li>Queue generation</li>
+            </ol>
+
+            <h2>Generation Queue</h2>
+            <p>Track your generation jobs in the queue panel (bottom-right corner):</p>
+            <ul>
+                <li><strong>⏳ Processing</strong> - Job is being generated</li>
+                <li><strong>✅ Complete</strong> - Ready to import</li>
+                <li><strong>❌ Failed</strong> - Error occurred (click Retry)</li>
+            </ul>
+
+            <p>When a job completes:</p>
+            <ol>
+                <li>Click <strong>Import</strong> on the completed job</li>
+                <li>The generated spritesheet loads automatically</li>
+                <li>Use Auto-Detect to select each sprite direction</li>
+                <li>Name and save sprites to the master sheet</li>
+            </ol>
+
+            <h2>Style Settings</h2>
+            <p>Customize the visual style of generated art:</p>
+            <ul>
+                <li><strong>Outline</strong> - None, single color black, or colored outline</li>
+                <li><strong>Shading</strong> - Flat, basic, or detailed shading</li>
+                <li><strong>Detail</strong> - Low, medium, or high detail level</li>
+            </ul>
+
+            <div class="tip">
+                <div class="tip-label">Tip</div>
+                Set project-wide style defaults in Crucible to maintain visual consistency across all generated assets.
+            </div>
+
+            <div class="warning">
+                <div class="warning-label">Note</div>
+                Generation requires an active PixelLab API connection. Jobs are queued and processed asynchronously—you can continue working while waiting.
+            </div>
+        `
+    },
+    {
         id: 'shortcuts',
         title: 'Shortcuts',
         content: `

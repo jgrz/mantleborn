@@ -225,6 +225,16 @@ const TILESMITH_DOCS = [
                 After generating, click "Apply Palette" to add the AI's colors to your palette for manual touch-ups.
             </div>
 
+            <h2>Generation Queue</h2>
+            <p>Track all your AI generation jobs in the queue panel (bottom-right corner):</p>
+            <ul>
+                <li><strong>⏳ Processing</strong> - Generation in progress</li>
+                <li><strong>✅ Complete</strong> - Ready to apply</li>
+                <li><strong>❌ Failed</strong> - Click Retry</li>
+            </ul>
+
+            <p>The queue is shared across all Game Wizard tools. Jobs started in other tools (Sprite-Rite, Incarnum, Level Forge) appear here too, so you can monitor all your generations from anywhere.</p>
+
             <h2>Limitations</h2>
             <ul>
                 <li>Maximum size is 32×32 pixels per tile</li>

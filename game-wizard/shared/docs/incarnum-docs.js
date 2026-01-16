@@ -544,6 +544,116 @@ const bosses = characters.filter(c =>
         `
     },
     {
+        id: 'ai-generation',
+        title: 'AI Generation',
+        content: `
+            <h1>AI Character Generation</h1>
+            <p>Generate complete pixel art characters with AI assistance using two different engines.</p>
+
+            <h2>Choosing an Engine</h2>
+            <p>When creating a new character, select your generation engine:</p>
+
+            <h3>Claude (Brainstorming)</h3>
+            <p>Use Claude AI to brainstorm character concepts:</p>
+            <ul>
+                <li>Describe your character idea in natural language</li>
+                <li>Get suggestions for stats, abilities, and backstory</li>
+                <li>Best for fleshing out character concepts</li>
+                <li>Does not generate pixel art</li>
+            </ul>
+
+            <h3>PixelLab (Pixel Art)</h3>
+            <p>Generate actual pixel art sprites:</p>
+            <ul>
+                <li>Creates multi-directional character spritesheets</li>
+                <li>Precise pose control via skeleton editor</li>
+                <li>Consistent style settings</li>
+                <li>Results import directly as sprites</li>
+            </ul>
+
+            <h2>PixelLab Generation Workflow</h2>
+
+            <div class="step">
+                <div class="step-num">1</div>
+                <div class="step-text">
+                    <strong>Select PixelLab Engine</strong><br>
+                    In the New Character form, click "PixelLab" as your engine choice.
+                </div>
+            </div>
+
+            <div class="step">
+                <div class="step-num">2</div>
+                <div class="step-text">
+                    <strong>Describe Your Character</strong><br>
+                    Enter a detailed description: "armored knight with blue cape", "small goblin with wooden club", etc.
+                </div>
+            </div>
+
+            <div class="step">
+                <div class="step-num">3</div>
+                <div class="step-text">
+                    <strong>Set the Pose</strong><br>
+                    Use the skeleton editor to position your character. Drag joints to adjust the pose, or select a preset (Idle, Walk, Attack).
+                </div>
+            </div>
+
+            <div class="step">
+                <div class="step-num">4</div>
+                <div class="step-text">
+                    <strong>Configure Options</strong><br>
+                    Set sprite size (32, 48, 64px), number of directions (4 or 8), and visual style settings.
+                </div>
+            </div>
+
+            <div class="step">
+                <div class="step-num">5</div>
+                <div class="step-text">
+                    <strong>Generate</strong><br>
+                    Click Generate to queue the job. Generation takes 2-5 minutes.
+                </div>
+            </div>
+
+            <h2>Skeleton Editor</h2>
+            <p>The skeleton editor gives you precise control over character pose:</p>
+            <ul>
+                <li><strong>Joints</strong> - Drag head, shoulders, elbows, hands, hips, knees, and feet</li>
+                <li><strong>Presets</strong> - Quick poses: Idle, Walk 1, Walk 2, Attack, Jump</li>
+                <li><strong>Reset</strong> - Return to the default pose</li>
+                <li><strong>Guidance</strong> - Slider controls how strictly the AI follows your pose</li>
+            </ul>
+
+            <h2>Generation Queue</h2>
+            <p>Track your generation jobs in the queue panel (bottom-right):</p>
+            <ul>
+                <li><strong>⏳ Processing</strong> - Job is being generated</li>
+                <li><strong>✅ Complete</strong> - Ready to import</li>
+                <li><strong>❌ Failed</strong> - Click Retry to try again</li>
+            </ul>
+
+            <p>The queue is shared across all Game Wizard tools—you can start a job here and see it complete in Sprite-Rite.</p>
+
+            <h2>After Generation</h2>
+            <p>When generation completes:</p>
+            <ol>
+                <li>Click <strong>Import</strong> on the completed job</li>
+                <li>The spritesheet loads in Sprite-Rite</li>
+                <li>Use Auto-Detect to select each direction</li>
+                <li>Save sprites to the master sheet</li>
+                <li>Return to Incarnum and assign the sprite to your character</li>
+            </ol>
+
+            <div class="tip">
+                <div class="tip-label">Tip</div>
+                For best results, use consistent style settings across all characters. Set project defaults in Crucible.
+            </div>
+
+            <div class="warning">
+                <div class="warning-label">Note</div>
+                PixelLab generation requires API access. Jobs run asynchronously—you can continue working while waiting.
+            </div>
+        `
+    },
+    {
         id: 'shortcuts',
         title: 'Shortcuts',
         content: `

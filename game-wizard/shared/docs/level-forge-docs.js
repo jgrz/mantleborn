@@ -420,6 +420,102 @@ const LEVEL_FORGE_DOCS = [
         `
     },
     {
+        id: 'ai-tilesets',
+        title: 'AI Tileset Generation',
+        content: `
+            <h1>AI Tileset Generation</h1>
+            <p>Generate complete Wang tilesets using PixelLab AI. Create terrain transitions, platform sets, and decorative tiles with a single prompt.</p>
+
+            <h2>Opening the Generator</h2>
+            <p>In the Tiles tab, click the <strong>+ Generate</strong> button next to the tile palette header.</p>
+
+            <h2>Tileset Types</h2>
+
+            <h3>Top-Down Terrain</h3>
+            <p>For top-down/overhead games. Creates 16 Wang tiles for terrain transitions:</p>
+            <ul>
+                <li><strong>Lower Material</strong> - The base terrain ("grass", "water", "stone")</li>
+                <li><strong>Upper Material</strong> - The overlapping terrain ("dirt path", "sand", "snow")</li>
+            </ul>
+
+            <h3>Sidescroller Platforms</h3>
+            <p>For platformer games. Creates platform pieces with proper edges:</p>
+            <ul>
+                <li><strong>Material</strong> - Platform material ("stone brick", "wood plank", "metal")</li>
+                <li><strong>Decoration</strong> - Surface details ("mossy", "cracked", "rusted")</li>
+            </ul>
+
+            <h2>Generation Workflow</h2>
+
+            <div class="step">
+                <div class="step-num">1</div>
+                <div class="step-text">
+                    <strong>Select Tileset Type</strong><br>
+                    Choose Top-Down or Sidescroller based on your game perspective.
+                </div>
+            </div>
+
+            <div class="step">
+                <div class="step-num">2</div>
+                <div class="step-text">
+                    <strong>Describe Materials</strong><br>
+                    Enter descriptions for lower/upper (top-down) or material/decoration (sidescroller).
+                </div>
+            </div>
+
+            <div class="step">
+                <div class="step-num">3</div>
+                <div class="step-text">
+                    <strong>Set Options</strong><br>
+                    Tile size, transition style (sharp/medium/wide), and visual style settings.
+                </div>
+            </div>
+
+            <div class="step">
+                <div class="step-num">4</div>
+                <div class="step-text">
+                    <strong>Queue Generation</strong><br>
+                    Click Generate. Tileset generation takes 2-5 minutes.
+                </div>
+            </div>
+
+            <h2>Chaining Tilesets</h2>
+            <p>Create seamless multi-terrain transitions by chaining tilesets:</p>
+            <ol>
+                <li>Generate grass → dirt transition</li>
+                <li>Generate dirt → water using the dirt tileset as base</li>
+                <li>The AI maintains material consistency across sets</li>
+            </ol>
+
+            <h2>Generation Queue</h2>
+            <p>Track jobs in the queue panel (bottom-right):</p>
+            <ul>
+                <li><strong>⏳ Processing</strong> - Tileset is being generated</li>
+                <li><strong>✅ Complete</strong> - Ready to import to palette</li>
+                <li><strong>❌ Failed</strong> - Click Retry</li>
+            </ul>
+
+            <h2>Importing Tilesets</h2>
+            <p>When generation completes:</p>
+            <ol>
+                <li>Click <strong>Import</strong> on the completed job</li>
+                <li>All 16 Wang tiles are added to the palette</li>
+                <li>Autotile rules are pre-configured</li>
+                <li>Start painting with automatic tile selection</li>
+            </ol>
+
+            <div class="tip">
+                <div class="tip-label">Tip</div>
+                Use consistent style settings across all tilesets in a project for visual coherence. Set defaults in Crucible.
+            </div>
+
+            <div class="warning">
+                <div class="warning-label">Note</div>
+                Wang tilesets use the "blob" autotile pattern with 16 tiles covering all corner and edge combinations.
+            </div>
+        `
+    },
+    {
         id: 'export',
         title: 'Export & Integration',
         content: `
