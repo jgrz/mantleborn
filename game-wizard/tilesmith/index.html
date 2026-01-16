@@ -447,6 +447,133 @@
             font-style: italic;
         }
 
+        /* Groups Section */
+        .groups-section {
+            margin-bottom: 12px;
+            display: none;
+        }
+
+        .groups-section.visible {
+            display: block;
+        }
+
+        .groups-header, .tiles-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 6px;
+        }
+
+        .section-subheader {
+            font-family: 'Press Start 2P', cursive;
+            font-size: 7px;
+            color: var(--stone-mid);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .btn-tiny {
+            font-family: 'Press Start 2P', cursive;
+            font-size: 6px;
+            padding: 3px 6px;
+            background: var(--bg-surface);
+            border: 1px solid var(--stone-dark);
+            border-radius: 3px;
+            color: var(--stone-mid);
+            cursor: pointer;
+            transition: all 0.15s;
+        }
+
+        .btn-tiny:hover {
+            border-color: var(--stone-mid);
+            color: var(--stone-bright);
+        }
+
+        .groups-grid {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+            max-height: 80px;
+            overflow-y: auto;
+            margin-bottom: 8px;
+        }
+
+        .group-tile {
+            min-width: 56px;
+            min-height: 56px;
+            max-width: 80px;
+            max-height: 80px;
+            background: var(--bg-surface);
+            border: 2px solid var(--fire-dark);
+            border-radius: 4px;
+            cursor: pointer;
+            transition: all 0.15s;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 4px;
+            position: relative;
+        }
+
+        .group-tile:hover {
+            border-color: var(--fire-mid);
+            transform: scale(1.05);
+        }
+
+        .group-tile.active {
+            border-color: var(--fire-bright);
+            box-shadow: 0 0 8px var(--fire-mid);
+        }
+
+        .group-tile canvas {
+            image-rendering: pixelated;
+        }
+
+        .group-tile-name {
+            font-size: 6px;
+            color: var(--stone-mid);
+            margin-top: 2px;
+            max-width: 100%;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        .group-tile-delete {
+            position: absolute;
+            top: -4px;
+            right: -4px;
+            width: 14px;
+            height: 14px;
+            border-radius: 50%;
+            background: var(--fire-dark);
+            border: none;
+            color: var(--stone-bright);
+            font-size: 10px;
+            line-height: 1;
+            cursor: pointer;
+            opacity: 0;
+            transition: opacity 0.15s;
+        }
+
+        .group-tile:hover .group-tile-delete {
+            opacity: 1;
+        }
+
+        .group-tile-delete:hover {
+            background: var(--fire-mid);
+        }
+
+        .groups-empty {
+            width: 100%;
+            padding: 8px;
+            text-align: center;
+            color: var(--stone-mid);
+            font-size: 8px;
+            font-style: italic;
+        }
+
         .library-tile {
             width: 48px;
             height: 48px;
@@ -1123,8 +1250,26 @@
                     <button class="btn btn-small" id="publishTileBtn" title="Publish selected tile to Master Sheet">Publish</button>
                     <button class="btn btn-small" id="publishAllBtn" title="Publish all drafts to Master Sheet">Publish All</button>
                 </div>
-                <div class="library-grid" id="libraryGrid">
-                    <!-- Tiles populated by JS -->
+
+                <!-- Groups Section (only shown on Master view) -->
+                <div class="groups-section" id="groupsSection">
+                    <div class="groups-header">
+                        <span class="section-subheader">Groups</span>
+                        <button class="btn btn-tiny" id="newGroupBtn" title="Create new tile group">+ Group</button>
+                    </div>
+                    <div class="groups-grid" id="groupsGrid">
+                        <!-- Groups populated by JS -->
+                    </div>
+                </div>
+
+                <!-- Tiles Section -->
+                <div class="tiles-section">
+                    <div class="tiles-header">
+                        <span class="section-subheader">Tiles</span>
+                    </div>
+                    <div class="library-grid" id="libraryGrid">
+                        <!-- Tiles populated by JS -->
+                    </div>
                 </div>
             </div>
         </div>
@@ -1429,6 +1574,10 @@
             draftSheet: { png: null, atlas: { size: { w: 0, h: 0 }, sprites: {} } },
             masterSheet: { png: null, atlas: { size: { w: 0, h: 0 }, sprites: {} } },
             draftTiles: [],             // Array of tile objects from draft
+
+            // Tile groups
+            tileGroups: [],             // Array of tile groups from DB
+            currentGroupId: null,       // Currently selected group (if any)
             masterTiles: [],            // Array of tile objects from master
 
             // Canvas - single tile dimensions
@@ -1498,6 +1647,9 @@
             libraryActions: document.getElementById('libraryActions'),
             publishTileBtn: document.getElementById('publishTileBtn'),
             publishAllBtn: document.getElementById('publishAllBtn'),
+            groupsSection: document.getElementById('groupsSection'),
+            groupsGrid: document.getElementById('groupsGrid'),
+            newGroupBtn: document.getElementById('newGroupBtn'),
             colorPicker: document.getElementById('colorPicker'),
             currentHex: document.getElementById('currentHex'),
             currentColorFamily: document.getElementById('currentColorFamily'),
@@ -2540,10 +2692,11 @@
             }
 
             try {
-                // Load both sheets in parallel
-                const [draftResult, masterResult] = await Promise.all([
+                // Load sheets and groups in parallel
+                const [draftResult, masterResult, groups] = await Promise.all([
                     crucibleClient.getDraftSheet(projectId),
-                    crucibleClient.getMasterSheet(projectId)
+                    crucibleClient.getMasterSheet(projectId),
+                    crucibleClient.getTileGroups(projectId)
                 ]);
 
                 // Store sheet data
@@ -2555,6 +2708,7 @@
                     png: masterResult.png,
                     atlas: masterResult.atlas || { size: { w: 0, h: 0 }, sprites: {} }
                 };
+                state.tileGroups = groups || [];
 
                 // Convert atlas sprites to tile arrays for display
                 state.draftTiles = atlasToTileArray(state.draftSheet.atlas, state.draftSheet.png);
@@ -2562,6 +2716,7 @@
 
                 updateSheetCounts();
                 renderTileLibrary();
+                renderTileGroups();
             } catch (err) {
                 console.error('Failed to load sheets:', err);
                 showToast('Failed to load tiles', true);
@@ -2590,6 +2745,10 @@
             // Show/hide publish buttons based on view and content
             const showPublish = state.libraryView === 'draft' && state.draftTiles.length > 0;
             elements.libraryActions.style.display = showPublish ? 'flex' : 'none';
+
+            // Show groups section only on master view
+            const showGroups = state.libraryView === 'master';
+            elements.groupsSection.classList.toggle('visible', showGroups);
         }
 
         function switchSheetView(view) {
@@ -2601,6 +2760,201 @@
 
             updateSheetCounts();
             renderTileLibrary();
+            renderTileGroups();
+        }
+
+        // Render tile groups (assembled previews)
+        function renderTileGroups() {
+            elements.groupsGrid.innerHTML = '';
+
+            // Only show groups on master view
+            if (state.libraryView !== 'master') return;
+
+            if (state.tileGroups.length === 0) {
+                const emptyMsg = document.createElement('div');
+                emptyMsg.className = 'groups-empty';
+                emptyMsg.textContent = 'No groups yet. Create one to combine tiles.';
+                elements.groupsGrid.appendChild(emptyMsg);
+                return;
+            }
+
+            // Need the master sheet image to render group previews
+            if (!state.masterSheet.png) return;
+
+            const sheetImg = new Image();
+            sheetImg.src = state.masterSheet.png;
+            sheetImg.onload = () => {
+                state.tileGroups.forEach(group => {
+                    const groupEl = document.createElement('div');
+                    groupEl.className = 'group-tile';
+                    if (group.id === state.currentGroupId) {
+                        groupEl.classList.add('active');
+                    }
+
+                    // Create assembled preview canvas
+                    const canvas = document.createElement('canvas');
+                    const tileSize = 16; // Base tile size (will be scaled)
+                    canvas.width = group.cols * tileSize;
+                    canvas.height = group.rows * tileSize;
+                    const gCtx = canvas.getContext('2d');
+                    gCtx.imageSmoothingEnabled = false;
+
+                    // Render each tile in the arrangement
+                    const arrangement = group.arrangement || [];
+                    for (let row = 0; row < group.rows; row++) {
+                        for (let col = 0; col < group.cols; col++) {
+                            const tileName = arrangement[row]?.[col];
+                            if (tileName) {
+                                const tile = state.masterTiles.find(t => t.name === tileName);
+                                if (tile) {
+                                    gCtx.drawImage(
+                                        sheetImg,
+                                        tile.x, tile.y, tile.width, tile.height,
+                                        col * tileSize, row * tileSize, tileSize, tileSize
+                                    );
+                                }
+                            }
+                        }
+                    }
+
+                    groupEl.appendChild(canvas);
+
+                    // Group name label
+                    const nameEl = document.createElement('div');
+                    nameEl.className = 'group-tile-name';
+                    nameEl.textContent = group.name;
+                    groupEl.appendChild(nameEl);
+
+                    // Delete button
+                    const deleteBtn = document.createElement('button');
+                    deleteBtn.className = 'group-tile-delete';
+                    deleteBtn.textContent = '×';
+                    deleteBtn.addEventListener('click', async (e) => {
+                        e.stopPropagation();
+                        await handleGroupDelete(group);
+                    });
+                    groupEl.appendChild(deleteBtn);
+
+                    groupEl.title = `${group.name} (${group.cols}×${group.rows})`;
+                    groupEl.addEventListener('click', () => loadGroup(group));
+
+                    elements.groupsGrid.appendChild(groupEl);
+                });
+            };
+        }
+
+        // Handle group deletion
+        async function handleGroupDelete(group) {
+            if (!confirm(`Delete group "${group.name}"?\n\nTiles will not be deleted, only the group arrangement.`)) {
+                return;
+            }
+
+            try {
+                await crucibleClient.deleteTileGroup(group.id);
+                state.tileGroups = state.tileGroups.filter(g => g.id !== group.id);
+
+                if (state.currentGroupId === group.id) {
+                    state.currentGroupId = null;
+                    newTile();
+                }
+
+                renderTileGroups();
+                showToast(`Deleted group "${group.name}"`);
+            } catch (err) {
+                console.error('Failed to delete group:', err);
+                showToast('Failed to delete group', true);
+            }
+        }
+
+        // Load a group into the canvas for editing
+        async function loadGroup(group) {
+            state.currentGroupId = group.id;
+            state.currentTileName = null;
+            state.currentTileSource = 'group';
+
+            // Set canvas to group dimensions
+            state.gridCols = group.cols;
+            state.gridRows = group.rows;
+            state.selectedTileX = 0;
+            state.selectedTileY = 0;
+
+            elements.tileName.value = group.name;
+            elements.gridCols.value = group.cols;
+            elements.gridRows.value = group.rows;
+
+            // Determine tile size from first tile in arrangement
+            const arrangement = group.arrangement || [];
+            let tileWidth = 16, tileHeight = 16;
+            for (const row of arrangement) {
+                for (const tileName of row) {
+                    if (tileName) {
+                        const tile = state.masterTiles.find(t => t.name === tileName);
+                        if (tile) {
+                            tileWidth = tile.width;
+                            tileHeight = tile.height;
+                            break;
+                        }
+                    }
+                }
+            }
+            state.width = tileWidth;
+            state.height = tileHeight;
+            elements.tileWidth.value = tileWidth;
+            elements.tileHeight.value = tileHeight;
+
+            // Create pixel data for the full group
+            const totalWidth = getTotalWidth();
+            const totalHeight = getTotalHeight();
+            state.pixels = ctx.createImageData(totalWidth, totalHeight);
+
+            // Load each tile from the master sheet
+            if (state.masterSheet.png) {
+                try {
+                    const sheetImg = new Image();
+                    await new Promise((resolve, reject) => {
+                        sheetImg.onload = resolve;
+                        sheetImg.onerror = reject;
+                        sheetImg.src = state.masterSheet.png;
+                    });
+
+                    const tempCanvas = document.createElement('canvas');
+                    tempCanvas.width = totalWidth;
+                    tempCanvas.height = totalHeight;
+                    const tempCtx = tempCanvas.getContext('2d');
+
+                    for (let row = 0; row < group.rows; row++) {
+                        for (let col = 0; col < group.cols; col++) {
+                            const tileName = arrangement[row]?.[col];
+                            if (tileName) {
+                                const tile = state.masterTiles.find(t => t.name === tileName);
+                                if (tile) {
+                                    tempCtx.drawImage(
+                                        sheetImg,
+                                        tile.x, tile.y, tile.width, tile.height,
+                                        col * tileWidth, row * tileHeight, tileWidth, tileHeight
+                                    );
+                                }
+                            }
+                        }
+                    }
+
+                    const imgData = tempCtx.getImageData(0, 0, totalWidth, totalHeight);
+                    state.pixels.data.set(imgData.data);
+                } catch (e) {
+                    console.warn('Failed to load group tiles:', e);
+                }
+            }
+
+            renderTileSelector();
+            updateCanvasSize();
+            renderTileGroups();
+            renderTileLibrary();
+            state.undoStack = [];
+            state.redoStack = [];
+            updateUndoRedoButtons();
+            state.isDirty = false;
+            elements.saveIndicator.textContent = 'Group';
+            elements.saveIndicator.className = 'save-indicator master';
         }
 
         function renderTileLibrary() {
@@ -2910,6 +3264,7 @@
             state.currentTileId = null;
             state.currentTileName = null;
             state.currentTileSource = 'new';
+            state.currentGroupId = null;
             state.width = parseInt(elements.tileWidth.value) || 16;
             state.height = parseInt(elements.tileHeight.value) || 16;
 
@@ -2927,12 +3282,115 @@
             renderTileSelector();
             initializeCanvas();
             renderTileLibrary();
+            renderTileGroups();
             state.undoStack = [];
             state.redoStack = [];
             updateUndoRedoButtons();
             state.isDirty = false;
             elements.saveIndicator.textContent = 'New';
             elements.saveIndicator.className = 'save-indicator';
+        }
+
+        // Create a new tile group from canvas contents
+        async function createNewGroup() {
+            // Must be on master view to create groups
+            if (state.libraryView !== 'master') {
+                switchSheetView('master');
+            }
+
+            // Must have multiple tiles to create a group
+            if (state.gridCols === 1 && state.gridRows === 1) {
+                showToast('Expand the grid to create a multi-tile group', true);
+                return;
+            }
+
+            const groupName = prompt('Enter a name for this group:', '');
+            if (!groupName || groupName.trim() === '') return;
+
+            // Build arrangement from current grid
+            // For now, auto-generate tile names based on group name
+            const arrangement = [];
+            const tilesToSave = [];
+
+            for (let row = 0; row < state.gridRows; row++) {
+                const rowArr = [];
+                for (let col = 0; col < state.gridCols; col++) {
+                    const tileName = `${groupName.trim()}_${row}_${col}`;
+                    rowArr.push(tileName);
+
+                    // Extract tile pixel data
+                    const tileCanvas = document.createElement('canvas');
+                    tileCanvas.width = state.width;
+                    tileCanvas.height = state.height;
+                    const tileCtx = tileCanvas.getContext('2d');
+
+                    // Copy from state.pixels
+                    const tileData = tileCtx.createImageData(state.width, state.height);
+                    const srcX = col * state.width;
+                    const srcY = row * state.height;
+                    const totalWidth = getTotalWidth();
+
+                    for (let y = 0; y < state.height; y++) {
+                        for (let x = 0; x < state.width; x++) {
+                            const srcIdx = ((srcY + y) * totalWidth + (srcX + x)) * 4;
+                            const dstIdx = (y * state.width + x) * 4;
+                            tileData.data[dstIdx] = state.pixels.data[srcIdx];
+                            tileData.data[dstIdx + 1] = state.pixels.data[srcIdx + 1];
+                            tileData.data[dstIdx + 2] = state.pixels.data[srcIdx + 2];
+                            tileData.data[dstIdx + 3] = state.pixels.data[srcIdx + 3];
+                        }
+                    }
+
+                    tileCtx.putImageData(tileData, 0, 0);
+                    const imageData = tileCanvas.toDataURL('image/png');
+
+                    tilesToSave.push({
+                        name: tileName,
+                        imageData,
+                        width: state.width,
+                        height: state.height
+                    });
+                }
+                arrangement.push(rowArr);
+            }
+
+            elements.saveIndicator.textContent = 'Saving...';
+            elements.saveIndicator.className = 'save-indicator saving';
+
+            try {
+                // Save all tiles to master sheet
+                for (const tile of tilesToSave) {
+                    await crucibleClient.saveToMaster(
+                        state.projectId,
+                        tile.name,
+                        tile.imageData,
+                        tile.width,
+                        tile.height
+                    );
+                }
+
+                // Create the group record
+                await crucibleClient.createTileGroup(
+                    state.projectId,
+                    groupName.trim(),
+                    state.gridCols,
+                    state.gridRows,
+                    arrangement
+                );
+
+                // Refresh
+                await selectProject(state.projectId);
+                switchSheetView('master');
+
+                elements.saveIndicator.textContent = 'Group Created';
+                elements.saveIndicator.className = 'save-indicator saved';
+                showToast(`Created group "${groupName.trim()}" with ${tilesToSave.length} tiles`);
+            } catch (err) {
+                console.error('Failed to create group:', err);
+                elements.saveIndicator.textContent = 'Save failed';
+                elements.saveIndicator.className = 'save-indicator';
+                showToast('Failed to create group', true);
+            }
         }
 
         async function saveTile() {
@@ -3643,6 +4101,9 @@
             // Publish buttons
             elements.publishTileBtn.addEventListener('click', () => publishTile());
             elements.publishAllBtn.addEventListener('click', () => publishAllDrafts());
+
+            // New group button
+            elements.newGroupBtn.addEventListener('click', () => createNewGroup());
 
             // AI modal
             elements.aiGenerateBtn.addEventListener('click', openAiModal);
