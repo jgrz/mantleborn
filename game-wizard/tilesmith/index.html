@@ -297,6 +297,68 @@
             accent-color: var(--accent-green);
         }
 
+        /* Quick Palette Bar */
+        .quick-palette-bar {
+            display: none;
+            padding: 8px 12px;
+            background: var(--bg-mid);
+            border-top: 1px solid var(--stone-dark);
+            gap: 8px;
+            align-items: center;
+        }
+
+        .quick-palette-bar.open {
+            display: flex;
+        }
+
+        .quick-palette-current {
+            width: 28px;
+            height: 28px;
+            border: 2px solid var(--stone-mid);
+            border-radius: 4px;
+            cursor: pointer;
+            flex-shrink: 0;
+        }
+
+        .quick-palette-grid {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 3px;
+            flex: 1;
+        }
+
+        .quick-palette-swatch {
+            width: 20px;
+            height: 20px;
+            border: 1px solid var(--stone-dark);
+            border-radius: 2px;
+            cursor: pointer;
+            transition: transform 0.15s;
+        }
+
+        .quick-palette-swatch:hover {
+            transform: scale(1.15);
+        }
+
+        .quick-palette-swatch.active {
+            border-color: var(--stone-bright);
+            box-shadow: 0 0 0 1px var(--stone-bright);
+        }
+
+        .palette-toggle-btn {
+            position: relative;
+        }
+
+        .palette-toggle-btn .color-dot {
+            position: absolute;
+            bottom: 2px;
+            right: 2px;
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            border: 1px solid var(--bg-deep);
+        }
+
         /* Tile Library */
         .tile-library {
             border-top: 1px solid var(--stone-dark);
@@ -847,9 +909,9 @@
                     <div class="zoom-group">
                         <button class="zoom-btn" data-zoom="1">1x</button>
                         <button class="zoom-btn" data-zoom="2">2x</button>
-                        <button class="zoom-btn active" data-zoom="4">4x</button>
+                        <button class="zoom-btn" data-zoom="4">4x</button>
                         <button class="zoom-btn" data-zoom="8">8x</button>
-                        <button class="zoom-btn" data-zoom="16">16x</button>
+                        <button class="zoom-btn active" data-zoom="16">16x</button>
                     </div>
                 </div>
 
@@ -905,6 +967,16 @@
                     </div>
                     <div class="toolbar-group">
                         <button class="tool-btn" data-tool="clear" title="Clear Current Tile">&#128465;</button>
+                        <button class="tool-btn palette-toggle-btn" id="paletteToggleBtn" title="Toggle Palette (C)">
+                            &#127912;
+                            <span class="color-dot" id="colorDot" style="background: #40d080;"></span>
+                        </button>
+                    </div>
+                </div>
+                <div class="quick-palette-bar" id="quickPaletteBar">
+                    <input type="color" class="quick-palette-current" id="quickColorPicker" value="#40d080" title="Pick Color">
+                    <div class="quick-palette-grid" id="quickPaletteGrid">
+                        <!-- Populated by JS -->
                     </div>
                 </div>
             </div>
@@ -1215,7 +1287,7 @@
             // Canvas - single tile dimensions
             width: 16,
             height: 16,
-            zoom: 4,
+            zoom: 16,
             showGrid: true,
             showTileBorders: true,
 
@@ -1274,6 +1346,11 @@
             currentHex: document.getElementById('currentHex'),
             palettePreset: document.getElementById('palettePreset'),
             paletteGrid: document.getElementById('paletteGrid'),
+            paletteToggleBtn: document.getElementById('paletteToggleBtn'),
+            quickPaletteBar: document.getElementById('quickPaletteBar'),
+            quickPaletteGrid: document.getElementById('quickPaletteGrid'),
+            quickColorPicker: document.getElementById('quickColorPicker'),
+            colorDot: document.getElementById('colorDot'),
             addColorBtn: document.getElementById('addColorBtn'),
             removeColorBtn: document.getElementById('removeColorBtn'),
             tileName: document.getElementById('tileName'),
@@ -1940,12 +2017,32 @@
                 swatch.addEventListener('click', () => selectColor(color));
                 elements.paletteGrid.appendChild(swatch);
             });
+
+            renderQuickPalette();
+        }
+
+        function renderQuickPalette() {
+            elements.quickPaletteGrid.innerHTML = '';
+
+            state.palette.forEach((color) => {
+                const swatch = document.createElement('div');
+                swatch.className = 'quick-palette-swatch';
+                if (color.toLowerCase() === state.currentColor.toLowerCase()) {
+                    swatch.classList.add('active');
+                }
+                swatch.style.backgroundColor = color;
+                swatch.title = color;
+                swatch.addEventListener('click', () => selectColor(color));
+                elements.quickPaletteGrid.appendChild(swatch);
+            });
         }
 
         function selectColor(color) {
             state.currentColor = color;
             elements.colorPicker.value = color;
+            elements.quickColorPicker.value = color;
             elements.currentHex.textContent = color.toUpperCase();
+            elements.colorDot.style.backgroundColor = color;
             renderPalette();
         }
 
@@ -2747,6 +2844,17 @@
                 selectColor(e.target.value);
             });
 
+            // Quick palette toggle
+            elements.paletteToggleBtn.addEventListener('click', () => {
+                elements.quickPaletteBar.classList.toggle('open');
+                elements.paletteToggleBtn.classList.toggle('active');
+            });
+
+            // Quick color picker
+            elements.quickColorPicker.addEventListener('input', (e) => {
+                selectColor(e.target.value);
+            });
+
             // Palette preset
             elements.palettePreset.addEventListener('change', (e) => {
                 loadPalettePreset(e.target.value);
@@ -2836,6 +2944,10 @@
                 if (e.key === 'i') selectTool('picker');
                 if (e.key === 'l') selectTool('line');
                 if (e.key === 'r') selectTool(e.shiftKey ? 'rectfill' : 'rect');
+                if (e.key === 'c') {
+                    elements.quickPaletteBar.classList.toggle('open');
+                    elements.paletteToggleBtn.classList.toggle('active');
+                }
             });
         }
 
