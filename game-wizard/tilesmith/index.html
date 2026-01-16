@@ -1014,83 +1014,67 @@
             </div>
             <div class="modal-body">
                 <div class="form-group">
-                    <label class="form-label">Tile Type *</label>
-                    <select class="form-input" id="aiTileType">
-                        <option value="terrain">Terrain</option>
-                        <option value="structure">Structure</option>
-                        <option value="vegetation">Vegetation</option>
-                        <option value="water">Water</option>
-                        <option value="path">Path</option>
-                        <option value="decoration">Decoration</option>
-                    </select>
-                </div>
-                <div class="form-group">
                     <label class="form-label">Description *</label>
-                    <input type="text" class="form-input" id="aiSubtype" placeholder="e.g., grassy meadow, cobblestone road">
+                    <textarea class="form-input" id="aiDescription" rows="2" placeholder="e.g., mossy stone brick, wooden treasure chest, glowing crystal"></textarea>
                 </div>
                 <div class="form-row">
-                    <div class="form-group">
-                        <label class="form-label">Art Style</label>
-                        <select class="form-input" id="aiArtStyle">
-                            <option value="pixel_8bit">8-bit Pixel</option>
-                            <option value="pixel_16bit" selected>16-bit Pixel</option>
-                            <option value="pixel_32bit">32-bit Pixel</option>
-                        </select>
-                    </div>
                     <div class="form-group">
                         <label class="form-label">Perspective</label>
                         <select class="form-input" id="aiPerspective">
-                            <option value="top_down" selected>Top-down</option>
+                            <option value="high top-down">High Top-Down</option>
+                            <option value="low top-down" selected>Low Top-Down</option>
+                            <option value="side">Side View</option>
                             <option value="isometric">Isometric</option>
-                            <option value="side_view">Side View</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Isometric Shape</label>
+                        <select class="form-input" id="aiIsoShape" disabled>
+                            <option value="thin">Thin</option>
+                            <option value="thick">Thick</option>
+                            <option value="block" selected>Block</option>
                         </select>
                     </div>
                 </div>
                 <div class="form-row">
                     <div class="form-group">
-                        <label class="form-label">Palette Size</label>
-                        <select class="form-input" id="aiPaletteSize">
-                            <option value="4">4 Colors</option>
-                            <option value="8">8 Colors</option>
-                            <option value="16" selected>16 Colors</option>
-                            <option value="32">32 Colors</option>
+                        <label class="form-label">Outline</label>
+                        <select class="form-input" id="aiOutline">
+                            <option value="none">None</option>
+                            <option value="single color black outline" selected>Black Outline</option>
+                            <option value="single color colored outline">Colored Outline</option>
                         </select>
                     </div>
                     <div class="form-group">
                         <label class="form-label">Shading</label>
-                        <select class="form-input" id="aiShadingStyle">
-                            <option value="flat">Flat</option>
-                            <option value="dithered" selected>Dithered</option>
-                            <option value="soft_gradient">Soft Gradient</option>
+                        <select class="form-input" id="aiShading">
+                            <option value="flat shading">Flat</option>
+                            <option value="basic shading" selected>Basic</option>
+                            <option value="detailed shading">Detailed</option>
                         </select>
                     </div>
                 </div>
                 <div class="form-row">
                     <div class="form-group">
-                        <label class="form-label">Biome</label>
-                        <select class="form-input" id="aiBiome">
-                            <option value="forest">Forest</option>
-                            <option value="desert">Desert</option>
-                            <option value="snow">Snow</option>
-                            <option value="urban">Urban</option>
-                            <option value="fantasy" selected>Fantasy</option>
-                            <option value="plains">Plains</option>
+                        <label class="form-label">Detail Level</label>
+                        <select class="form-input" id="aiDetail">
+                            <option value="low detail">Low</option>
+                            <option value="medium detail" selected>Medium</option>
+                            <option value="high detail">High</option>
                         </select>
                     </div>
                     <div class="form-group">
-                        <label class="form-label">Condition</label>
-                        <select class="form-input" id="aiWearLevel">
-                            <option value="pristine">Pristine</option>
-                            <option value="used" selected>Used</option>
-                            <option value="weathered">Weathered</option>
-                            <option value="ruined">Ruined</option>
+                        <label class="form-label">Size</label>
+                        <select class="form-input" id="aiSize">
+                            <option value="16">16px</option>
+                            <option value="24">24px</option>
+                            <option value="32" selected>32px</option>
                         </select>
                     </div>
                 </div>
-                <div class="form-group">
-                    <label class="form-label">Custom Instructions (optional)</label>
-                    <textarea class="form-input" id="aiCustomInstructions" rows="2" placeholder="Any specific details or requirements..."></textarea>
-                </div>
+                <p style="font-size: 11px; color: var(--stone-mid); margin-top: 8px;">
+                    Generation takes 2-5 minutes. Track progress in the queue panel.
+                </p>
             </div>
             <div class="modal-footer">
                 <button class="btn" id="aiModalCancel">Cancel</button>
@@ -1269,11 +1253,98 @@
         function initGenerationQueue() {
             if (typeof GenerationQueue !== 'undefined' && elements.generationQueuePanel) {
                 state.generationQueue = new GenerationQueue(elements.generationQueuePanel, {
-                    onImport: (job) => {
-                        showToast('Import completed generation in Sprite-Rite');
+                    onImport: async (job) => {
+                        // Handle tile imports - download image and apply to canvas
+                        if (job.jobType === 'isometric_tile' || job.jobType === 'map_object') {
+                            await importGeneratedTile(job);
+                        } else {
+                            showToast('Import this asset in Sprite-Rite');
+                        }
                     },
                     onError: (error) => showToast(error, true)
                 });
+            }
+        }
+
+        async function importGeneratedTile(job) {
+            if (!job.resultUrl) {
+                showToast('No image URL available', true);
+                return;
+            }
+
+            try {
+                showToast('Importing tile...');
+
+                // Download the image
+                const response = await fetch(job.resultUrl);
+                if (!response.ok) throw new Error('Failed to download image');
+
+                const blob = await response.blob();
+                const img = new Image();
+
+                await new Promise((resolve, reject) => {
+                    img.onload = resolve;
+                    img.onerror = reject;
+                    img.src = URL.createObjectURL(blob);
+                });
+
+                // Get the image dimensions
+                const imgWidth = img.width;
+                const imgHeight = img.height;
+
+                // Update tile size if needed
+                if (imgWidth !== state.width || imgHeight !== state.height) {
+                    state.width = imgWidth;
+                    state.height = imgHeight;
+                    elements.tileWidth.value = imgWidth;
+                    elements.tileHeight.value = imgHeight;
+
+                    // Recreate pixel data with new dimensions
+                    const totalWidth = state.width * state.gridCols;
+                    const totalHeight = state.height * state.gridRows;
+                    state.pixels = ctx.createImageData(totalWidth, totalHeight);
+                    updateCanvasSize();
+                }
+
+                // Draw image to temp canvas to get pixel data
+                const tempCanvas = document.createElement('canvas');
+                tempCanvas.width = imgWidth;
+                tempCanvas.height = imgHeight;
+                const tempCtx = tempCanvas.getContext('2d');
+                tempCtx.drawImage(img, 0, 0);
+
+                const imageData = tempCtx.getImageData(0, 0, imgWidth, imgHeight);
+
+                // Save undo state
+                saveUndoState();
+
+                // Calculate offset for selected tile
+                const offsetX = state.selectedTileX * state.width;
+                const offsetY = state.selectedTileY * state.height;
+
+                // Apply pixels to the selected tile position
+                for (let y = 0; y < imgHeight; y++) {
+                    for (let x = 0; x < imgWidth; x++) {
+                        const srcIdx = (y * imgWidth + x) * 4;
+                        const r = imageData.data[srcIdx];
+                        const g = imageData.data[srcIdx + 1];
+                        const b = imageData.data[srcIdx + 2];
+                        const a = imageData.data[srcIdx + 3];
+
+                        const hex = `#${r.toString(16).padStart(2, '0')}${g.toString(16).padStart(2, '0')}${b.toString(16).padStart(2, '0')}`;
+                        setPixel(offsetX + x, offsetY + y, hex, a);
+                    }
+                }
+
+                // Clean up
+                URL.revokeObjectURL(img.src);
+
+                render();
+                markDirty();
+                showToast('Tile imported to canvas!');
+            } catch (err) {
+                console.error('Failed to import tile:', err);
+                showToast('Failed to import tile: ' + err.message, true);
             }
         }
 
@@ -2027,50 +2098,76 @@
             elements.aiModal.classList.remove('active');
         }
 
-        async function generateTileSpec() {
-            const request = {
-                tileType: document.getElementById('aiTileType').value,
-                subtype: document.getElementById('aiSubtype').value,
-                width: state.width,
-                height: state.height,
-                artStyle: document.getElementById('aiArtStyle').value,
-                perspective: document.getElementById('aiPerspective').value,
-                paletteSize: parseInt(document.getElementById('aiPaletteSize').value),
-                shadingStyle: document.getElementById('aiShadingStyle').value,
-                biome: document.getElementById('aiBiome').value,
-                wearLevel: document.getElementById('aiWearLevel').value,
-                customInstructions: document.getElementById('aiCustomInstructions').value || undefined
-            };
+        async function generateTileWithPixelLab() {
+            const description = document.getElementById('aiDescription').value.trim();
+            const perspective = document.getElementById('aiPerspective').value;
+            const isoShape = document.getElementById('aiIsoShape').value;
+            const outline = document.getElementById('aiOutline').value;
+            const shading = document.getElementById('aiShading').value;
+            const detail = document.getElementById('aiDetail').value;
+            const size = parseInt(document.getElementById('aiSize').value);
 
-            if (!request.subtype) {
+            if (!description) {
                 showToast('Enter a tile description', true);
                 return;
             }
 
             elements.aiModalGenerate.disabled = true;
-            elements.aiModalGenerate.textContent = 'Generating...';
+            elements.aiModalGenerate.textContent = 'Queueing...';
 
             try {
-                const spec = await crucibleClient.generateTileSpec(request);
+                const client = new PixelLabClient();
+                const style = {
+                    outline: outline === 'none' ? undefined : outline,
+                    shading: shading,
+                    detail: detail
+                };
 
-                // Check for error in response
-                if (spec.error) {
-                    throw new Error(spec.error);
+                let result;
+                let jobType;
+
+                if (perspective === 'isometric') {
+                    // Use isometric tile endpoint
+                    result = await client.createIsometricTile({
+                        description,
+                        size,
+                        tileShape: isoShape,
+                        style
+                    });
+                    jobType = 'isometric_tile';
+                } else {
+                    // Use map object endpoint for other perspectives
+                    result = await client.createMapObject({
+                        description,
+                        width: size,
+                        height: size,
+                        view: perspective,
+                        style
+                    });
+                    jobType = 'map_object';
                 }
 
-                state.currentSpec = spec;
+                if (result.job_id) {
+                    // Add to generation queue
+                    if (state.generationQueue) {
+                        await state.generationQueue.addJob({
+                            pixellab_job_id: result.job_id,
+                            job_type: jobType,
+                            prompt: description,
+                            parameters: { perspective, size, style },
+                            project_id: state.projectId,
+                            user_id: state.user?.id
+                        });
+                    }
 
-                // Save spec if logged in
-                if (state.user && state.projectId) {
-                    await crucibleClient.saveTileSpec(state.projectId, request, spec);
+                    closeAiModal();
+                    showToast('Generation queued! Track progress in the queue panel.');
+                } else {
+                    throw new Error('No job ID returned from PixelLab');
                 }
-
-                displaySpec(spec);
-                closeAiModal();
-                showToast('Tile generated! Click "Apply to Canvas" to use it.');
             } catch (err) {
-                console.error('Failed to generate tile:', err);
-                showToast(err.message || 'Failed to generate tile', true);
+                console.error('Failed to queue tile generation:', err);
+                showToast(err.message || 'Failed to queue generation', true);
             } finally {
                 elements.aiModalGenerate.disabled = false;
                 elements.aiModalGenerate.textContent = 'Generate Tile';
@@ -2408,7 +2505,13 @@
             elements.aiGenerateBtn.addEventListener('click', openAiModal);
             elements.aiModalClose.addEventListener('click', closeAiModal);
             elements.aiModalCancel.addEventListener('click', closeAiModal);
-            elements.aiModalGenerate.addEventListener('click', generateTileSpec);
+            elements.aiModalGenerate.addEventListener('click', generateTileWithPixelLab);
+
+            // Toggle isometric shape selector based on perspective
+            document.getElementById('aiPerspective').addEventListener('change', (e) => {
+                const isoShape = document.getElementById('aiIsoShape');
+                isoShape.disabled = e.target.value !== 'isometric';
+            });
 
             // Export
             elements.saveTileBtn.addEventListener('click', saveTile);

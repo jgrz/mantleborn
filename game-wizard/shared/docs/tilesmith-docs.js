@@ -155,96 +155,106 @@ const TILESMITH_DOCS = [
         title: 'AI Generation',
         content: `
             <h1>AI Tile Generation</h1>
-            <p>Tilesmith uses AI to generate actual pixel art tiles based on your parameters. The AI outputs pixel-by-pixel color data that you can apply directly to your canvas.</p>
+            <p>Tilesmith uses PixelLab AI to generate pixel art tiles. Describe what you want, and the AI creates production-ready tile images.</p>
 
-            <h2>How It Works</h2>
-            <p>When you click "Generate Tile":</p>
-            <ol>
-                <li>Your parameters are sent to our AI backend</li>
-                <li>The AI generates a complete tile as pixel data</li>
-                <li>A preview appears in the AI panel</li>
-                <li>Click "Apply to Canvas" to use it</li>
-            </ol>
+            <h2>Generating a Tile</h2>
 
-            <h2>Parameters Explained</h2>
+            <div class="step">
+                <div class="step-num">1</div>
+                <div class="step-text">
+                    <strong>Click "AI Generate"</strong><br>
+                    Opens the generation modal in the toolbar.
+                </div>
+            </div>
 
-            <h3>Tile Type</h3>
-            <p>The category of tile you're creating:</p>
-            <ul>
-                <li><strong>Terrain</strong> - Ground surfaces (grass, dirt, stone)</li>
-                <li><strong>Structure</strong> - Buildings, walls, floors</li>
-                <li><strong>Vegetation</strong> - Plants, trees, flowers</li>
-                <li><strong>Water</strong> - Rivers, lakes, ocean</li>
-                <li><strong>Path</strong> - Roads, trails, bridges</li>
-                <li><strong>Decoration</strong> - Props, objects, details</li>
-            </ul>
+            <div class="step">
+                <div class="step-num">2</div>
+                <div class="step-text">
+                    <strong>Describe Your Tile</strong><br>
+                    Enter a detailed description: "mossy stone brick", "wooden treasure chest", "glowing crystal".
+                </div>
+            </div>
 
-            <h3>Description</h3>
-            <p>Be specific about what you want. Good examples:</p>
-            <ul>
-                <li>"lush green grass with small flowers"</li>
-                <li>"cobblestone path with moss between stones"</li>
-                <li>"wooden barrel with metal bands"</li>
-            </ul>
+            <div class="step">
+                <div class="step-num">3</div>
+                <div class="step-text">
+                    <strong>Set Options</strong><br>
+                    Choose perspective, style settings, and size.
+                </div>
+            </div>
 
-            <h3>Art Style</h3>
-            <ul>
-                <li><strong>8-bit</strong> - Simple, limited colors (NES-like)</li>
-                <li><strong>16-bit</strong> - More detail, richer colors (SNES-like)</li>
-                <li><strong>32-bit</strong> - High detail, smooth gradients</li>
-            </ul>
+            <div class="step">
+                <div class="step-num">4</div>
+                <div class="step-text">
+                    <strong>Queue Generation</strong><br>
+                    Click Generate. The job takes 2-5 minutes.
+                </div>
+            </div>
+
+            <h2>Generation Options</h2>
 
             <h3>Perspective</h3>
             <ul>
-                <li><strong>Top-down</strong> - Looking straight down (RPGs, strategy)</li>
-                <li><strong>Side view</strong> - Looking from the side (platformers)</li>
-                <li><strong>Isometric</strong> - Angled 3/4 view</li>
+                <li><strong>High Top-Down</strong> - Looking straight down (classic RPGs)</li>
+                <li><strong>Low Top-Down</strong> - Slight angle, shows some depth (action RPGs)</li>
+                <li><strong>Side View</strong> - Looking from the side (platformers)</li>
+                <li><strong>Isometric</strong> - 3/4 angled view with depth</li>
             </ul>
 
-            <h3>Shading Style</h3>
+            <h3>Isometric Shape</h3>
+            <p>Only available when Isometric perspective is selected:</p>
             <ul>
-                <li><strong>Flat</strong> - Solid colors, no gradients</li>
-                <li><strong>Dithered</strong> - Classic pixel art dithering</li>
-                <li><strong>Soft gradient</strong> - Smooth color transitions</li>
+                <li><strong>Thin</strong> - Flat tiles (floors, paths)</li>
+                <li><strong>Thick</strong> - Medium height (platforms, low walls)</li>
+                <li><strong>Block</strong> - Full cube (crates, buildings)</li>
             </ul>
 
-            <h2>Tips for Good Results</h2>
-
-            <div class="tip">
-                <div class="tip-label">Be Specific</div>
-                "Medieval stone wall with ivy" works better than just "wall".
-            </div>
-
-            <div class="tip">
-                <div class="tip-label">Match Your Game</div>
-                Use consistent art style, perspective, and biome settings across all tiles.
-            </div>
-
-            <div class="tip">
-                <div class="tip-label">Apply the Palette</div>
-                After generating, click "Apply Palette" to add the AI's colors to your palette for manual touch-ups.
-            </div>
+            <h3>Style Settings</h3>
+            <ul>
+                <li><strong>Outline</strong> - None, black outline, or colored outline</li>
+                <li><strong>Shading</strong> - Flat, basic, or detailed shading</li>
+                <li><strong>Detail</strong> - Low, medium, or high detail level</li>
+            </ul>
 
             <h2>Generation Queue</h2>
             <p>Track all your AI generation jobs in the queue panel (bottom-right corner):</p>
             <ul>
                 <li><strong>⏳ Processing</strong> - Generation in progress</li>
-                <li><strong>✅ Complete</strong> - Ready to apply</li>
+                <li><strong>✅ Complete</strong> - Ready to import</li>
                 <li><strong>❌ Failed</strong> - Click Retry</li>
             </ul>
 
-            <p>The queue is shared across all Game Wizard tools. Jobs started in other tools (Sprite-Rite, Incarnum, Level Forge) appear here too, so you can monitor all your generations from anywhere.</p>
+            <p>The queue is shared across all Game Wizard tools. Jobs started in other tools (Sprite-Rite, Incarnum, Level Forge) appear here too.</p>
 
-            <h2>Limitations</h2>
-            <ul>
-                <li>Maximum size is 32×32 pixels per tile</li>
-                <li>Results may need manual refinement</li>
-                <li>Complex scenes work better as multi-tile</li>
-            </ul>
+            <h2>Importing to Canvas</h2>
+            <p>When generation completes:</p>
+            <ol>
+                <li>Click <strong>Import</strong> on the completed job</li>
+                <li>The tile image is applied to the currently selected tile position</li>
+                <li>Edit the tile with drawing tools as needed</li>
+                <li>Save or export when finished</li>
+            </ol>
+
+            <h2>Tips for Good Results</h2>
+
+            <div class="tip">
+                <div class="tip-label">Be Specific</div>
+                "Medieval stone wall with ivy and moss" works better than just "wall".
+            </div>
+
+            <div class="tip">
+                <div class="tip-label">Match Your Game</div>
+                Use consistent style settings across all tiles. Set project defaults in Crucible.
+            </div>
+
+            <div class="tip">
+                <div class="tip-label">Multi-Tile Objects</div>
+                For larger objects, set up a multi-tile grid first, then generate and import to each tile position.
+            </div>
 
             <div class="warning">
-                <div class="warning-label">Heads Up</div>
-                AI generation requires an internet connection and may take a few seconds. The generated tile replaces only the currently selected tile in a multi-tile grid.
+                <div class="warning-label">Note</div>
+                Generation takes 2-5 minutes. The imported tile replaces only the currently selected tile in a multi-tile grid.
             </div>
         `
     },
