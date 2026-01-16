@@ -840,16 +840,17 @@
     <main class="main">
         <!-- Left Panel - Canvas -->
         <div class="left-panel">
-            <!-- Toolbar -->
+            <!-- Toolbar (Zoom & Grid) -->
             <div class="toolbar">
                 <div class="toolbar-group">
-                    <span class="toolbar-label">Tool</span>
-                    <button class="tool-btn active" data-tool="pencil" title="Pencil (P)">&#9998;</button>
-                    <button class="tool-btn" data-tool="eraser" title="Eraser (E)">&#9003;</button>
-                    <button class="tool-btn" data-tool="fill" title="Fill (F)">&#9699;</button>
-                    <button class="tool-btn" data-tool="picker" title="Color Picker (I)">&#128371;</button>
-                    <button class="tool-btn" data-tool="line" title="Line (L)">&#9585;</button>
-                    <button class="tool-btn" data-tool="rect" title="Rectangle (R)">&#9634;</button>
+                    <span class="toolbar-label">Zoom</span>
+                    <div class="zoom-group">
+                        <button class="zoom-btn" data-zoom="1">1x</button>
+                        <button class="zoom-btn" data-zoom="2">2x</button>
+                        <button class="zoom-btn active" data-zoom="4">4x</button>
+                        <button class="zoom-btn" data-zoom="8">8x</button>
+                        <button class="zoom-btn" data-zoom="16">16x</button>
+                    </div>
                 </div>
 
                 <div class="toolbar-divider"></div>
@@ -873,7 +874,14 @@
                 <div class="toolbar-divider"></div>
 
                 <div class="toolbar-group">
-                    <button class="tool-btn" data-tool="clear" title="Clear Current Tile">&#128465;</button>
+                    <label class="grid-toggle">
+                        <input type="checkbox" id="gridToggle" checked>
+                        Show Grid
+                    </label>
+                    <label class="grid-toggle">
+                        <input type="checkbox" id="tileBordersToggle" checked>
+                        Tile Borders
+                    </label>
                 </div>
             </div>
 
@@ -883,21 +891,21 @@
                     <canvas id="gridCanvas"></canvas>
                 </div>
                 <div class="canvas-controls">
-                    <div class="zoom-group">
-                        <button class="zoom-btn" data-zoom="1">1x</button>
-                        <button class="zoom-btn" data-zoom="2">2x</button>
-                        <button class="zoom-btn active" data-zoom="4">4x</button>
-                        <button class="zoom-btn" data-zoom="8">8x</button>
-                        <button class="zoom-btn" data-zoom="16">16x</button>
+                    <div class="toolbar-group">
+                        <button class="tool-btn" id="undoBtn" title="Undo (Ctrl+Z)" disabled>&#8630;</button>
+                        <button class="tool-btn" id="redoBtn" title="Redo (Ctrl+Shift+Z)" disabled>&#8631;</button>
                     </div>
-                    <label class="grid-toggle">
-                        <input type="checkbox" id="gridToggle" checked>
-                        Show Grid
-                    </label>
-                    <label class="grid-toggle">
-                        <input type="checkbox" id="tileBordersToggle" checked>
-                        Tile Borders
-                    </label>
+                    <div class="toolbar-group">
+                        <button class="tool-btn active" data-tool="pencil" title="Pencil (P)">&#9998;</button>
+                        <button class="tool-btn" data-tool="eraser" title="Eraser (E)">&#9003;</button>
+                        <button class="tool-btn" data-tool="fill" title="Fill (F)">&#9699;</button>
+                        <button class="tool-btn" data-tool="picker" title="Color Picker (I)">&#128371;</button>
+                        <button class="tool-btn" data-tool="line" title="Line (L)">&#9585;</button>
+                        <button class="tool-btn" data-tool="rect" title="Rectangle (R)">&#9634;</button>
+                    </div>
+                    <div class="toolbar-group">
+                        <button class="tool-btn" data-tool="clear" title="Clear Current Tile">&#128465;</button>
+                    </div>
                 </div>
             </div>
 
@@ -1789,6 +1797,7 @@
             state.undoStack.push(data);
             if (state.undoStack.length > 50) state.undoStack.shift();
             state.redoStack = [];
+            updateUndoRedoButtons();
         }
 
         function undo() {
@@ -1801,6 +1810,7 @@
             state.pixels.data.set(previous);
             render();
             markDirty();
+            updateUndoRedoButtons();
         }
 
         function redo() {
@@ -1813,6 +1823,14 @@
             state.pixels.data.set(next);
             render();
             markDirty();
+            updateUndoRedoButtons();
+        }
+
+        function updateUndoRedoButtons() {
+            const undoBtn = document.getElementById('undoBtn');
+            const redoBtn = document.getElementById('redoBtn');
+            if (undoBtn) undoBtn.disabled = state.undoStack.length === 0;
+            if (redoBtn) redoBtn.disabled = state.redoStack.length === 0;
         }
 
         function drawLine(x0, y0, x1, y1, color) {
@@ -2122,6 +2140,7 @@
             renderTileLibrary();
             state.undoStack = [];
             state.redoStack = [];
+            updateUndoRedoButtons();
         }
 
         function newTile() {
@@ -2145,6 +2164,7 @@
             renderTileLibrary();
             state.undoStack = [];
             state.redoStack = [];
+            updateUndoRedoButtons();
         }
 
         async function saveTile() {
@@ -2704,7 +2724,7 @@
             elements.gridRows.addEventListener('change', updateTilesetGrid);
 
             // Tool buttons
-            document.querySelectorAll('.tool-btn').forEach(btn => {
+            document.querySelectorAll('.tool-btn[data-tool]').forEach(btn => {
                 btn.addEventListener('click', () => {
                     if (btn.dataset.tool === 'clear') {
                         if (confirm('Clear current tile?')) clearCanvas();
@@ -2717,6 +2737,10 @@
                     state.tool = btn.dataset.tool;
                 });
             });
+
+            // Undo/Redo buttons
+            document.getElementById('undoBtn').addEventListener('click', undo);
+            document.getElementById('redoBtn').addEventListener('click', redo);
 
             // Color picker
             elements.colorPicker.addEventListener('input', (e) => {

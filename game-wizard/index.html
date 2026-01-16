@@ -363,6 +363,53 @@
             z-index: 10;
         }
 
+        /* Locked cartridge (no project) */
+        .cartridge--locked {
+            pointer-events: none;
+        }
+
+        .cartridge--locked .cartridge-body {
+            filter: grayscale(0.5) brightness(0.6);
+        }
+
+        .cart-locked-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(13, 13, 20, 0.7);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            border-radius: 4px;
+            z-index: 10;
+        }
+
+        .cart-lock-icon {
+            font-size: 32px;
+            margin-bottom: 8px;
+            animation: lockPulse 2s ease-in-out infinite;
+        }
+
+        @keyframes lockPulse {
+            0%, 100% { opacity: 0.6; transform: scale(1); }
+            50% { opacity: 1; transform: scale(1.1); }
+        }
+
+        .cart-locked-text {
+            font-family: 'Press Start 2P', cursive;
+            font-size: 7px;
+            color: var(--stone-mid);
+            text-align: center;
+            line-height: 1.6;
+        }
+
+        .cart-locked-text span {
+            color: var(--accent-ember);
+        }
+
         /* Footer */
         .footer {
             text-align: center;
@@ -520,7 +567,7 @@
 
     <main class="cartridge-shelf">
         <!-- Sprite-Rite -->
-        <a href="sprite-rite/" class="cartridge cartridge--sprite-rite">
+        <a href="sprite-rite/" class="cartridge cartridge--sprite-rite" data-requires-project>
             <div class="cartridge-body">
                 <div class="cart-label">
                     <div class="cart-rating">DEV</div>
@@ -545,7 +592,7 @@
         </a>
 
         <!-- Animancer -->
-        <a href="animancer/" class="cartridge cartridge--animancer">
+        <a href="animancer/" class="cartridge cartridge--animancer" data-requires-project>
             <div class="cartridge-body">
                 <div class="cart-label">
                     <div class="cart-rating">DEV</div>
@@ -570,7 +617,7 @@
         </a>
 
         <!-- Level Forge -->
-        <a href="level-forge/" class="cartridge cartridge--level-forge">
+        <a href="level-forge/" class="cartridge cartridge--level-forge" data-requires-project>
             <div class="cartridge-body">
                 <div class="cart-label">
                     <div class="cart-rating">DEV</div>
@@ -620,7 +667,7 @@
         </a>
 
         <!-- Portals -->
-        <a href="portals/" class="cartridge cartridge--portals">
+        <a href="portals/" class="cartridge cartridge--portals" data-requires-project>
             <div class="cartridge-body">
                 <div class="cart-label">
                     <div class="cart-rating">DEV</div>
@@ -645,7 +692,7 @@
         </a>
 
         <!-- Tilesmith -->
-        <a href="tilesmith/" class="cartridge cartridge--tilesmith">
+        <a href="tilesmith/" class="cartridge cartridge--tilesmith" data-requires-project>
             <div class="cartridge-body">
                 <div class="cart-label">
                     <div class="cart-rating">DEV</div>
@@ -670,7 +717,7 @@
         </a>
 
         <!-- Incarnum -->
-        <a href="incarnum/" class="cartridge cartridge--incarnum">
+        <a href="incarnum/" class="cartridge cartridge--incarnum" data-requires-project>
             <div class="cartridge-body">
                 <div class="cart-label">
                     <div class="cart-rating">DEV</div>
@@ -804,8 +851,62 @@
             }
         }
 
+        // =============================================
+        // PROJECT GATING
+        // =============================================
+
+        async function checkProjectGating() {
+            const user = await crucibleClient.getUser();
+
+            // If not logged in, don't lock (they'll hit auth screen anyway)
+            if (!user) {
+                unlockAllCartridges();
+                return;
+            }
+
+            // Check if user has projects
+            const hasProjects = await crucibleClient.hasProjects();
+
+            if (hasProjects) {
+                unlockAllCartridges();
+            } else {
+                lockCartridgesRequiringProject();
+            }
+        }
+
+        function lockCartridgesRequiringProject() {
+            const cartridges = document.querySelectorAll('[data-requires-project]');
+            cartridges.forEach(cartridge => {
+                // Add locked class
+                cartridge.classList.add('cartridge--locked');
+
+                // Add lock overlay if not already present
+                const body = cartridge.querySelector('.cartridge-body');
+                if (body && !body.querySelector('.cart-locked-overlay')) {
+                    const overlay = document.createElement('div');
+                    overlay.className = 'cart-locked-overlay';
+                    overlay.innerHTML = `
+                        <div class="cart-lock-icon">&#128274;</div>
+                        <div class="cart-locked-text">Create a project in<br><span>CRUCIBLE</span> first</div>
+                    `;
+                    body.appendChild(overlay);
+                }
+            });
+        }
+
+        function unlockAllCartridges() {
+            const cartridges = document.querySelectorAll('[data-requires-project]');
+            cartridges.forEach(cartridge => {
+                cartridge.classList.remove('cartridge--locked');
+                const overlay = cartridge.querySelector('.cart-locked-overlay');
+                if (overlay) overlay.remove();
+            });
+        }
+
         // Initialize on load
-        initAuth();
+        initAuth().then(() => {
+            checkProjectGating();
+        });
     </script>
 </body>
 </html>
