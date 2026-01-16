@@ -2514,6 +2514,15 @@
             if (e.key === 'Delete' && state.selectedSpriteIndex >= 0) {
                 confirmDeleteSprite(state.selectedSpriteIndex);
             }
+            // A for Auto-Detect mode
+            if (e.key === 'a' || e.key === 'A') {
+                if (!e.ctrlKey && !e.metaKey && document.activeElement.tagName !== 'INPUT') {
+                    e.preventDefault();
+                    if (state.image) {
+                        setToolMode(state.toolMode === 'autoDetect' ? null : 'autoDetect');
+                    }
+                }
+            }
         });
 
         // Initialize

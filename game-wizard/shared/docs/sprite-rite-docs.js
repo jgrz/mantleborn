@@ -332,8 +332,7 @@ const SPRITE_RITE_DOCS = [
 
             <h2>Tools</h2>
             <ul>
-                <li><kbd>B</kbd> - Background Remover</li>
-                <li><kbd>A</kbd> - Auto-Detect mode</li>
+                <li><kbd>A</kbd> - Toggle Auto-Detect mode</li>
             </ul>
 
             <h2>Actions</h2>
