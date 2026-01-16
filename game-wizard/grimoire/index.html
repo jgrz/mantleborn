@@ -590,6 +590,12 @@
                             Overview
                         </a>
                     </li>
+                    <li class="nav-item">
+                        <a href="#ai-generation" class="nav-link">
+                            <span class="nav-icon">&#129302;</span>
+                            AI Generation
+                        </a>
+                    </li>
                 </ul>
             </div>
 
@@ -893,6 +899,190 @@
                     <div class="tip">
                         <div class="tip-label">Workflow Tip</div>
                         Keep multiple tools open in browser tabs. Design sprites in one tab, paint levels in another, and refresh to see updates flow between them.
+                    </div>
+                </div>
+            `,
+            'ai-generation': `
+                <div class="content-header">
+                    <h1 class="content-title">AI Generation</h1>
+                    <p class="content-subtitle">Generate pixel art assets with PixelLab AI across all Game Wizard tools.</p>
+                </div>
+                <div class="article">
+                    <h2>Overview</h2>
+                    <p>Game Wizard integrates <strong>PixelLab AI</strong> for generating pixel art assets. You can generate characters, animations, tilesets, and individual tiles directly within the tools—no external software needed.</p>
+
+                    <p>All generation is <strong>asynchronous</strong> (takes 2-5 minutes) and tracked in a shared queue visible across all tools. Start a job in one tool, continue working, and import the result when it's ready.</p>
+
+                    <h2>Generation Capabilities</h2>
+
+                    <div class="feature-grid" style="margin: 20px 0;">
+                        <div class="feature-item">
+                            <span class="feature-icon">&#129302;</span>
+                            <div class="feature-text">
+                                <strong>Characters</strong>
+                                <span>Multi-directional spritesheets (4 or 8 directions) with precise pose control via skeleton editor.</span>
+                            </div>
+                        </div>
+                        <div class="feature-item">
+                            <span class="feature-icon">&#127916;</span>
+                            <div class="feature-text">
+                                <strong>Animations</strong>
+                                <span>Walk cycles, attacks, and custom actions for existing PixelLab characters.</span>
+                            </div>
+                        </div>
+                        <div class="feature-item">
+                            <span class="feature-icon">&#129513;</span>
+                            <div class="feature-text">
+                                <strong>Wang Tilesets</strong>
+                                <span>16-tile terrain transitions (grass→dirt) and platform sets with autotile support.</span>
+                            </div>
+                        </div>
+                        <div class="feature-item">
+                            <span class="feature-icon">&#127912;</span>
+                            <div class="feature-text">
+                                <strong>Single Tiles</strong>
+                                <span>Individual props, decorations, and isometric tiles for manual editing.</span>
+                            </div>
+                        </div>
+                        <div class="feature-item">
+                            <span class="feature-icon">&#128230;</span>
+                            <div class="feature-text">
+                                <strong>Map Objects</strong>
+                                <span>Props and decorations: treasure chests, crystals, barrels, trees.</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <h2>Where to Generate</h2>
+
+                    <table style="width: 100%; border-collapse: collapse; margin: 20px 0;">
+                        <thead>
+                            <tr style="background: var(--bg-surface); text-align: left;">
+                                <th style="padding: 12px; border: 1px solid var(--stone-dark);">Asset Type</th>
+                                <th style="padding: 12px; border: 1px solid var(--stone-dark);">Tool</th>
+                                <th style="padding: 12px; border: 1px solid var(--stone-dark);">Best For</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td style="padding: 12px; border: 1px solid var(--stone-dark);">Character</td>
+                                <td style="padding: 12px; border: 1px solid var(--stone-dark);"><strong>Sprite-Rite</strong> or <strong>Incarnum</strong></td>
+                                <td style="padding: 12px; border: 1px solid var(--stone-dark);">Sprite-Rite for quick generation, Incarnum for full character setup</td>
+                            </tr>
+                            <tr>
+                                <td style="padding: 12px; border: 1px solid var(--stone-dark);">Animation</td>
+                                <td style="padding: 12px; border: 1px solid var(--stone-dark);"><strong>Animancer</strong></td>
+                                <td style="padding: 12px; border: 1px solid var(--stone-dark);">Requires existing PixelLab character</td>
+                            </tr>
+                            <tr>
+                                <td style="padding: 12px; border: 1px solid var(--stone-dark);">Wang Tileset</td>
+                                <td style="padding: 12px; border: 1px solid var(--stone-dark);"><strong>Tilesmith</strong> or <strong>Level Forge</strong></td>
+                                <td style="padding: 12px; border: 1px solid var(--stone-dark);">Tilesmith for editing, Level Forge for direct use</td>
+                            </tr>
+                            <tr>
+                                <td style="padding: 12px; border: 1px solid var(--stone-dark);">Single Tile</td>
+                                <td style="padding: 12px; border: 1px solid var(--stone-dark);"><strong>Tilesmith</strong></td>
+                                <td style="padding: 12px; border: 1px solid var(--stone-dark);">Isometric tiles, props for manual editing</td>
+                            </tr>
+                            <tr>
+                                <td style="padding: 12px; border: 1px solid var(--stone-dark);">Map Object</td>
+                                <td style="padding: 12px; border: 1px solid var(--stone-dark);"><strong>Sprite-Rite</strong> or <strong>Tilesmith</strong></td>
+                                <td style="padding: 12px; border: 1px solid var(--stone-dark);">Sprite-Rite for master sheet, Tilesmith for editing</td>
+                            </tr>
+                        </tbody>
+                    </table>
+
+                    <h2>The Generation Queue</h2>
+                    <p>Every tool displays a <strong>generation queue panel</strong> in the bottom-right corner. This queue is shared—jobs started in any tool appear everywhere.</p>
+
+                    <ul>
+                        <li><strong>⏳ Processing</strong> — Generation in progress (2-5 minutes)</li>
+                        <li><strong>✅ Complete</strong> — Ready to import with the Import button</li>
+                        <li><strong>❌ Failed</strong> — Click Retry to try again</li>
+                    </ul>
+
+                    <p>You can continue working in any tool while jobs process. The queue persists across page refreshes.</p>
+
+                    <h2>Skeleton Editor</h2>
+                    <p>Character generation includes a <strong>skeleton editor</strong> for precise pose control:</p>
+
+                    <ul>
+                        <li><strong>Drag joints</strong> — Head, shoulders, elbows, hands, hips, knees, feet</li>
+                        <li><strong>Preset poses</strong> — Idle, Walk 1, Walk 2, Attack, Jump</li>
+                        <li><strong>Guidance slider</strong> — Control how strictly the AI follows your pose (0-5)</li>
+                        <li><strong>Reset</strong> — Return to default pose</li>
+                    </ul>
+
+                    <p>The skeleton editor appears in <strong>Sprite-Rite</strong> (character generation) and <strong>Incarnum</strong> (PixelLab engine).</p>
+
+                    <h2>Style Settings</h2>
+                    <p>Consistent style settings are available across all generation types:</p>
+
+                    <ul>
+                        <li><strong>Outline</strong> — None, black outline, or colored outline</li>
+                        <li><strong>Shading</strong> — Flat, basic, or detailed shading</li>
+                        <li><strong>Detail</strong> — Low, medium, or high detail level</li>
+                    </ul>
+
+                    <div class="tip">
+                        <div class="tip-label">Consistency Tip</div>
+                        Use the same style settings across all assets in a project for visual coherence. You can set project-wide defaults in Crucible's settings.
+                    </div>
+
+                    <h2>Tileset Generation</h2>
+                    <p>Wang tilesets generate 16 tiles for terrain transitions:</p>
+
+                    <h3>Top-Down Terrain</h3>
+                    <p>For RPGs and top-down games. Describe two materials (e.g., "grass" and "dirt path") and the AI generates all transition tiles between them.</p>
+
+                    <h3>Sidescroller Platforms</h3>
+                    <p>For platformers. Describe a platform material (e.g., "stone brick") with optional surface decoration ("mossy", "cracked") to get edge pieces and middle sections.</p>
+
+                    <h3>Chaining Tilesets</h3>
+                    <p>For multi-terrain games, chain tilesets together:</p>
+                    <ol>
+                        <li>Generate grass → dirt tileset</li>
+                        <li>Generate dirt → water tileset using the first as a base</li>
+                        <li>The AI maintains material consistency across sets</li>
+                    </ol>
+
+                    <h2>Workflow Examples</h2>
+
+                    <h3>Creating a Character from Scratch</h3>
+                    <ol>
+                        <li>Open <strong>Incarnum</strong>, select PixelLab engine</li>
+                        <li>Describe your character ("brave knight with silver armor")</li>
+                        <li>Adjust pose in skeleton editor</li>
+                        <li>Set directions (4 or 8), size, and style</li>
+                        <li>Generate → Wait → Import</li>
+                        <li>In <strong>Sprite-Rite</strong>, auto-detect each direction and save to master sheet</li>
+                        <li>Return to <strong>Incarnum</strong> and assign sprites</li>
+                    </ol>
+
+                    <h3>Building a Complete Tileset</h3>
+                    <ol>
+                        <li>Open <strong>Tilesmith</strong>, click AI Generate</li>
+                        <li>Select "Wang Tileset" and "Top-Down Terrain"</li>
+                        <li>Enter lower material ("ocean water") and upper ("sandy beach")</li>
+                        <li>Generate → Wait → Import</li>
+                        <li>4×4 grid auto-populates with all 16 tiles</li>
+                        <li>Edit individual tiles with drawing tools if needed</li>
+                        <li>Save to project for use in Level Forge</li>
+                    </ol>
+
+                    <h3>Adding Animations to an Existing Character</h3>
+                    <ol>
+                        <li>Ensure character was created via PixelLab (has character ID)</li>
+                        <li>Open <strong>Animancer</strong>, click AI Generate</li>
+                        <li>Select the character and choose animation template (Walk, Attack, etc.)</li>
+                        <li>Add optional custom description</li>
+                        <li>Generate → Wait → Import to timeline</li>
+                        <li>Adjust timing and save</li>
+                    </ol>
+
+                    <div class="warning">
+                        <div class="warning-label">API Requirements</div>
+                        AI generation requires a configured PixelLab API token in your Supabase project secrets. Contact your administrator if generation isn't working.
                     </div>
                 </div>
             `
