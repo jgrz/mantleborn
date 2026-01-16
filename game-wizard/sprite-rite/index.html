@@ -4016,29 +4016,39 @@
 
         // Keyboard shortcuts
         window.addEventListener('keydown', (e) => {
-            // Escape to cancel selection
+            // Check if a modal is open - skip hotkeys except Escape
+            const modalOpen = document.querySelector('.dialog-overlay.show, .ai-modal-overlay.open');
+            const inTextInput = document.activeElement.tagName === 'INPUT' ||
+                               document.activeElement.tagName === 'TEXTAREA' ||
+                               document.activeElement.isContentEditable;
+
+            // Escape to cancel selection or close modal
             if (e.key === 'Escape') {
+                if (modalOpen) {
+                    // Let modal handle its own close
+                    return;
+                }
                 if (state.selection) {
                     cancelSprite();
                 }
             }
+
+            // Skip all other hotkeys if modal is open or user is typing
+            if (modalOpen || inTextInput) return;
+
             // Enter to save sprite
             if (e.key === 'Enter' && state.selection && elements.createPanel.classList.contains('active')) {
-                if (document.activeElement === elements.spriteName || document.activeElement === elements.spriteDesc) {
-                    saveSprite();
-                }
+                saveSprite();
             }
             // Delete selected sprite
             if (e.key === 'Delete' && state.selectedSpriteIndex >= 0) {
                 confirmDeleteSprite(state.selectedSpriteIndex);
             }
             // A for Auto-Detect mode
-            if (e.key === 'a' || e.key === 'A') {
-                if (!e.ctrlKey && !e.metaKey && document.activeElement.tagName !== 'INPUT') {
-                    e.preventDefault();
-                    if (state.image) {
-                        setToolMode(state.toolMode === 'autoDetect' ? null : 'autoDetect');
-                    }
+            if ((e.key === 'a' || e.key === 'A') && !e.ctrlKey && !e.metaKey) {
+                e.preventDefault();
+                if (state.image) {
+                    setToolMode(state.toolMode === 'autoDetect' ? null : 'autoDetect');
                 }
             }
         });

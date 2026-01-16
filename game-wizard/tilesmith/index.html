@@ -605,6 +605,19 @@
             color: var(--stone-mid);
         }
 
+        .current-color-name {
+            font-size: 12px;
+            color: var(--emerald);
+            font-weight: 500;
+            margin-top: 2px;
+        }
+
+        .current-color-desc {
+            font-size: 10px;
+            color: var(--stone-mid);
+            font-style: italic;
+        }
+
         .palette-presets {
             margin-bottom: 12px;
         }
@@ -1003,7 +1016,8 @@
                     <input type="color" id="colorPicker" class="current-color-swatch" value="#40d080">
                     <div class="current-color-info">
                         <div class="current-color-hex" id="currentHex">#40D080</div>
-                        <div class="current-color-label">Current Color</div>
+                        <div class="current-color-name" id="currentColorName">Green</div>
+                        <div class="current-color-desc" id="currentColorDesc">Vivid, medium tone</div>
                     </div>
                 </div>
                 <div class="palette-presets">
@@ -1344,6 +1358,8 @@
             newTileBtn: document.getElementById('newTileBtn'),
             colorPicker: document.getElementById('colorPicker'),
             currentHex: document.getElementById('currentHex'),
+            currentColorName: document.getElementById('currentColorName'),
+            currentColorDesc: document.getElementById('currentColorDesc'),
             palettePreset: document.getElementById('palettePreset'),
             paletteGrid: document.getElementById('paletteGrid'),
             paletteToggleBtn: document.getElementById('paletteToggleBtn'),
@@ -2037,12 +2053,95 @@
             });
         }
 
+        // Color accessibility - get color name and descriptor from hex
+        function getColorInfo(hex) {
+            // Convert hex to RGB
+            const r = parseInt(hex.slice(1, 3), 16) / 255;
+            const g = parseInt(hex.slice(3, 5), 16) / 255;
+            const b = parseInt(hex.slice(5, 7), 16) / 255;
+
+            // Convert RGB to HSL
+            const max = Math.max(r, g, b);
+            const min = Math.min(r, g, b);
+            let h, s, l = (max + min) / 2;
+
+            if (max === min) {
+                h = s = 0; // achromatic (gray)
+            } else {
+                const d = max - min;
+                s = l > 0.5 ? d / (2 - max - min) : d / (max + min);
+                switch (max) {
+                    case r: h = ((g - b) / d + (g < b ? 6 : 0)) / 6; break;
+                    case g: h = ((b - r) / d + 2) / 6; break;
+                    case b: h = ((r - g) / d + 4) / 6; break;
+                }
+            }
+
+            const hue = h * 360;
+            const sat = s * 100;
+            const light = l * 100;
+
+            // Get color name based on hue
+            let name;
+            if (sat < 10) {
+                // Achromatic colors
+                if (light < 15) name = 'Black';
+                else if (light < 35) name = 'Dark Gray';
+                else if (light < 65) name = 'Gray';
+                else if (light < 85) name = 'Light Gray';
+                else name = 'White';
+            } else {
+                // Chromatic colors - hue-based names
+                if (hue < 15) name = 'Red';
+                else if (hue < 45) name = 'Orange';
+                else if (hue < 70) name = 'Yellow';
+                else if (hue < 90) name = 'Lime';
+                else if (hue < 150) name = 'Green';
+                else if (hue < 180) name = 'Teal';
+                else if (hue < 210) name = 'Cyan';
+                else if (hue < 250) name = 'Blue';
+                else if (hue < 290) name = 'Purple';
+                else if (hue < 330) name = 'Magenta';
+                else name = 'Red';
+            }
+
+            // Get descriptor based on lightness and saturation
+            let lightDesc, satDesc;
+
+            if (light < 25) lightDesc = 'very dark';
+            else if (light < 40) lightDesc = 'dark';
+            else if (light < 60) lightDesc = 'medium';
+            else if (light < 75) lightDesc = 'light';
+            else lightDesc = 'very light';
+
+            if (sat < 20) satDesc = 'muted';
+            else if (sat < 50) satDesc = 'soft';
+            else if (sat < 80) satDesc = 'vivid';
+            else satDesc = 'intense';
+
+            // Build descriptor string
+            let desc;
+            if (sat < 10) {
+                desc = `Neutral ${lightDesc} tone`;
+            } else {
+                desc = `${satDesc.charAt(0).toUpperCase() + satDesc.slice(1)}, ${lightDesc} tone`;
+            }
+
+            return { name, desc };
+        }
+
         function selectColor(color) {
             state.currentColor = color;
             elements.colorPicker.value = color;
             elements.quickColorPicker.value = color;
             elements.currentHex.textContent = color.toUpperCase();
             elements.colorDot.style.backgroundColor = color;
+
+            // Update color name and descriptor for accessibility
+            const colorInfo = getColorInfo(color);
+            elements.currentColorName.textContent = colorInfo.name;
+            elements.currentColorDesc.textContent = colorInfo.desc;
+
             renderPalette();
         }
 
