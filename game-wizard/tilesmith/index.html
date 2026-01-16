@@ -2780,24 +2780,55 @@
             }
 
             try {
-                // Check for legacy tiles that need migration
-                await migrateLegacyTiles(projectId);
+                // Initialize defaults
+                let draftResult = { png: null, atlas: { size: { w: 0, h: 0 }, sprites: {} } };
+                let masterResult = { png: null, atlas: { size: { w: 0, h: 0 }, sprites: {} } };
+                let groups = [];
 
-                // Load sheets and groups in parallel
-                const [draftResult, masterResult, groups] = await Promise.all([
-                    crucibleClient.getDraftSheet(projectId),
-                    crucibleClient.getMasterSheet(projectId),
-                    crucibleClient.getTileGroups(projectId)
-                ]);
+                // Try to load draft sheet (may fail if migration not run)
+                try {
+                    if (crucibleClient.getDraftSheet) {
+                        draftResult = await crucibleClient.getDraftSheet(projectId);
+                    }
+                } catch (draftErr) {
+                    console.warn('Could not load draft sheet (columns may not exist):', draftErr.message);
+                }
+
+                // Load master sheet (should always work)
+                try {
+                    masterResult = await crucibleClient.getMasterSheet(projectId);
+                } catch (masterErr) {
+                    console.warn('Could not load master sheet:', masterErr.message);
+                }
+
+                // Check for legacy tiles that need migration (only if master is empty)
+                if (!masterResult.atlas?.sprites || Object.keys(masterResult.atlas.sprites).length === 0) {
+                    await migrateLegacyTiles(projectId);
+                    // Reload master sheet after migration
+                    try {
+                        masterResult = await crucibleClient.getMasterSheet(projectId);
+                    } catch (e) {
+                        console.warn('Could not reload master sheet after migration');
+                    }
+                }
+
+                // Try to load groups (may fail if table doesn't exist yet)
+                try {
+                    if (crucibleClient.getTileGroups) {
+                        groups = await crucibleClient.getTileGroups(projectId);
+                    }
+                } catch (groupErr) {
+                    console.warn('Could not load tile groups (table may not exist):', groupErr.message);
+                }
 
                 // Store sheet data
                 state.draftSheet = {
-                    png: draftResult.png,
-                    atlas: draftResult.atlas || { size: { w: 0, h: 0 }, sprites: {} }
+                    png: draftResult?.png || null,
+                    atlas: draftResult?.atlas || { size: { w: 0, h: 0 }, sprites: {} }
                 };
                 state.masterSheet = {
-                    png: masterResult.png,
-                    atlas: masterResult.atlas || { size: { w: 0, h: 0 }, sprites: {} }
+                    png: masterResult?.png || null,
+                    atlas: masterResult?.atlas || { size: { w: 0, h: 0 }, sprites: {} }
                 };
                 state.tileGroups = groups || [];
 
