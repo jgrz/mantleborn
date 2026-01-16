@@ -472,12 +472,14 @@
             border: 1px solid var(--stone-dark);
             border-radius: 4px;
             color: var(--stone-bright);
+            caret-color: var(--accent-ember);
         }
 
         .form-input:focus {
             outline: none;
-            border-color: var(--mystic-glow);
-            box-shadow: 0 0 0 2px rgba(128, 96, 192, 0.2);
+            border-color: var(--accent-ember);
+            box-shadow: 0 0 0 2px rgba(224, 112, 32, 0.3);
+            background: var(--bg-mid);
         }
 
         .preview-container {
@@ -2053,7 +2055,10 @@
             // Draw original image
             mainCtx.drawImage(state.image, 0, 0);
 
-            // Draw flipped selection over the original area
+            // Clear the selection area first (remove original pixels)
+            mainCtx.clearRect(x, y, w, h);
+
+            // Draw flipped selection into the cleared area
             mainCtx.drawImage(flippedCanvas, x, y);
 
             // Update the image
