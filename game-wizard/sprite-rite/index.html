@@ -1065,6 +1065,7 @@
             </div>
             <input type="file" id="uploadInput" class="hidden-input" accept="image/*">
             <button class="btn upload-btn" id="uploadBtn" disabled>Upload Sheet</button>
+            <button class="btn btn-danger" id="deleteSheetBtn" disabled title="Delete the currently selected spritesheet">Delete Sheet</button>
             <input type="file" id="importInput" class="hidden-input" accept=".json">
             <button class="btn" id="importJsonBtn">Import JSON</button>
             <span class="save-indicator" id="saveIndicator"></span>
@@ -1315,6 +1316,7 @@
             spriteSheetSelect: document.getElementById('spriteSheetSelect'),
             uploadInput: document.getElementById('uploadInput'),
             uploadBtn: document.getElementById('uploadBtn'),
+            deleteSheetBtn: document.getElementById('deleteSheetBtn'),
             importInput: document.getElementById('importInput'),
             importJsonBtn: document.getElementById('importJsonBtn'),
             saveIndicator: document.getElementById('saveIndicator'),
@@ -1589,6 +1591,9 @@
 
                 // Load the image - use master sheet sprites instead of local sprites array
                 loadSpriteSheetImage(sheet.name, sheet.publicUrl, state.masterSheetSprites);
+
+                // Enable delete sheet button
+                elements.deleteSheetBtn.disabled = false;
             } catch (error) {
                 console.error('Failed to load spritesheet:', error);
                 showToast('Failed to load sprite sheet', 'error');
@@ -1599,6 +1604,7 @@
             state.image = null;
             state.imageName = '';
             state.imagePath = '';
+            state.spritesheetId = null;
             state.sprites = [];
             state.selection = null;
             state.selectedSpriteIndex = -1;
@@ -1612,6 +1618,7 @@
             elements.dropZone.style.display = 'flex';
             elements.canvasContainer.style.display = 'none';
             elements.imageInfo.textContent = 'No image loaded';
+            elements.deleteSheetBtn.disabled = true;
             updateSpriteList();
             updateJsonPreview();
         }
@@ -2652,14 +2659,39 @@
 
         let pendingDeleteIndex = -1;
         let pendingDeleteName = '';
+        let pendingDeleteType = null; // 'sprite' or 'sheet'
+        let pendingDeleteSheetId = null;
+        let pendingDeleteSheetName = '';
 
         function confirmDeleteSprite(index, name) {
             pendingDeleteIndex = index;
             pendingDeleteName = name;
+            pendingDeleteType = 'sprite';
             const sprite = state.sprites[index];
             elements.dialogTitle.textContent = 'Remove from Master Sheet?';
             elements.dialogMessage.textContent = `Remove "${sprite.name}" from the master sheet? This cannot be undone.`;
             elements.confirmDialog.classList.add('show');
+        }
+
+        function confirmDeleteSheet() {
+            if (!state.spritesheetId) return;
+
+            pendingDeleteType = 'sheet';
+            pendingDeleteSheetId = state.spritesheetId;
+            pendingDeleteSheetName = elements.spriteSheetSelect.options[elements.spriteSheetSelect.selectedIndex]?.text || 'this spritesheet';
+
+            elements.dialogTitle.textContent = 'Delete Spritesheet?';
+            elements.dialogMessage.textContent = `Delete "${pendingDeleteSheetName}"? This will remove the image file. Sprites already saved to the master sheet will not be affected.`;
+            elements.confirmDialog.classList.add('show');
+        }
+
+        async function handleDialogConfirm() {
+            if (pendingDeleteType === 'sprite') {
+                await deleteSprite();
+            } else if (pendingDeleteType === 'sheet') {
+                await deleteSheet();
+            }
+            pendingDeleteType = null;
         }
 
         async function deleteSprite() {
@@ -2694,6 +2726,61 @@
                 pendingDeleteIndex = -1;
                 pendingDeleteName = '';
             }
+            elements.confirmDialog.classList.remove('show');
+        }
+
+        async function deleteSheet() {
+            if (!pendingDeleteSheetId) {
+                elements.confirmDialog.classList.remove('show');
+                return;
+            }
+
+            try {
+                showToast('Deleting spritesheet...');
+
+                await crucibleClient.deleteSpritesheet(pendingDeleteSheetId);
+
+                // Remove from dropdown
+                const option = elements.spriteSheetSelect.querySelector(`option[value="${pendingDeleteSheetId}"]`);
+                if (option) {
+                    option.remove();
+                }
+
+                // Clear state and canvas
+                state.spritesheetId = null;
+                state.image = null;
+                state.imageWidth = 0;
+                state.imageHeight = 0;
+                state.imageName = '';
+                state.imagePath = '';
+                state.sprites = [];
+                state.selection = null;
+                state.selectedSpriteIndex = -1;
+
+                // Reset UI
+                elements.spriteSheetSelect.value = '';
+                elements.deleteSheetBtn.disabled = true;
+                elements.mainCanvas.width = 0;
+                elements.mainCanvas.height = 0;
+                elements.gridCanvas.width = 0;
+                elements.gridCanvas.height = 0;
+                elements.selectionCanvas.width = 0;
+                elements.selectionCanvas.height = 0;
+                elements.dropZone.style.display = 'flex';
+                elements.imageInfo.textContent = '';
+
+                hideCreatePanel();
+                updateSpriteList();
+                updateToolButtonStates();
+
+                showToast('Spritesheet deleted');
+            } catch (error) {
+                console.error('Failed to delete spritesheet:', error);
+                showToast('Failed to delete: ' + error.message, 'error');
+            }
+
+            pendingDeleteSheetId = null;
+            pendingDeleteSheetName = '';
             elements.confirmDialog.classList.remove('show');
         }
 
@@ -3023,11 +3110,16 @@
         elements.copyMasterJson.addEventListener('click', copyMasterSheetJson);
 
         // Confirm dialog
-        elements.dialogConfirm.addEventListener('click', deleteSprite);
+        elements.dialogConfirm.addEventListener('click', handleDialogConfirm);
         elements.dialogCancel.addEventListener('click', () => {
             pendingDeleteIndex = -1;
+            pendingDeleteType = null;
+            pendingDeleteSheetId = null;
             elements.confirmDialog.classList.remove('show');
         });
+
+        // Delete sheet button
+        elements.deleteSheetBtn.addEventListener('click', confirmDeleteSheet);
 
         // Sprite direction notice
         elements.dismissNotice.addEventListener('click', dismissSpriteDirectionNotice);
