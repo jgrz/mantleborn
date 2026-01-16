@@ -918,9 +918,6 @@
             <select class="header-select" id="projectSelect">
                 <option value="">-- Select Project --</option>
             </select>
-            <select class="header-select" id="spritesheetSelect" disabled>
-                <option value="">-- Select Spritesheet --</option>
-            </select>
             <span class="save-indicator" id="saveIndicator"></span>
             <div class="auth-indicator" id="authIndicator">
                 <span class="auth-dot"></span>
@@ -937,11 +934,16 @@
             <div class="sprite-palette" id="spritePalette">
                 <div class="empty-state" id="paletteEmpty">
                     <div class="empty-state-icon">&#127912;</div>
-                    <div class="empty-state-text">Select a project and spritesheet</div>
-                    <div class="empty-state-hint">Sprites defined in Sprite-Rite will appear here</div>
+                    <div class="empty-state-text">Select a project</div>
+                    <div class="empty-state-hint">Sprites from the master sheet will appear here</div>
                 </div>
                 <div id="paletteContent" style="display: none;">
-                    <div class="section-header">Available Sprites</div>
+                    <div class="section-header" style="display: flex; justify-content: space-between; align-items: center;">
+                        <span>Master Sheet</span>
+                        <select class="source-filter" id="sourceFilter" style="font-size: 10px; padding: 4px 8px; background: var(--bg-surface); border: 1px solid var(--stone-dark); border-radius: 4px; color: var(--stone-light);">
+                            <option value="">All Sources</option>
+                        </select>
+                    </div>
                     <div class="sprite-grid" id="spriteGrid"></div>
                 </div>
             </div>
@@ -1096,9 +1098,6 @@
         const state = {
             user: null,
             projectId: null,
-            spritesheetId: null,
-            spritesheet: null,
-            spriteSheetImage: null,
             sprites: [],
             animations: [],
             currentAnimationId: null,
@@ -1115,7 +1114,8 @@
             isDirty: false,
             masterSheetAtlas: null,
             masterSheetImage: null,
-            generationQueue: null
+            generationQueue: null,
+            sourceFilter: '' // Filter sprites by source sheet
         };
 
         let animationLoop = null;
@@ -1126,7 +1126,7 @@
         // ==========================================
         const elements = {
             projectSelect: document.getElementById('projectSelect'),
-            spritesheetSelect: document.getElementById('spritesheetSelect'),
+            sourceFilter: document.getElementById('sourceFilter'),
             saveIndicator: document.getElementById('saveIndicator'),
             authIndicator: document.getElementById('authIndicator'),
             paletteEmpty: document.getElementById('paletteEmpty'),
@@ -1284,18 +1284,18 @@
 
         async function selectProject(projectId) {
             state.projectId = projectId;
-            state.spritesheetId = null;
-            state.spritesheet = null;
             state.sprites = [];
             state.animations = [];
             state.currentAnimationId = null;
             state.masterSheetAtlas = null;
             state.masterSheetImage = null;
+            state.sourceFilter = '';
 
             localStorage.setItem('animstation_project', projectId);
 
-            elements.spritesheetSelect.disabled = !projectId;
-            elements.spritesheetSelect.innerHTML = '<option value="">-- Select Spritesheet --</option>';
+            // Reset source filter
+            elements.sourceFilter.innerHTML = '<option value="">All Sources</option>';
+            elements.sourceFilter.value = '';
 
             if (!projectId) {
                 renderSpritePalette();
@@ -1306,140 +1306,89 @@
             try {
                 // Load master sheet for this project
                 if (crucibleClient.getMasterSheet) {
-                    try {
-                        const masterSheet = await crucibleClient.getMasterSheet(projectId);
-                        if (masterSheet.png && masterSheet.atlas && Object.keys(masterSheet.atlas.sprites).length > 0) {
-                            const img = new Image();
-                            await new Promise((resolve, reject) => {
-                                img.onload = resolve;
-                                img.onerror = reject;
-                                img.src = masterSheet.png;
-                            });
-                            state.masterSheetAtlas = masterSheet.atlas;
-                            state.masterSheetImage = img;
+                    const masterSheet = await crucibleClient.getMasterSheet(projectId);
+                    if (masterSheet.png && masterSheet.atlas && Object.keys(masterSheet.atlas.sprites).length > 0) {
+                        const img = new Image();
+                        await new Promise((resolve, reject) => {
+                            img.onload = resolve;
+                            img.onerror = reject;
+                            img.src = masterSheet.png;
+                        });
+                        state.masterSheetAtlas = masterSheet.atlas;
+                        state.masterSheetImage = img;
 
-                            // Add master sheet as first option
-                            const spriteCount = Object.keys(masterSheet.atlas.sprites).length;
-                            const masterOpt = document.createElement('option');
-                            masterOpt.value = '__master__';
-                            masterOpt.textContent = `Master Sheet (${spriteCount} sprites)`;
-                            elements.spritesheetSelect.appendChild(masterOpt);
+                        // Convert master sheet atlas to sprites array format
+                        state.sprites = Object.entries(masterSheet.atlas.sprites).map(([name, def]) => ({
+                            name,
+                            x: def.x,
+                            y: def.y,
+                            width: def.w,
+                            height: def.h,
+                            source: def.source
+                        }));
+
+                        // Populate source filter with unique sources
+                        populateSourceFilter();
+
+                        // Load project animations
+                        try {
+                            state.animations = await crucibleClient.getProjectAnimations(projectId);
+                        } catch (e) {
+                            console.warn('Could not load project animations:', e);
+                            state.animations = [];
                         }
-                    } catch (err) {
-                        console.warn('Could not load master sheet:', err);
                     }
                 }
 
-                const spritesheets = await crucibleClient.getSpritesheets(projectId);
-
-                spritesheets.forEach(s => {
-                    const opt = document.createElement('option');
-                    opt.value = s.id;
-                    opt.textContent = s.name;
-                    elements.spritesheetSelect.appendChild(opt);
-                });
-
-                // Restore last selected spritesheet or auto-select master sheet
-                const lastSheet = localStorage.getItem('animstation_spritesheet');
-                if (lastSheet === '__master__' && state.masterSheetAtlas) {
-                    elements.spritesheetSelect.value = '__master__';
-                    await selectSpritesheet('__master__');
-                } else if (lastSheet && spritesheets.find(s => s.id === lastSheet)) {
-                    elements.spritesheetSelect.value = lastSheet;
-                    await selectSpritesheet(lastSheet);
-                } else if (state.masterSheetAtlas) {
-                    // Auto-select master sheet if available
-                    elements.spritesheetSelect.value = '__master__';
-                    await selectSpritesheet('__master__');
-                }
+                renderSpritePalette();
+                renderAnimationList();
             } catch (err) {
-                console.error('Failed to load spritesheets:', err);
-                showToast('Failed to load spritesheets');
+                console.error('Failed to load master sheet:', err);
+                showToast('Failed to load master sheet');
             }
         }
 
-        async function selectSpritesheet(spritesheetId) {
-            state.spritesheetId = spritesheetId;
-            state.spritesheet = null;
-            state.spriteSheetImage = null;
-            state.sprites = [];
-            state.frames = [];
-            state.selectedFrameIndex = -1;
-            state.currentAnimationId = null;
-            stopPlayback();
-
-            localStorage.setItem('animstation_spritesheet', spritesheetId);
-
-            if (!spritesheetId) {
-                renderSpritePalette();
-                renderTimeline();
-                renderAnimationList();
-                return;
-            }
-
-            // Handle master sheet
-            if (spritesheetId === '__master__') {
-                if (!state.masterSheetAtlas || !state.masterSheetImage) {
-                    showToast('Master sheet not loaded');
-                    return;
+        function populateSourceFilter() {
+            // Get unique sources from sprites
+            const sources = new Map();
+            state.sprites.forEach(sprite => {
+                if (sprite.source && sprite.source.spritesheetId) {
+                    if (!sources.has(sprite.source.spritesheetId)) {
+                        sources.set(sprite.source.spritesheetId, {
+                            id: sprite.source.spritesheetId,
+                            type: sprite.source.type,
+                            count: 1
+                        });
+                    } else {
+                        sources.get(sprite.source.spritesheetId).count++;
+                    }
                 }
+            });
 
-                // Convert master sheet atlas to sprites array format
-                state.spriteSheetImage = state.masterSheetImage;
-                state.sprites = Object.entries(state.masterSheetAtlas.sprites).map(([name, def]) => ({
-                    name,
-                    x: def.x,
-                    y: def.y,
-                    width: def.w,
-                    height: def.h,
-                    source: def.source
-                }));
+            // Add options to filter
+            elements.sourceFilter.innerHTML = '<option value="">All Sources</option>';
 
-                // Load project animations for master sheet
-                try {
-                    state.animations = state.projectId
-                        ? await crucibleClient.getProjectAnimations(state.projectId)
-                        : [];
-                } catch (e) {
-                    console.warn('Could not load project animations:', e);
-                    state.animations = [];
-                }
+            // Fetch spritesheet names for better labels
+            if (sources.size > 0 && state.projectId) {
+                crucibleClient.getSpritesheets(state.projectId).then(spritesheets => {
+                    const sheetMap = new Map(spritesheets.map(s => [s.id, s.name]));
 
-                renderSpritePalette();
-                renderAnimationList();
-                renderTimeline();
-                updateJsonOutput();
-
-                showToast(`Loaded ${state.sprites.length} sprites from master sheet`);
-                return;
-            }
-
-            try {
-                // Load spritesheet with animations
-                state.spritesheet = await crucibleClient.getSpritesheetWithAnimations(spritesheetId);
-                state.sprites = state.spritesheet.sprites || [];
-                state.animations = state.spritesheet.animations || [];
-
-                // Load the image
-                if (state.spritesheet.publicUrl) {
-                    state.spriteSheetImage = new Image();
-                    state.spriteSheetImage.crossOrigin = 'anonymous';
-                    await new Promise((resolve, reject) => {
-                        state.spriteSheetImage.onload = resolve;
-                        state.spriteSheetImage.onerror = reject;
-                        state.spriteSheetImage.src = state.spritesheet.publicUrl;
+                    sources.forEach((info, id) => {
+                        const opt = document.createElement('option');
+                        opt.value = id;
+                        const name = sheetMap.get(id) || `${info.type} (${id.slice(0, 8)}...)`;
+                        opt.textContent = `${name} (${info.count})`;
+                        elements.sourceFilter.appendChild(opt);
                     });
-                }
-
-                renderSpritePalette();
-                renderAnimationList();
-                renderTimeline();
-                updateJsonOutput();
-
-                showToast(`Loaded ${state.sprites.length} sprites, ${state.animations.length} animations`);
-            } catch (err) {
-                console.error('Failed to load spritesheet:', err);
-                showToast('Failed to load spritesheet');
+                }).catch(() => {
+                    // Fallback: just use IDs
+                    sources.forEach((info, id) => {
+                        const opt = document.createElement('option');
+                        opt.value = id;
+                        opt.textContent = `${info.type} (${info.count} sprites)`;
+                        elements.sourceFilter.appendChild(opt);
+                    });
+                });
             }
         }
 
@@ -1493,10 +1442,20 @@
 
             elements.spriteGrid.innerHTML = '';
 
-            state.sprites.forEach((sprite, index) => {
+            // Filter sprites by source if filter is active
+            const filteredSprites = state.sourceFilter
+                ? state.sprites.filter(s => s.source && s.source.spritesheetId === state.sourceFilter)
+                : state.sprites;
+
+            if (filteredSprites.length === 0 && state.sourceFilter) {
+                elements.spriteGrid.innerHTML = '<div style="padding: 20px; text-align: center; color: var(--stone-mid); font-size: 11px;">No sprites from this source</div>';
+                return;
+            }
+
+            filteredSprites.forEach((sprite, index) => {
                 const tile = document.createElement('div');
                 tile.className = 'sprite-tile';
-                tile.dataset.index = index;
+                tile.dataset.index = state.sprites.indexOf(sprite); // Use original index
 
                 const canvasWrapper = document.createElement('div');
                 canvasWrapper.className = 'sprite-tile-canvas';
@@ -1506,11 +1465,11 @@
                 canvas.width = Math.floor(sprite.width * scale);
                 canvas.height = Math.floor(sprite.height * scale);
 
-                if (state.spriteSheetImage) {
+                if (state.masterSheetImage) {
                     const ctx = canvas.getContext('2d');
                     ctx.imageSmoothingEnabled = false;
                     ctx.drawImage(
-                        state.spriteSheetImage,
+                        state.masterSheetImage,
                         sprite.x, sprite.y, sprite.width, sprite.height,
                         0, 0, canvas.width, canvas.height
                     );
@@ -1526,7 +1485,7 @@
                 tile.appendChild(canvasWrapper);
                 tile.appendChild(nameLabel);
 
-                tile.addEventListener('click', () => addFrameToTimeline(sprite, index));
+                tile.addEventListener('click', () => addFrameToTimeline(sprite, state.sprites.indexOf(sprite)));
 
                 elements.spriteGrid.appendChild(tile);
             });
@@ -1725,11 +1684,11 @@
                 canvas.width = Math.floor(sprite.width * scale);
                 canvas.height = Math.floor(sprite.height * scale);
 
-                if (state.spriteSheetImage) {
+                if (state.masterSheetImage) {
                     const ctx = canvas.getContext('2d');
                     ctx.imageSmoothingEnabled = false;
                     ctx.drawImage(
-                        state.spriteSheetImage,
+                        state.masterSheetImage,
                         sprite.x, sprite.y, sprite.width, sprite.height,
                         0, 0, canvas.width, canvas.height
                     );
@@ -1969,7 +1928,7 @@
         function renderPreview() {
             previewCtx.clearRect(0, 0, 128, 128);
 
-            if (state.frames.length === 0 || !state.spriteSheetImage) return;
+            if (state.frames.length === 0 || !state.masterSheetImage) return;
 
             const currentFrame = state.frames[state.playbackFrame];
             if (!currentFrame) return;
@@ -1987,7 +1946,7 @@
 
                 previewCtx.globalAlpha = alpha;
                 previewCtx.drawImage(
-                    state.spriteSheetImage,
+                    state.masterSheetImage,
                     sprite.x, sprite.y, sprite.width, sprite.height,
                     destX, destY, destW, destH
                 );
@@ -2031,7 +1990,7 @@
                 clearTimeout(state.saveTimeout);
             }
 
-            if (!state.user || !state.spritesheetId) {
+            if (!state.user || !state.projectId || !state.masterSheetImage) {
                 saveToLocalStorage();
                 return;
             }
@@ -2045,7 +2004,7 @@
         }
 
         async function autoSaveAnimation() {
-            if (!state.user || !state.spritesheetId || state.frames.length === 0) return;
+            if (!state.user || !state.projectId || !state.masterSheetImage || state.frames.length === 0) return;
 
             const name = elements.animationName.value.trim();
             if (!name) return;
@@ -2099,12 +2058,9 @@
                     state.animations[idx] = { ...state.animations[idx], name, frames, fps, loop };
                 }
             } else {
-                // Create new - pass projectId for master sheet animations
-                const options = { fps, loop };
-                if (state.spritesheetId === '__master__' && state.projectId) {
-                    options.projectId = state.projectId;
-                }
-                const newAnim = await crucibleClient.createAnimation(state.spritesheetId, name, frames, options);
+                // Create new animation on master sheet (project level)
+                const options = { fps, loop, projectId: state.projectId };
+                const newAnim = await crucibleClient.createAnimation('__master__', name, frames, options);
                 state.currentAnimationId = newAnim.id;
                 state.animations.push(newAnim);
             }
@@ -2189,8 +2145,9 @@
                 selectProject(e.target.value);
             });
 
-            elements.spritesheetSelect.addEventListener('change', (e) => {
-                selectSpritesheet(e.target.value);
+            elements.sourceFilter.addEventListener('change', (e) => {
+                state.sourceFilter = e.target.value;
+                renderSpritePalette();
             });
 
             elements.newAnimationBtn.addEventListener('click', newAnimation);
@@ -2264,8 +2221,8 @@
                     showToast('Sign in to save animations');
                     return;
                 }
-                if (!state.spritesheetId) {
-                    showToast('Select a spritesheet first');
+                if (!state.projectId || !state.masterSheetImage) {
+                    showToast('Select a project first');
                     return;
                 }
                 await saveAnimationToCloud();
