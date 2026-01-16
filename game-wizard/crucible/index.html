@@ -700,6 +700,145 @@
             font-size: 9px;
             color: var(--stone-mid);
         }
+
+        /* Settings Modal */
+        .modal-wide {
+            min-width: 520px;
+            max-width: 600px;
+        }
+
+        .settings-tabs {
+            display: flex;
+            gap: 4px;
+            margin-bottom: 20px;
+            border-bottom: 1px solid var(--stone-dark);
+        }
+
+        .settings-tab {
+            padding: 10px 16px;
+            background: none;
+            border: none;
+            color: var(--stone-mid);
+            font-family: inherit;
+            font-size: 11px;
+            cursor: pointer;
+            border-bottom: 2px solid transparent;
+            transition: all 0.2s;
+        }
+
+        .settings-tab:hover {
+            color: var(--stone-light);
+        }
+
+        .settings-tab.active {
+            color: var(--accent-gold);
+            border-bottom-color: var(--accent-gold);
+        }
+
+        .settings-panel {
+            display: none;
+        }
+
+        .settings-panel.active {
+            display: block;
+        }
+
+        .settings-section {
+            margin-bottom: 24px;
+        }
+
+        .settings-section-title {
+            font-size: 11px;
+            color: var(--stone-mid);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 12px;
+            padding-bottom: 8px;
+            border-bottom: 1px solid var(--stone-dark);
+        }
+
+        .settings-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 12px;
+        }
+
+        .settings-row-label {
+            font-size: 12px;
+            color: var(--stone-light);
+        }
+
+        .settings-row-hint {
+            font-size: 10px;
+            color: var(--stone-mid);
+            margin-top: 2px;
+        }
+
+        .settings-select {
+            padding: 8px 12px;
+            background: var(--bg-surface);
+            border: 1px solid var(--stone-dark);
+            border-radius: 4px;
+            color: var(--stone-light);
+            font-family: inherit;
+            font-size: 11px;
+            min-width: 160px;
+            cursor: pointer;
+        }
+
+        .settings-select:focus {
+            outline: none;
+            border-color: var(--accent-gold);
+        }
+
+        .settings-number {
+            width: 80px;
+            padding: 8px 12px;
+            background: var(--bg-surface);
+            border: 1px solid var(--stone-dark);
+            border-radius: 4px;
+            color: var(--stone-light);
+            font-family: inherit;
+            font-size: 11px;
+            text-align: center;
+        }
+
+        .settings-number:focus {
+            outline: none;
+            border-color: var(--accent-gold);
+        }
+
+        .preset-preview {
+            background: var(--bg-surface);
+            border: 1px solid var(--stone-dark);
+            border-radius: 8px;
+            padding: 16px;
+            margin-top: 16px;
+        }
+
+        .preset-preview-title {
+            font-size: 10px;
+            color: var(--stone-mid);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 12px;
+        }
+
+        .preset-preview-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 8px;
+        }
+
+        .preset-preview-item {
+            font-size: 10px;
+            color: var(--stone-light);
+        }
+
+        .preset-preview-item span {
+            color: var(--accent-gold);
+        }
     </style>
 </head>
 <body>
@@ -733,7 +872,10 @@
                 <div id="projectInfo">
                     <div style="font-size: 12px; color: var(--stone-mid);">No project selected</div>
                 </div>
-                <button class="btn" id="exportProjectBtn" style="width: 100%; margin-top: 12px;" disabled>
+                <button class="btn" id="projectSettingsBtn" style="width: 100%; margin-top: 12px;" disabled>
+                    &#9881; Project Settings
+                </button>
+                <button class="btn" id="exportProjectBtn" style="width: 100%; margin-top: 8px;" disabled>
                     &#128230; Export Project
                 </button>
                 <button class="btn" id="inviteBtn" style="width: 100%; margin-top: 8px;" disabled>
@@ -965,6 +1107,175 @@
         </div>
     </div>
 
+    <!-- Project Settings Modal -->
+    <div class="modal-overlay" id="projectSettingsModal">
+        <div class="modal modal-wide">
+            <div class="modal-header">Project Settings</div>
+
+            <div class="settings-tabs">
+                <button class="settings-tab active" data-settings-tab="general">General</button>
+                <button class="settings-tab" data-settings-tab="ai">AI Generation</button>
+                <button class="settings-tab" data-settings-tab="assets">Asset Defaults</button>
+            </div>
+
+            <!-- General Settings -->
+            <div class="settings-panel active" id="settingsGeneral">
+                <div class="settings-section">
+                    <div class="settings-section-title">Project Info</div>
+                    <div class="form-group">
+                        <label class="form-label">Project Name</label>
+                        <input type="text" class="form-input" id="settingsProjectName">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Description</label>
+                        <input type="text" class="form-input" id="settingsProjectDesc" placeholder="A brief description...">
+                    </div>
+                </div>
+                <div class="settings-section">
+                    <div class="settings-section-title">Game Type</div>
+                    <div class="settings-row">
+                        <div>
+                            <div class="settings-row-label">Primary View</div>
+                            <div class="settings-row-hint">Default perspective for this project</div>
+                        </div>
+                        <select class="settings-select" id="settingsGameView">
+                            <option value="top-down">Top-Down</option>
+                            <option value="side-scroll">Side-Scroller</option>
+                            <option value="isometric">Isometric</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+
+            <!-- AI Generation Settings -->
+            <div class="settings-panel" id="settingsAI">
+                <div class="settings-section">
+                    <div class="settings-section-title">Style Presets</div>
+                    <p style="font-size: 11px; color: var(--stone-mid); margin-bottom: 16px;">
+                        These defaults pre-fill AI generation forms. You can override them per-generation.
+                    </p>
+
+                    <div class="settings-row">
+                        <div>
+                            <div class="settings-row-label">Outline</div>
+                            <div class="settings-row-hint">Edge style for generated sprites</div>
+                        </div>
+                        <select class="settings-select" id="settingsOutline">
+                            <option value="none">No Outline</option>
+                            <option value="single_color_black">Black Outline</option>
+                            <option value="single_color_colored">Colored Outline</option>
+                        </select>
+                    </div>
+
+                    <div class="settings-row">
+                        <div>
+                            <div class="settings-row-label">Shading</div>
+                            <div class="settings-row-hint">Depth and lighting style</div>
+                        </div>
+                        <select class="settings-select" id="settingsShading">
+                            <option value="flat">Flat (No Shading)</option>
+                            <option value="basic">Basic Shading</option>
+                            <option value="detailed">Detailed Shading</option>
+                        </select>
+                    </div>
+
+                    <div class="settings-row">
+                        <div>
+                            <div class="settings-row-label">Detail Level</div>
+                            <div class="settings-row-hint">Amount of visual detail</div>
+                        </div>
+                        <select class="settings-select" id="settingsDetail">
+                            <option value="low">Low Detail</option>
+                            <option value="medium">Medium Detail</option>
+                            <option value="high">High Detail</option>
+                        </select>
+                    </div>
+
+                    <div class="settings-row">
+                        <div>
+                            <div class="settings-row-label">View Perspective</div>
+                            <div class="settings-row-hint">Default camera angle for sprites</div>
+                        </div>
+                        <select class="settings-select" id="settingsView">
+                            <option value="high_top_down">High Top-Down</option>
+                            <option value="low_top_down">Low Top-Down</option>
+                            <option value="side">Side View</option>
+                            <option value="isometric_thin">Isometric (Thin)</option>
+                            <option value="isometric_thick">Isometric (Thick)</option>
+                            <option value="isometric_block">Isometric (Block)</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="preset-preview">
+                    <div class="preset-preview-title">Current Style Preview</div>
+                    <div class="preset-preview-grid" id="stylePreviewGrid">
+                        <div class="preset-preview-item">Outline: <span id="previewOutline">Black</span></div>
+                        <div class="preset-preview-item">Shading: <span id="previewShading">Basic</span></div>
+                        <div class="preset-preview-item">Detail: <span id="previewDetail">Medium</span></div>
+                        <div class="preset-preview-item">View: <span id="previewView">Low Top-Down</span></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Asset Defaults -->
+            <div class="settings-panel" id="settingsAssets">
+                <div class="settings-section">
+                    <div class="settings-section-title">Tile Defaults</div>
+                    <div class="settings-row">
+                        <div>
+                            <div class="settings-row-label">Tile Size</div>
+                            <div class="settings-row-hint">Default size for new tiles</div>
+                        </div>
+                        <select class="settings-select" id="settingsTileSize">
+                            <option value="16">16×16 px</option>
+                            <option value="24">24×24 px</option>
+                            <option value="32">32×32 px</option>
+                        </select>
+                    </div>
+                    <div class="settings-row">
+                        <div>
+                            <div class="settings-row-label">Transition Size</div>
+                            <div class="settings-row-hint">Blend width for tileset transitions</div>
+                        </div>
+                        <select class="settings-select" id="settingsTransition">
+                            <option value="sharp">Sharp (0%)</option>
+                            <option value="medium">Medium (25%)</option>
+                            <option value="wide">Wide (50%)</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="settings-section">
+                    <div class="settings-section-title">Character Defaults</div>
+                    <div class="settings-row">
+                        <div>
+                            <div class="settings-row-label">Character Size</div>
+                            <div class="settings-row-hint">Default sprite size for characters</div>
+                        </div>
+                        <input type="number" class="settings-number" id="settingsCharSize" value="32" min="16" max="128" step="8">
+                    </div>
+                    <div class="settings-row">
+                        <div>
+                            <div class="settings-row-label">Directions</div>
+                            <div class="settings-row-hint">Number of rotation angles</div>
+                        </div>
+                        <select class="settings-select" id="settingsDirections">
+                            <option value="1">1 (No rotation)</option>
+                            <option value="4">4 (Cardinal)</option>
+                            <option value="8">8 (Full rotation)</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+
+            <div class="modal-actions">
+                <button class="btn" id="cancelSettingsBtn">Cancel</button>
+                <button class="btn btn-primary" id="saveSettingsBtn">Save Settings</button>
+            </div>
+        </div>
+    </div>
+
     <!-- Toast -->
     <div class="toast" id="toast"></div>
 
@@ -1024,6 +1335,20 @@
             inviteModal: document.getElementById('inviteModal'),
             inviteIdentifier: document.getElementById('inviteIdentifier'),
             membersList: document.getElementById('membersList'),
+            // Settings
+            projectSettingsBtn: document.getElementById('projectSettingsBtn'),
+            projectSettingsModal: document.getElementById('projectSettingsModal'),
+            settingsProjectName: document.getElementById('settingsProjectName'),
+            settingsProjectDesc: document.getElementById('settingsProjectDesc'),
+            settingsGameView: document.getElementById('settingsGameView'),
+            settingsOutline: document.getElementById('settingsOutline'),
+            settingsShading: document.getElementById('settingsShading'),
+            settingsDetail: document.getElementById('settingsDetail'),
+            settingsView: document.getElementById('settingsView'),
+            settingsTileSize: document.getElementById('settingsTileSize'),
+            settingsTransition: document.getElementById('settingsTransition'),
+            settingsCharSize: document.getElementById('settingsCharSize'),
+            settingsDirections: document.getElementById('settingsDirections'),
             // Auth
             authIndicator: document.getElementById('authIndicator')
         };
@@ -1091,6 +1416,7 @@
                 renderLevelsList();
                 elements.newLevelBtn.disabled = true;
                 elements.exportProjectBtn.disabled = true;
+                elements.projectSettingsBtn.disabled = true;
                 elements.inviteBtn.disabled = true;
                 elements.membersList.style.display = 'none';
                 showEmptyState();
@@ -1112,6 +1438,7 @@
                 renderLevelsList();
                 elements.newLevelBtn.disabled = false;
                 elements.exportProjectBtn.disabled = false;
+                elements.projectSettingsBtn.disabled = false;
 
                 // Enable invite button if user is the owner
                 const user = await crucible.getUser();
@@ -1573,7 +1900,7 @@
         });
 
         // Close modals on overlay click
-        [elements.newProjectModal, elements.newLevelModal, elements.inviteModal].forEach(modal => {
+        [elements.newProjectModal, elements.newLevelModal, elements.inviteModal, elements.projectSettingsModal].forEach(modal => {
             modal.addEventListener('click', (e) => {
                 if (e.target === modal) hideModal(modal);
             });
@@ -1585,8 +1912,172 @@
                 hideModal(elements.newProjectModal);
                 hideModal(elements.newLevelModal);
                 hideModal(elements.inviteModal);
+                hideModal(elements.projectSettingsModal);
             }
         });
+
+        // =============================================
+        // PROJECT SETTINGS
+        // =============================================
+
+        // Settings tab switching
+        document.querySelectorAll('.settings-tab').forEach(tab => {
+            tab.addEventListener('click', () => {
+                document.querySelectorAll('.settings-tab').forEach(t => t.classList.remove('active'));
+                document.querySelectorAll('.settings-panel').forEach(p => p.classList.remove('active'));
+                tab.classList.add('active');
+                const panelId = 'settings' + tab.dataset.settingsTab.charAt(0).toUpperCase() + tab.dataset.settingsTab.slice(1);
+                document.getElementById(panelId)?.classList.add('active');
+            });
+        });
+
+        // Open settings modal
+        elements.projectSettingsBtn.addEventListener('click', () => {
+            if (!state.currentProject) return;
+            loadSettingsIntoModal();
+            showModal(elements.projectSettingsModal);
+        });
+
+        // Cancel settings
+        document.getElementById('cancelSettingsBtn').addEventListener('click', () => {
+            hideModal(elements.projectSettingsModal);
+        });
+
+        // Save settings
+        document.getElementById('saveSettingsBtn').addEventListener('click', async () => {
+            await saveProjectSettings();
+        });
+
+        // Update preview on AI settings change
+        ['settingsOutline', 'settingsShading', 'settingsDetail', 'settingsView'].forEach(id => {
+            document.getElementById(id)?.addEventListener('change', updateStylePreview);
+        });
+
+        function loadSettingsIntoModal() {
+            if (!state.currentProject) return;
+
+            const settings = state.currentProject.settings || {};
+            const pixellab = settings.pixellab || {};
+            const style = pixellab.defaultStyle || {};
+            const tiles = pixellab.tileDefaults || {};
+            const chars = pixellab.characterDefaults || {};
+
+            // General
+            elements.settingsProjectName.value = state.currentProject.name || '';
+            elements.settingsProjectDesc.value = state.currentProject.description || '';
+            elements.settingsGameView.value = settings.gameView || 'top-down';
+
+            // AI Generation
+            elements.settingsOutline.value = style.outline || 'single_color_black';
+            elements.settingsShading.value = style.shading || 'basic';
+            elements.settingsDetail.value = style.detail || 'medium';
+            elements.settingsView.value = style.view || 'low_top_down';
+
+            // Asset Defaults
+            elements.settingsTileSize.value = tiles.size || '16';
+            elements.settingsTransition.value = tiles.transitionSize || 'medium';
+            elements.settingsCharSize.value = chars.size || 32;
+            elements.settingsDirections.value = chars.directions || '4';
+
+            updateStylePreview();
+        }
+
+        function updateStylePreview() {
+            const labels = {
+                outline: {
+                    'none': 'None',
+                    'single_color_black': 'Black',
+                    'single_color_colored': 'Colored'
+                },
+                shading: {
+                    'flat': 'Flat',
+                    'basic': 'Basic',
+                    'detailed': 'Detailed'
+                },
+                detail: {
+                    'low': 'Low',
+                    'medium': 'Medium',
+                    'high': 'High'
+                },
+                view: {
+                    'high_top_down': 'High Top-Down',
+                    'low_top_down': 'Low Top-Down',
+                    'side': 'Side View',
+                    'isometric_thin': 'Isometric Thin',
+                    'isometric_thick': 'Isometric Thick',
+                    'isometric_block': 'Isometric Block'
+                }
+            };
+
+            document.getElementById('previewOutline').textContent = labels.outline[elements.settingsOutline.value] || 'Black';
+            document.getElementById('previewShading').textContent = labels.shading[elements.settingsShading.value] || 'Basic';
+            document.getElementById('previewDetail').textContent = labels.detail[elements.settingsDetail.value] || 'Medium';
+            document.getElementById('previewView').textContent = labels.view[elements.settingsView.value] || 'Low Top-Down';
+        }
+
+        async function saveProjectSettings() {
+            if (!state.currentProject) return;
+
+            const btn = document.getElementById('saveSettingsBtn');
+            btn.disabled = true;
+            btn.textContent = 'Saving...';
+
+            try {
+                const crucible = await getCrucible();
+
+                // Build settings object
+                const settings = {
+                    gameView: elements.settingsGameView.value,
+                    pixellab: {
+                        defaultStyle: {
+                            outline: elements.settingsOutline.value,
+                            shading: elements.settingsShading.value,
+                            detail: elements.settingsDetail.value,
+                            view: elements.settingsView.value
+                        },
+                        tileDefaults: {
+                            size: parseInt(elements.settingsTileSize.value),
+                            transitionSize: elements.settingsTransition.value
+                        },
+                        characterDefaults: {
+                            size: parseInt(elements.settingsCharSize.value),
+                            directions: parseInt(elements.settingsDirections.value)
+                        }
+                    }
+                };
+
+                // Update project
+                await crucible.updateProject(state.currentProject.id, {
+                    name: elements.settingsProjectName.value.trim(),
+                    description: elements.settingsProjectDesc.value.trim(),
+                    settings
+                });
+
+                // Refresh project data
+                state.currentProject = await crucible.getProject(state.currentProject.id);
+
+                // Update UI
+                elements.projectInfo.innerHTML = `
+                    <div style="font-size: 13px; color: var(--stone-bright);">${state.currentProject.name}</div>
+                    <div style="font-size: 10px; color: var(--stone-mid); margin-top: 4px;">
+                        ${state.levels.length} level${state.levels.length !== 1 ? 's' : ''}
+                    </div>
+                `;
+
+                // Update project dropdown
+                const opt = elements.projectSelect.querySelector(`option[value="${state.currentProject.id}"]`);
+                if (opt) opt.textContent = state.currentProject.name;
+
+                hideModal(elements.projectSettingsModal);
+                showToast('Settings saved!', 'success');
+            } catch (err) {
+                console.error('Failed to save settings:', err);
+                showToast(err.message || 'Failed to save settings', 'error');
+            } finally {
+                btn.disabled = false;
+                btn.textContent = 'Save Settings';
+            }
+        }
 
         // =============================================
         // INITIALIZATION

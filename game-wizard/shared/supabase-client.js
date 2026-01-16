@@ -342,6 +342,70 @@ class CrucibleClient {
         }
     }
 
+    async updateProject(projectId, updates) {
+        if (!this.client) throw new Error('Crucible not initialized');
+
+        const { data, error } = await this.client
+            .from('projects')
+            .update(updates)
+            .eq('id', projectId)
+            .select()
+            .single();
+
+        if (error) throw error;
+        return data;
+    }
+
+    async hasProjects() {
+        if (!this.client) return false;
+
+        const user = await this.getUser();
+        if (!user) return false;
+
+        const { data, error } = await this.client
+            .from('projects')
+            .select('id')
+            .eq('user_id', user.id)
+            .limit(1);
+
+        if (error) return false;
+        return data && data.length > 0;
+    }
+
+    async getProjectSettings(projectId) {
+        if (!this.client) throw new Error('Crucible not initialized');
+
+        const { data, error } = await this.client
+            .from('projects')
+            .select('settings')
+            .eq('id', projectId)
+            .single();
+
+        if (error) throw error;
+
+        // Return settings with sensible defaults
+        const settings = data?.settings || {};
+        return {
+            gameView: settings.gameView || 'top-down',
+            pixellab: {
+                defaultStyle: {
+                    outline: settings.pixellab?.defaultStyle?.outline || 'single_color_black',
+                    shading: settings.pixellab?.defaultStyle?.shading || 'basic',
+                    detail: settings.pixellab?.defaultStyle?.detail || 'medium',
+                    view: settings.pixellab?.defaultStyle?.view || 'low_top_down'
+                },
+                tileDefaults: {
+                    size: settings.pixellab?.tileDefaults?.size || 16,
+                    transitionSize: settings.pixellab?.tileDefaults?.transitionSize || 'medium'
+                },
+                characterDefaults: {
+                    size: settings.pixellab?.characterDefaults?.size || 32,
+                    directions: settings.pixellab?.characterDefaults?.directions || 4
+                }
+            }
+        };
+    }
+
     // =============================================
     // LEVEL OPERATIONS
     // =============================================

@@ -1815,6 +1815,7 @@
 
     <!-- Supabase Client -->
     <script src="../shared/supabase-client.js"></script>
+    <script src="../shared/project-gate.js"></script>
     <script src="../shared/master-sheet.js"></script>
     <script src="../shared/pixellab-client.js"></script>
     <script src="../shared/generation-queue.js"></script>
@@ -4569,11 +4570,17 @@
         // ==========================================
         // Initialize
         // ==========================================
-        initGrid();
-        initVisualTiles();
-        loadSpriteIndex();
-        loadProjects();
-        initGenerationQueue();
+        (async function() {
+            // Check if user has projects (displays gate if not)
+            const hasProject = await checkProjectGate();
+            if (!hasProject) return;
+
+            initGrid();
+            initVisualTiles();
+            loadSpriteIndex();
+            loadProjects();
+            initGenerationQueue();
+        })();
 
         // ==========================================
         // AI Generation Queue

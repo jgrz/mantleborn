@@ -1151,6 +1151,7 @@
     <div class="generation-queue-panel" id="generationQueuePanel"></div>
 
     <script src="../shared/supabase-client.js"></script>
+    <script src="../shared/project-gate.js"></script>
     <script src="../shared/master-sheet.js"></script>
     <script src="../shared/pixellab-client.js"></script>
     <script src="../shared/generation-queue.js"></script>
@@ -1294,6 +1295,10 @@
         // INITIALIZATION
         // ==========================================
         async function init() {
+            // Check if user has projects (displays gate if not)
+            const hasProject = await checkProjectGate();
+            if (!hasProject) return;
+
             await crucibleClient.init();
             state.user = await crucibleClient.getUser();
             updateAuthIndicator();
