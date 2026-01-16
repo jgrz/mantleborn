@@ -157,6 +157,8 @@
 
         .save-indicator.saving { color: var(--warning); }
         .save-indicator.saved { color: var(--success); }
+        .save-indicator.master { color: var(--fire-bright); }
+        .save-indicator.draft { color: var(--water-bright, #6dc2ca); }
 
         /* Buttons */
         .btn {
@@ -380,12 +382,69 @@
             letter-spacing: 1px;
         }
 
+        /* Sheet Switcher */
+        .sheet-switcher {
+            display: flex;
+            gap: 4px;
+            margin-bottom: 8px;
+        }
+
+        .sheet-tab {
+            flex: 1;
+            padding: 6px 8px;
+            font-family: 'Press Start 2P', cursive;
+            font-size: 7px;
+            background: var(--bg-surface);
+            border: 2px solid var(--stone-dark);
+            border-radius: 4px;
+            color: var(--stone-mid);
+            cursor: pointer;
+            transition: all 0.15s;
+        }
+
+        .sheet-tab:hover {
+            border-color: var(--stone-mid);
+            color: var(--stone-bright);
+        }
+
+        .sheet-tab.active {
+            background: var(--fire-mid);
+            border-color: var(--fire-bright);
+            color: var(--fire-bright);
+        }
+
+        .sheet-tab .tab-count {
+            opacity: 0.7;
+            margin-left: 4px;
+        }
+
+        .library-actions {
+            display: flex;
+            gap: 4px;
+            margin-bottom: 8px;
+        }
+
+        .library-actions .btn {
+            flex: 1;
+            font-size: 7px;
+            padding: 4px 6px;
+        }
+
         .library-grid {
             display: flex;
             gap: 8px;
             flex-wrap: wrap;
             max-height: 100px;
             overflow-y: auto;
+        }
+
+        .library-empty {
+            width: 100%;
+            padding: 16px;
+            text-align: center;
+            color: var(--stone-mid);
+            font-size: 10px;
+            font-style: italic;
         }
 
         .library-tile {
@@ -1056,6 +1115,14 @@
                     <span class="section-header">Tile Library</span>
                     <button class="btn btn-small" id="newTileBtn">+ New</button>
                 </div>
+                <div class="sheet-switcher">
+                    <button class="sheet-tab active" id="draftTab" data-sheet="draft">Draft <span class="tab-count" id="draftCount">(0)</span></button>
+                    <button class="sheet-tab" id="masterTab" data-sheet="master">Master <span class="tab-count" id="masterCount">(0)</span></button>
+                </div>
+                <div class="library-actions" id="libraryActions">
+                    <button class="btn btn-small" id="publishTileBtn" title="Publish selected tile to Master Sheet">Publish</button>
+                    <button class="btn btn-small" id="publishAllBtn" title="Publish all drafts to Master Sheet">Publish All</button>
+                </div>
                 <div class="library-grid" id="libraryGrid">
                     <!-- Tiles populated by JS -->
                 </div>
@@ -1354,6 +1421,15 @@
             projectId: null,
             tiles: [],
             currentTileId: null,
+            currentTileName: null,      // Name of currently loaded tile
+            currentTileSource: null,    // 'draft', 'master', or 'new'
+
+            // Sheet data
+            libraryView: 'draft',       // 'draft' or 'master'
+            draftSheet: { png: null, atlas: { size: { w: 0, h: 0 }, sprites: {} } },
+            masterSheet: { png: null, atlas: { size: { w: 0, h: 0 }, sprites: {} } },
+            draftTiles: [],             // Array of tile objects from draft
+            masterTiles: [],            // Array of tile objects from master
 
             // Canvas - single tile dimensions
             width: 16,
@@ -1415,6 +1491,13 @@
             tileSelector: document.getElementById('tileSelector'),
             libraryGrid: document.getElementById('libraryGrid'),
             newTileBtn: document.getElementById('newTileBtn'),
+            draftTab: document.getElementById('draftTab'),
+            masterTab: document.getElementById('masterTab'),
+            draftCount: document.getElementById('draftCount'),
+            masterCount: document.getElementById('masterCount'),
+            libraryActions: document.getElementById('libraryActions'),
+            publishTileBtn: document.getElementById('publishTileBtn'),
+            publishAllBtn: document.getElementById('publishAllBtn'),
             colorPicker: document.getElementById('colorPicker'),
             currentHex: document.getElementById('currentHex'),
             currentColorFamily: document.getElementById('currentColorFamily'),
@@ -2441,78 +2524,275 @@
             state.projectId = projectId;
             state.tiles = [];
             state.currentTileId = null;
+            state.currentTileName = null;
+            state.currentTileSource = null;
+            state.draftTiles = [];
+            state.masterTiles = [];
+            state.draftSheet = { png: null, atlas: { size: { w: 0, h: 0 }, sprites: {} } };
+            state.masterSheet = { png: null, atlas: { size: { w: 0, h: 0 }, sprites: {} } };
 
             localStorage.setItem('tilesmith_project', projectId);
 
             if (!projectId) {
+                updateSheetCounts();
                 renderTileLibrary();
                 return;
             }
 
             try {
-                state.tiles = await crucibleClient.getTiles(projectId);
+                // Load both sheets in parallel
+                const [draftResult, masterResult] = await Promise.all([
+                    crucibleClient.getDraftSheet(projectId),
+                    crucibleClient.getMasterSheet(projectId)
+                ]);
+
+                // Store sheet data
+                state.draftSheet = {
+                    png: draftResult.png,
+                    atlas: draftResult.atlas || { size: { w: 0, h: 0 }, sprites: {} }
+                };
+                state.masterSheet = {
+                    png: masterResult.png,
+                    atlas: masterResult.atlas || { size: { w: 0, h: 0 }, sprites: {} }
+                };
+
+                // Convert atlas sprites to tile arrays for display
+                state.draftTiles = atlasToTileArray(state.draftSheet.atlas, state.draftSheet.png);
+                state.masterTiles = atlasToTileArray(state.masterSheet.atlas, state.masterSheet.png);
+
+                updateSheetCounts();
                 renderTileLibrary();
             } catch (err) {
-                console.error('Failed to load tiles:', err);
+                console.error('Failed to load sheets:', err);
                 showToast('Failed to load tiles', true);
             }
+        }
+
+        // Convert atlas sprites object to array for rendering
+        function atlasToTileArray(atlas, sheetPng) {
+            if (!atlas?.sprites) return [];
+
+            return Object.entries(atlas.sprites).map(([name, sprite]) => ({
+                name,
+                width: sprite.w,
+                height: sprite.h,
+                x: sprite.x,
+                y: sprite.y,
+                sheetPng,
+                metadata: sprite.metadata || {}
+            }));
+        }
+
+        function updateSheetCounts() {
+            elements.draftCount.textContent = `(${state.draftTiles.length})`;
+            elements.masterCount.textContent = `(${state.masterTiles.length})`;
+
+            // Show/hide publish buttons based on view and content
+            const showPublish = state.libraryView === 'draft' && state.draftTiles.length > 0;
+            elements.libraryActions.style.display = showPublish ? 'flex' : 'none';
+        }
+
+        function switchSheetView(view) {
+            state.libraryView = view;
+
+            // Update tab styles
+            elements.draftTab.classList.toggle('active', view === 'draft');
+            elements.masterTab.classList.toggle('active', view === 'master');
+
+            updateSheetCounts();
+            renderTileLibrary();
         }
 
         function renderTileLibrary() {
             elements.libraryGrid.innerHTML = '';
 
-            state.tiles.forEach(tile => {
-                const tileEl = document.createElement('div');
-                tileEl.className = 'library-tile';
-                if (tile.id === state.currentTileId) {
-                    tileEl.classList.add('active');
-                }
+            const tiles = state.libraryView === 'draft' ? state.draftTiles : state.masterTiles;
+            const sheetPng = state.libraryView === 'draft' ? state.draftSheet.png : state.masterSheet.png;
 
-                // Render thumbnail
-                const canvas = document.createElement('canvas');
-                const thumbSize = 40;
-                const scale = Math.min(thumbSize / tile.width, thumbSize / tile.height);
-                canvas.width = Math.floor(tile.width * scale);
-                canvas.height = Math.floor(tile.height * scale);
+            if (tiles.length === 0 || !sheetPng) {
+                const emptyMsg = document.createElement('div');
+                emptyMsg.className = 'library-empty';
+                emptyMsg.textContent = state.libraryView === 'draft'
+                    ? 'No drafts yet. Save a tile to get started.'
+                    : 'No tiles on master sheet.';
+                elements.libraryGrid.appendChild(emptyMsg);
+                return;
+            }
 
-                // Load pixel data
-                if (tile.pixel_data) {
-                    try {
-                        const img = new Image();
-                        img.onload = () => {
-                            const tCtx = canvas.getContext('2d');
-                            tCtx.imageSmoothingEnabled = false;
-                            tCtx.drawImage(img, 0, 0, canvas.width, canvas.height);
-                        };
-                        img.src = tile.pixel_data;
-                    } catch (e) {
-                        console.warn('Failed to load tile thumbnail');
+            // Load the sheet image once for all tiles
+            const sheetImg = new Image();
+            sheetImg.onerror = () => {
+                console.warn('Failed to load sheet image');
+                const errorMsg = document.createElement('div');
+                errorMsg.className = 'library-empty';
+                errorMsg.textContent = 'Failed to load tile sheet.';
+                elements.libraryGrid.appendChild(errorMsg);
+            };
+            sheetImg.src = sheetPng;
+            sheetImg.onload = () => {
+                tiles.forEach(tile => {
+                    const tileEl = document.createElement('div');
+                    tileEl.className = 'library-tile';
+                    if (tile.name === state.currentTileName && state.currentTileSource === state.libraryView) {
+                        tileEl.classList.add('active');
                     }
-                }
 
-                tileEl.appendChild(canvas);
-                tileEl.title = tile.name;
+                    // Render thumbnail by extracting from sheet
+                    const canvas = document.createElement('canvas');
+                    const thumbSize = 40;
+                    const scale = Math.min(thumbSize / tile.width, thumbSize / tile.height);
+                    canvas.width = Math.floor(tile.width * scale);
+                    canvas.height = Math.floor(tile.height * scale);
 
-                // Delete button
-                const deleteBtn = document.createElement('button');
-                deleteBtn.className = 'library-tile-delete';
-                deleteBtn.textContent = '×';
-                deleteBtn.addEventListener('click', async (e) => {
-                    e.stopPropagation();
-                    if (confirm(`Delete "${tile.name}"?`)) {
-                        await deleteTile(tile.id);
-                    }
+                    const tCtx = canvas.getContext('2d');
+                    tCtx.imageSmoothingEnabled = false;
+                    tCtx.drawImage(
+                        sheetImg,
+                        tile.x, tile.y, tile.width, tile.height,
+                        0, 0, canvas.width, canvas.height
+                    );
+
+                    tileEl.appendChild(canvas);
+                    tileEl.title = tile.name;
+
+                    // Delete button
+                    const deleteBtn = document.createElement('button');
+                    deleteBtn.className = 'library-tile-delete';
+                    deleteBtn.textContent = '×';
+                    deleteBtn.addEventListener('click', async (e) => {
+                        e.stopPropagation();
+                        await handleTileDelete(tile.name, state.libraryView);
+                    });
+                    tileEl.appendChild(deleteBtn);
+
+                    tileEl.addEventListener('click', () => loadTileFromSheet(tile, state.libraryView));
+
+                    elements.libraryGrid.appendChild(tileEl);
                 });
-                tileEl.appendChild(deleteBtn);
-
-                tileEl.addEventListener('click', () => loadTile(tile));
-
-                elements.libraryGrid.appendChild(tileEl);
-            });
+            };
         }
 
-        async function loadTile(tile) {
-            state.currentTileId = tile.id;
+        // Handle tile deletion with usage check for master tiles
+        async function handleTileDelete(tileName, source) {
+            if (source === 'master') {
+                // Check usage before deleting from master
+                try {
+                    const usage = await crucibleClient.getTileUsage(state.projectId, tileName);
+                    const usedIn = [];
+                    if (usage.groups.length > 0) {
+                        usedIn.push(`${usage.groups.length} group(s)`);
+                    }
+                    if (usage.levels.length > 0) {
+                        usedIn.push(`${usage.levels.length} level(s)`);
+                    }
+
+                    if (usedIn.length > 0) {
+                        const proceed = confirm(
+                            `"${tileName}" is used in ${usedIn.join(' and ')}.\n\n` +
+                            `Deleting will remove it from all uses. Continue?`
+                        );
+                        if (!proceed) return;
+                    } else if (!confirm(`Delete "${tileName}" from Master Sheet?`)) {
+                        return;
+                    }
+
+                    await crucibleClient.deleteTileFromMaster(state.projectId, tileName);
+                    showToast(`Deleted "${tileName}" from master`);
+                } catch (err) {
+                    console.error('Failed to delete tile:', err);
+                    showToast('Failed to delete tile', true);
+                    return;
+                }
+            } else {
+                // Draft tiles can be deleted without warning
+                if (!confirm(`Delete "${tileName}" from drafts?`)) return;
+
+                try {
+                    await crucibleClient.removeFromDraft(state.projectId, tileName);
+                    showToast(`Deleted "${tileName}" from drafts`);
+                } catch (err) {
+                    console.error('Failed to delete draft tile:', err);
+                    showToast('Failed to delete tile', true);
+                    return;
+                }
+            }
+
+            // Clear current tile if it was the deleted one
+            if (state.currentTileName === tileName && state.currentTileSource === source) {
+                newTile();
+            }
+
+            // Refresh the library
+            await selectProject(state.projectId);
+        }
+
+        // Load tile from sheet (draft or master) with edit protection for MTS
+        async function loadTileFromSheet(tile, source) {
+            // Edit protection for Master tiles
+            if (source === 'master') {
+                const choice = await showEditProtectionDialog(tile.name);
+                if (choice === 'cancel') return;
+                if (choice === 'copy') {
+                    // Create a copy - prompt for new name and load as draft
+                    const newName = prompt(`Enter name for the copy:`, `${tile.name}_copy`);
+                    if (!newName || newName.trim() === '') return;
+
+                    try {
+                        // Duplicate from master to draft
+                        await crucibleClient.duplicateTileOnMaster(state.projectId, tile.name, newName.trim());
+                        // Now move that copy to draft and load it
+                        // Actually we need to extract and save to draft
+                        const sheetPng = state.masterSheet.png;
+                        const sheetImg = new Image();
+                        await new Promise((resolve, reject) => {
+                            sheetImg.onload = resolve;
+                            sheetImg.onerror = reject;
+                            sheetImg.src = sheetPng;
+                        });
+
+                        // Extract tile from master sheet
+                        const tempCanvas = document.createElement('canvas');
+                        tempCanvas.width = tile.width;
+                        tempCanvas.height = tile.height;
+                        const tempCtx = tempCanvas.getContext('2d');
+                        tempCtx.drawImage(
+                            sheetImg,
+                            tile.x, tile.y, tile.width, tile.height,
+                            0, 0, tile.width, tile.height
+                        );
+                        const imageData = tempCanvas.toDataURL('image/png');
+
+                        // Save to draft
+                        await crucibleClient.saveToDraft(state.projectId, newName.trim(), imageData, tile.width, tile.height);
+
+                        // Reload sheets and switch to draft view
+                        await selectProject(state.projectId);
+                        switchSheetView('draft');
+
+                        // Load the new draft tile
+                        const newDraftTile = state.draftTiles.find(t => t.name === newName.trim());
+                        if (newDraftTile) {
+                            await loadTileFromSheetInternal(newDraftTile, 'draft');
+                        }
+                        showToast(`Created copy "${newName.trim()}" in drafts`);
+                        return;
+                    } catch (err) {
+                        console.error('Failed to create copy:', err);
+                        showToast('Failed to create copy', true);
+                        return;
+                    }
+                }
+                // choice === 'edit' - proceed with loading the master tile (read-only warning acknowledged)
+            }
+
+            await loadTileFromSheetInternal(tile, source);
+        }
+
+        // Internal function to load tile without protection checks
+        async function loadTileFromSheetInternal(tile, source) {
+            state.currentTileId = null; // Sheet tiles don't have IDs
+            state.currentTileName = tile.name;
+            state.currentTileSource = source;
 
             // Load tileset metadata if available
             const meta = tile.metadata || {};
@@ -2537,39 +2817,44 @@
             elements.tileHeight.value = state.height;
             elements.gridCols.value = state.gridCols;
             elements.gridRows.value = state.gridRows;
-            elements.tileType.value = tile.tile_type || '';
+            elements.tileType.value = meta.tileType || '';
 
-            if (tile.palette && tile.palette.length > 0) {
-                state.palette = tile.palette.map(p => p.hex || p);
+            if (meta.palette && meta.palette.length > 0) {
+                state.palette = meta.palette.map(p => p.hex || p);
                 elements.palettePreset.value = 'custom';
                 renderPalette();
             }
 
-            // Create new pixel data for full tileset
+            // Create new pixel data
             const totalWidth = getTotalWidth();
             const totalHeight = getTotalHeight();
             state.pixels = ctx.createImageData(totalWidth, totalHeight);
 
-            // Load from data URL
-            if (tile.pixel_data) {
+            // Extract tile from sheet
+            const sheetPng = source === 'draft' ? state.draftSheet.png : state.masterSheet.png;
+            if (sheetPng) {
                 try {
-                    const img = new Image();
+                    const sheetImg = new Image();
                     await new Promise((resolve, reject) => {
-                        img.onload = resolve;
-                        img.onerror = reject;
-                        img.src = tile.pixel_data;
+                        sheetImg.onload = resolve;
+                        sheetImg.onerror = reject;
+                        sheetImg.src = sheetPng;
                     });
 
                     const tempCanvas = document.createElement('canvas');
-                    tempCanvas.width = img.width;
-                    tempCanvas.height = img.height;
+                    tempCanvas.width = tile.width;
+                    tempCanvas.height = tile.height;
                     const tempCtx = tempCanvas.getContext('2d');
-                    tempCtx.drawImage(img, 0, 0);
+                    tempCtx.drawImage(
+                        sheetImg,
+                        tile.x, tile.y, tile.width, tile.height,
+                        0, 0, tile.width, tile.height
+                    );
 
-                    const imgData = tempCtx.getImageData(0, 0, img.width, img.height);
+                    const imgData = tempCtx.getImageData(0, 0, tile.width, tile.height);
                     state.pixels.data.set(imgData.data);
                 } catch (e) {
-                    console.warn('Failed to load tile pixel data');
+                    console.warn('Failed to load tile from sheet:', e);
                 }
             }
 
@@ -2579,10 +2864,52 @@
             state.undoStack = [];
             state.redoStack = [];
             updateUndoRedoButtons();
+            state.isDirty = false;
+            elements.saveIndicator.textContent = source === 'master' ? 'Master' : 'Draft';
+            elements.saveIndicator.className = `save-indicator ${source}`;
+        }
+
+        // Show edit protection dialog for MTS tiles
+        function showEditProtectionDialog(tileName) {
+            return new Promise((resolve) => {
+                const result = confirm(
+                    `"${tileName}" is on the Master Sheet.\n\n` +
+                    `Changes will affect everywhere this tile is used.\n\n` +
+                    `Click OK to edit the original, or Cancel to make a copy instead.`
+                );
+
+                if (result) {
+                    resolve('edit');
+                } else {
+                    // Ask if they want to make a copy
+                    const makeCopy = confirm('Would you like to make a copy to edit instead?');
+                    resolve(makeCopy ? 'copy' : 'cancel');
+                }
+            });
+        }
+
+        // Legacy loadTile for backwards compatibility (if needed)
+        async function loadTile(tile) {
+            // Convert old-style tile to sheet format and load
+            const sheetTile = {
+                name: tile.name,
+                width: tile.width,
+                height: tile.height,
+                x: 0,
+                y: 0,
+                metadata: tile.metadata || {}
+            };
+
+            // For legacy tiles, treat as draft
+            state.currentTileName = tile.name;
+            state.currentTileSource = 'draft';
+            await loadTileFromSheetInternal(sheetTile, 'draft');
         }
 
         function newTile() {
             state.currentTileId = null;
+            state.currentTileName = null;
+            state.currentTileSource = 'new';
             state.width = parseInt(elements.tileWidth.value) || 16;
             state.height = parseInt(elements.tileHeight.value) || 16;
 
@@ -2603,6 +2930,9 @@
             state.undoStack = [];
             state.redoStack = [];
             updateUndoRedoButtons();
+            state.isDirty = false;
+            elements.saveIndicator.textContent = 'New';
+            elements.saveIndicator.className = 'save-indicator';
         }
 
         async function saveTile() {
@@ -2632,43 +2962,62 @@
             tempCtx.putImageData(state.pixels, 0, 0);
             const pixelData = tempCanvas.toDataURL('image/png');
 
-            const tileData = {
-                name: name,
-                width: totalWidth,
-                height: totalHeight,
-                pixelData: pixelData,
-                palette: state.palette.map(hex => ({ hex })),
-                tileType: elements.tileType.value || null,
-                specId: state.currentSpec?.id || null,
-                metadata: {
-                    tileWidth: state.width,
-                    tileHeight: state.height,
-                    gridCols: state.gridCols,
-                    gridRows: state.gridRows
-                }
-            };
-
             elements.saveIndicator.textContent = 'Saving...';
             elements.saveIndicator.className = 'save-indicator saving';
 
             try {
-                if (state.currentTileId) {
-                    await crucibleClient.updateTile(state.currentTileId, tileData);
+                // Determine where to save based on current tile source
+                if (state.currentTileSource === 'master') {
+                    // Saving changes to a master tile - update master sheet
+                    // First remove old version if name changed
+                    if (state.currentTileName && state.currentTileName !== name) {
+                        await crucibleClient.deleteTileFromMaster(state.projectId, state.currentTileName);
+                    } else if (state.currentTileName) {
+                        // Remove old version with same name (we're replacing it)
+                        await crucibleClient.deleteTileFromMaster(state.projectId, state.currentTileName);
+                    }
+
+                    // Add updated tile to master
+                    await crucibleClient.saveToMaster(state.projectId, name, pixelData, totalWidth, totalHeight);
+                    state.currentTileName = name;
+
+                    elements.saveIndicator.textContent = 'Master';
+                    elements.saveIndicator.className = 'save-indicator saved master';
+                    showToast('Tile saved to Master Sheet');
                 } else {
-                    const newTile = await crucibleClient.createTile(state.projectId, tileData);
-                    state.currentTileId = newTile.id;
-                    state.tiles.unshift(newTile);
+                    // New tile or draft tile - save to draft sheet
+                    // If editing existing draft, remove old version first
+                    if (state.currentTileSource === 'draft' && state.currentTileName) {
+                        if (state.currentTileName !== name) {
+                            // Name changed - remove old
+                            await crucibleClient.removeFromDraft(state.projectId, state.currentTileName);
+                        } else {
+                            // Same name - remove to replace
+                            await crucibleClient.removeFromDraft(state.projectId, state.currentTileName);
+                        }
+                    }
+
+                    // Save to draft
+                    await crucibleClient.saveToDraft(state.projectId, name, pixelData, totalWidth, totalHeight);
+
+                    state.currentTileName = name;
+                    state.currentTileSource = 'draft';
+
+                    elements.saveIndicator.textContent = 'Draft';
+                    elements.saveIndicator.className = 'save-indicator saved draft';
+                    showToast('Tile saved to Draft Sheet');
                 }
 
-                // Refresh list
-                state.tiles = await crucibleClient.getTiles(state.projectId);
-                renderTileLibrary();
+                // Refresh sheets
+                await selectProject(state.projectId);
 
-                elements.saveIndicator.textContent = 'Saved';
-                elements.saveIndicator.className = 'save-indicator saved';
+                // If we saved to draft, switch to draft view
+                if (state.currentTileSource === 'draft') {
+                    switchSheetView('draft');
+                }
+
                 state.isDirty = false;
 
-                showToast('Tile saved');
             } catch (err) {
                 console.error('Failed to save tile:', err);
                 elements.saveIndicator.textContent = 'Save failed';
@@ -2677,7 +3026,65 @@
             }
         }
 
+        // Publish tile from draft to master
+        async function publishTile(tileName) {
+            if (!tileName) {
+                // If no name provided, use currently loaded tile
+                tileName = state.currentTileName;
+            }
+
+            if (!tileName || state.currentTileSource !== 'draft') {
+                showToast('Select a draft tile to publish', true);
+                return;
+            }
+
+            try {
+                await crucibleClient.publishDraftToMaster(state.projectId, tileName);
+                showToast(`Published "${tileName}" to Master Sheet`);
+
+                // Refresh and switch to master view
+                await selectProject(state.projectId);
+                switchSheetView('master');
+
+                // Clear current tile since it's no longer in draft
+                if (state.currentTileName === tileName) {
+                    newTile();
+                }
+            } catch (err) {
+                console.error('Failed to publish tile:', err);
+                showToast('Failed to publish tile', true);
+            }
+        }
+
+        // Publish all drafts to master
+        async function publishAllDrafts() {
+            if (state.draftTiles.length === 0) {
+                showToast('No drafts to publish', true);
+                return;
+            }
+
+            if (!confirm(`Publish all ${state.draftTiles.length} draft tiles to Master Sheet?`)) {
+                return;
+            }
+
+            try {
+                const result = await crucibleClient.publishAllDraftsToMaster(state.projectId);
+                showToast(`Published ${result.published} tiles to Master Sheet`);
+
+                // Refresh and switch to master view
+                await selectProject(state.projectId);
+                switchSheetView('master');
+                newTile();
+            } catch (err) {
+                console.error('Failed to publish all drafts:', err);
+                showToast('Failed to publish drafts', true);
+            }
+        }
+
+        // Legacy deleteTile for backwards compatibility
         async function deleteTile(tileId) {
+            // This function is deprecated - use handleTileDelete instead
+            console.warn('deleteTile is deprecated, use handleTileDelete');
             try {
                 await crucibleClient.deleteTile(tileId);
                 state.tiles = state.tiles.filter(t => t.id !== tileId);
@@ -3228,6 +3635,14 @@
 
             // New tile
             elements.newTileBtn.addEventListener('click', newTile);
+
+            // Sheet tabs
+            elements.draftTab.addEventListener('click', () => switchSheetView('draft'));
+            elements.masterTab.addEventListener('click', () => switchSheetView('master'));
+
+            // Publish buttons
+            elements.publishTileBtn.addEventListener('click', () => publishTile());
+            elements.publishAllBtn.addEventListener('click', () => publishAllDrafts());
 
             // AI modal
             elements.aiGenerateBtn.addEventListener('click', openAiModal);
