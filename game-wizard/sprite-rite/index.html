@@ -2099,15 +2099,22 @@
                 state.spritesheetId = sheet.id;
                 state.spritesheetRecord = sheet;
 
-                // Load sprites already saved to master sheet from this spritesheet
+                // Load sprites already saved to master sprite sheet from this spritesheet
                 if (state.projectId) {
                     try {
-                        state.masterSheetSprites = await crucibleClient.getMasterSheetSpritesFromSource(
-                            state.projectId,
-                            spritesheetId
-                        );
+                        const getSpritesMethod = crucibleClient.getMasterSpriteSheetSpritesFromSource
+                            || crucibleClient.getMasterSheetSpritesFromSource;
+                        if (getSpritesMethod) {
+                            state.masterSheetSprites = await getSpritesMethod.call(
+                                crucibleClient,
+                                state.projectId,
+                                spritesheetId
+                            );
+                        } else {
+                            state.masterSheetSprites = [];
+                        }
                     } catch (e) {
-                        console.warn('Could not load master sheet sprites:', e);
+                        console.warn('Could not load master sprite sheet sprites:', e);
                         state.masterSheetSprites = [];
                     }
                 } else {
@@ -3021,10 +3028,16 @@
             tempCtx.drawImage(state.image, x, y, w, h, 0, 0, w, h);
 
             try {
-                showToast('Publishing to master sheet...');
+                showToast('Publishing to master sprite sheet...');
 
-                // Publish to master sheet with source tracking
-                await crucibleClient.publishToMasterSheet(
+                // Publish to master sprite sheet with source tracking
+                const publishMethod = crucibleClient.publishToMasterSpriteSheet
+                    || crucibleClient.publishToMasterSheet;
+                if (!publishMethod) {
+                    throw new Error('Master sprite sheet publishing not available');
+                }
+                await publishMethod.call(
+                    crucibleClient,
                     state.projectId,
                     name,
                     tempCanvas, // Pass the canvas as imageData
@@ -3356,7 +3369,10 @@
             }
 
             try {
-                const masterSheet = await crucibleClient.getMasterSheet(state.projectId);
+                // Use master sprite sheet (or fall back to old master sheet)
+                const getMasterMethod = crucibleClient.getMasterSpriteSheet
+                    || crucibleClient.getMasterSheet;
+                const masterSheet = await getMasterMethod.call(crucibleClient, state.projectId);
                 if (masterSheet.atlas && masterSheet.atlas.sprites) {
                     const count = Object.keys(masterSheet.atlas.sprites).length;
                     elements.masterSheetCount.textContent = count;

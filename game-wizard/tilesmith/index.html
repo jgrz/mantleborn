@@ -2725,34 +2725,44 @@
                 const legacyTiles = await crucibleClient.getTiles(projectId);
                 if (!legacyTiles || legacyTiles.length === 0) return;
 
-                // Check if master sheet already has sprites (already migrated)
-                const masterSheet = await crucibleClient.getMasterSheet(projectId);
-                if (masterSheet.atlas?.sprites && Object.keys(masterSheet.atlas.sprites).length > 0) {
+                // Check if master tile sheet already has sprites (already migrated)
+                let masterTileSheet = { atlas: { sprites: {} } };
+                try {
+                    if (crucibleClient.getMasterTileSheet) {
+                        masterTileSheet = await crucibleClient.getMasterTileSheet(projectId);
+                    }
+                } catch (e) {
+                    // Master tile sheet columns may not exist yet
+                }
+
+                if (masterTileSheet.atlas?.sprites && Object.keys(masterTileSheet.atlas.sprites).length > 0) {
                     // Already migrated - skip
                     return;
                 }
 
-                // Migrate each tile to master sheet
-                console.log(`Migrating ${legacyTiles.length} legacy tiles to master sheet...`);
+                // Migrate each tile to master tile sheet
+                console.log(`Migrating ${legacyTiles.length} legacy tiles to master tile sheet...`);
                 showToast(`Migrating ${legacyTiles.length} tiles to new system...`);
 
                 for (const tile of legacyTiles) {
                     if (tile.pixel_data) {
                         try {
-                            await crucibleClient.saveToMaster(
-                                projectId,
-                                tile.name,
-                                tile.pixel_data,
-                                tile.width,
-                                tile.height
-                            );
+                            if (crucibleClient.publishToMasterTileSheet) {
+                                await crucibleClient.publishToMasterTileSheet(
+                                    projectId,
+                                    tile.name,
+                                    tile.pixel_data,
+                                    tile.width,
+                                    tile.height
+                                );
+                            }
                         } catch (err) {
                             console.warn(`Failed to migrate tile "${tile.name}":`, err);
                         }
                     }
                 }
 
-                showToast(`Migrated ${legacyTiles.length} tiles to Master Sheet`);
+                showToast(`Migrated ${legacyTiles.length} tiles to Master Tile Sheet`);
                 console.log('Legacy tile migration complete');
             } catch (err) {
                 console.warn('Legacy tile migration check failed:', err);
@@ -2785,30 +2795,40 @@
                 let masterResult = { png: null, atlas: { size: { w: 0, h: 0 }, sprites: {} } };
                 let groups = [];
 
-                // Try to load draft sheet (may fail if migration not run)
+                // Try to load draft tile sheet (may fail if migration not run)
                 try {
-                    if (crucibleClient.getDraftSheet) {
+                    if (crucibleClient.getDraftTileSheet) {
+                        draftResult = await crucibleClient.getDraftTileSheet(projectId);
+                    } else if (crucibleClient.getDraftSheet) {
+                        // Fallback to old method name
                         draftResult = await crucibleClient.getDraftSheet(projectId);
                     }
                 } catch (draftErr) {
-                    console.warn('Could not load draft sheet (columns may not exist):', draftErr.message);
+                    console.warn('Could not load draft tile sheet (columns may not exist):', draftErr.message);
                 }
 
-                // Load master sheet (should always work)
+                // Load master tile sheet
                 try {
-                    masterResult = await crucibleClient.getMasterSheet(projectId);
+                    if (crucibleClient.getMasterTileSheet) {
+                        masterResult = await crucibleClient.getMasterTileSheet(projectId);
+                    } else if (crucibleClient.getMasterSheet) {
+                        // Fallback to old unified master sheet
+                        masterResult = await crucibleClient.getMasterSheet(projectId);
+                    }
                 } catch (masterErr) {
-                    console.warn('Could not load master sheet:', masterErr.message);
+                    console.warn('Could not load master tile sheet:', masterErr.message);
                 }
 
-                // Check for legacy tiles that need migration (only if master is empty)
+                // Check for legacy tiles that need migration (only if master tile sheet is empty)
                 if (!masterResult.atlas?.sprites || Object.keys(masterResult.atlas.sprites).length === 0) {
                     await migrateLegacyTiles(projectId);
-                    // Reload master sheet after migration
+                    // Reload master tile sheet after migration
                     try {
-                        masterResult = await crucibleClient.getMasterSheet(projectId);
+                        if (crucibleClient.getMasterTileSheet) {
+                            masterResult = await crucibleClient.getMasterTileSheet(projectId);
+                        }
                     } catch (e) {
-                        console.warn('Could not reload master sheet after migration');
+                        console.warn('Could not reload master tile sheet after migration');
                     }
                 }
 
@@ -3582,15 +3602,17 @@
             elements.saveIndicator.className = 'save-indicator saving';
 
             try {
-                // Save all tiles to master sheet
+                // Save all tiles to master tile sheet
                 for (const tile of tilesToSave) {
-                    await crucibleClient.saveToMaster(
-                        state.projectId,
-                        tile.name,
-                        tile.imageData,
-                        tile.width,
-                        tile.height
-                    );
+                    if (crucibleClient.publishToMasterTileSheet) {
+                        await crucibleClient.publishToMasterTileSheet(
+                            state.projectId,
+                            tile.name,
+                            tile.imageData,
+                            tile.width,
+                            tile.height
+                        );
+                    }
                 }
 
                 // Create the group record
@@ -3650,22 +3672,28 @@
             try {
                 // Determine where to save based on current tile source
                 if (state.currentTileSource === 'master') {
-                    // Saving changes to a master tile - update master sheet
+                    // Saving changes to a master tile - update master tile sheet
                     // First remove old version if name changed
                     if (state.currentTileName && state.currentTileName !== name) {
-                        await crucibleClient.deleteTileFromMaster(state.projectId, state.currentTileName);
+                        if (crucibleClient.removeFromMasterTileSheet) {
+                            await crucibleClient.removeFromMasterTileSheet(state.projectId, state.currentTileName);
+                        }
                     } else if (state.currentTileName) {
                         // Remove old version with same name (we're replacing it)
-                        await crucibleClient.deleteTileFromMaster(state.projectId, state.currentTileName);
+                        if (crucibleClient.removeFromMasterTileSheet) {
+                            await crucibleClient.removeFromMasterTileSheet(state.projectId, state.currentTileName);
+                        }
                     }
 
-                    // Add updated tile to master
-                    await crucibleClient.saveToMaster(state.projectId, name, pixelData, totalWidth, totalHeight);
+                    // Add updated tile to master tile sheet
+                    if (crucibleClient.publishToMasterTileSheet) {
+                        await crucibleClient.publishToMasterTileSheet(state.projectId, name, pixelData, totalWidth, totalHeight);
+                    }
                     state.currentTileName = name;
 
                     elements.saveIndicator.textContent = 'Master';
                     elements.saveIndicator.className = 'save-indicator saved master';
-                    showToast('Tile saved to Master Sheet');
+                    showToast('Tile saved to Master Tile Sheet');
                 } else {
                     // New tile or draft tile - save to draft sheet
                     // If editing existing draft, remove old version first
@@ -3721,8 +3749,13 @@
             }
 
             try {
-                await crucibleClient.publishDraftToMaster(state.projectId, tileName);
-                showToast(`Published "${tileName}" to Master Sheet`);
+                if (crucibleClient.publishDraftToMasterTileSheet) {
+                    await crucibleClient.publishDraftToMasterTileSheet(state.projectId, tileName);
+                } else {
+                    // Fallback to old method
+                    await crucibleClient.publishDraftToMaster(state.projectId, tileName);
+                }
+                showToast(`Published "${tileName}" to Master Tile Sheet`);
 
                 // Refresh and switch to master view
                 await selectProject(state.projectId);
@@ -4131,9 +4164,10 @@
                 return;
             }
 
-            // Check if crucibleClient has master sheet methods
-            if (!crucibleClient.publishToMasterSheet) {
-                showToast('Master sheet feature not available', true);
+            // Check if crucibleClient has master tile sheet methods
+            const publishMethod = crucibleClient.publishToMasterTileSheet || crucibleClient.publishToMasterSheet;
+            if (!publishMethod) {
+                showToast('Master tile sheet feature not available', true);
                 return;
             }
 
@@ -4163,7 +4197,8 @@
                             // Generate unique name for each tile in the set
                             const subName = `${tileName}_${row}_${col}`;
 
-                            await crucibleClient.publishToMasterSheet(
+                            await publishMethod.call(
+                                crucibleClient,
                                 state.currentProjectId,
                                 subName,
                                 tileImageData,
@@ -4176,10 +4211,11 @@
                         }
                     }
                     elements.masterSheetStatus.textContent = `Published ${publishedCount} tiles`;
-                    showToast(`Published ${publishedCount} tiles to master sheet`);
+                    showToast(`Published ${publishedCount} tiles to master tile sheet`);
                 } else {
                     // Single tile
-                    await crucibleClient.publishToMasterSheet(
+                    await publishMethod.call(
+                        crucibleClient,
                         state.currentProjectId,
                         tileName,
                         state.pixels,
@@ -4187,11 +4223,11 @@
                         state.height,
                         'tilesmith'
                     );
-                    elements.masterSheetStatus.textContent = 'Published to master sheet';
-                    showToast('Published to master sheet');
+                    elements.masterSheetStatus.textContent = 'Published to master tile sheet';
+                    showToast('Published to master tile sheet');
                 }
             } catch (err) {
-                console.error('Failed to publish to master sheet:', err);
+                console.error('Failed to publish to master tile sheet:', err);
                 elements.masterSheetStatus.textContent = 'Failed to publish';
                 showToast('Failed to publish: ' + err.message, true);
             } finally {

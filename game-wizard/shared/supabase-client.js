@@ -1465,43 +1465,68 @@ class CrucibleClient {
     // DRAFT TILE SHEET
     // =============================================
 
-    async getDraftSheet(projectId) {
+    async getDraftTileSheet(projectId) {
         if (!this.client) throw new Error('Crucible not initialized');
 
+        // Try new column names first, fall back to old names
         const { data, error } = await this.client
             .from('projects')
-            .select('draft_sheet_png, draft_sheet_atlas, draft_sheet_updated_at')
+            .select('draft_tile_sheet_png, draft_tile_sheet_atlas, draft_tile_sheet_updated_at, draft_sheet_png, draft_sheet_atlas, draft_sheet_updated_at')
             .eq('id', projectId)
             .single();
 
         if (error) throw error;
         return {
-            png: data.draft_sheet_png,
-            atlas: data.draft_sheet_atlas || { size: { w: 0, h: 0 }, sprites: {} },
-            updatedAt: data.draft_sheet_updated_at
+            png: data.draft_tile_sheet_png || data.draft_sheet_png,
+            atlas: data.draft_tile_sheet_atlas || data.draft_sheet_atlas || { size: { w: 0, h: 0 }, sprites: {} },
+            updatedAt: data.draft_tile_sheet_updated_at || data.draft_sheet_updated_at
         };
     }
 
-    async saveDraftSheet(projectId, png, atlas) {
+    // Alias for backward compatibility
+    async getDraftSheet(projectId) {
+        return this.getDraftTileSheet(projectId);
+    }
+
+    async saveDraftTileSheet(projectId, png, atlas) {
         if (!this.client) throw new Error('Crucible not initialized');
 
+        // Try new column names, fall back to old if needed
         const { error } = await this.client
             .from('projects')
             .update({
-                draft_sheet_png: png,
-                draft_sheet_atlas: atlas,
-                draft_sheet_updated_at: new Date().toISOString()
+                draft_tile_sheet_png: png,
+                draft_tile_sheet_atlas: atlas,
+                draft_tile_sheet_updated_at: new Date().toISOString()
             })
             .eq('id', projectId);
 
-        if (error) throw error;
+        // If new columns don't exist, try old names
+        if (error && error.message?.includes('draft_tile_sheet')) {
+            const { error: fallbackError } = await this.client
+                .from('projects')
+                .update({
+                    draft_sheet_png: png,
+                    draft_sheet_atlas: atlas,
+                    draft_sheet_updated_at: new Date().toISOString()
+                })
+                .eq('id', projectId);
+            if (fallbackError) throw fallbackError;
+        } else if (error) {
+            throw error;
+        }
     }
 
-    async saveToDraft(projectId, name, imageData, width, height, source = 'tilesmith') {
+    // Alias for backward compatibility
+    async saveDraftSheet(projectId, png, atlas) {
+        return this.saveDraftTileSheet(projectId, png, atlas);
+    }
+
+    async saveToDraftTile(projectId, name, imageData, width, height, source = 'tilesmith') {
         if (!this.client) throw new Error('Crucible not initialized');
 
-        // Get existing draft sheet
-        const existing = await this.getDraftSheet(projectId);
+        // Get existing draft tile sheet
+        const existing = await this.getDraftTileSheet(projectId);
 
         // Use MasterSheetManager to add the sprite (if available)
         if (typeof MasterSheetManager !== 'undefined') {
@@ -1513,18 +1538,23 @@ class CrucibleClient {
                 newSprite
             );
 
-            // Save updated draft sheet
-            await this.saveDraftSheet(projectId, result.png, result.atlas);
+            // Save updated draft tile sheet
+            await this.saveDraftTileSheet(projectId, result.png, result.atlas);
             return result;
         } else {
             throw new Error('MasterSheetManager not available');
         }
     }
 
-    async removeFromDraft(projectId, tileName) {
+    // Alias for backward compatibility
+    async saveToDraft(projectId, name, imageData, width, height, source = 'tilesmith') {
+        return this.saveToDraftTile(projectId, name, imageData, width, height, source);
+    }
+
+    async removeFromDraftTile(projectId, tileName) {
         if (!this.client) throw new Error('Crucible not initialized');
 
-        const existing = await this.getDraftSheet(projectId);
+        const existing = await this.getDraftTileSheet(projectId);
 
         if (typeof MasterSheetManager !== 'undefined') {
             const manager = new MasterSheetManager();
@@ -1534,11 +1564,16 @@ class CrucibleClient {
                 tileName
             );
 
-            await this.saveDraftSheet(projectId, result.png, result.atlas);
+            await this.saveDraftTileSheet(projectId, result.png, result.atlas);
             return result;
         } else {
             throw new Error('MasterSheetManager not available');
         }
+    }
+
+    // Alias for backward compatibility
+    async removeFromDraft(projectId, tileName) {
+        return this.removeFromDraftTile(projectId, tileName);
     }
 
     async saveToMaster(projectId, name, imageData, width, height, source = 'tilesmith') {
@@ -1624,6 +1659,361 @@ class CrucibleClient {
         }
 
         return { published: tileNames.length };
+    }
+
+    // =============================================
+    // MASTER TILE SHEET
+    // =============================================
+    // Source of truth for tiles (Tilesmith → Level Forge)
+
+    async getMasterTileSheet(projectId) {
+        if (!this.client) throw new Error('Crucible not initialized');
+
+        const { data, error } = await this.client
+            .from('projects')
+            .select('master_tile_sheet_png, master_tile_sheet_atlas, master_tile_sheet_updated_at')
+            .eq('id', projectId)
+            .single();
+
+        if (error) throw error;
+        return {
+            png: data.master_tile_sheet_png,
+            atlas: data.master_tile_sheet_atlas || { size: { w: 0, h: 0 }, sprites: {} },
+            updatedAt: data.master_tile_sheet_updated_at
+        };
+    }
+
+    async saveMasterTileSheet(projectId, png, atlas) {
+        if (!this.client) throw new Error('Crucible not initialized');
+
+        const { error } = await this.client
+            .from('projects')
+            .update({
+                master_tile_sheet_png: png,
+                master_tile_sheet_atlas: atlas,
+                master_tile_sheet_updated_at: new Date().toISOString()
+            })
+            .eq('id', projectId);
+
+        if (error) throw error;
+    }
+
+    async publishToMasterTileSheet(projectId, name, imageData, width, height, source = 'tilesmith') {
+        if (!this.client) throw new Error('Crucible not initialized');
+
+        const existing = await this.getMasterTileSheet(projectId);
+
+        if (typeof MasterSheetManager !== 'undefined') {
+            const manager = new MasterSheetManager();
+            const newSprite = { name, imageData, width, height, source };
+            const result = await manager.addSprite(
+                existing.atlas,
+                existing.png,
+                newSprite
+            );
+
+            await this.saveMasterTileSheet(projectId, result.png, result.atlas);
+            return result;
+        } else {
+            throw new Error('MasterSheetManager not available');
+        }
+    }
+
+    async removeFromMasterTileSheet(projectId, tileName) {
+        if (!this.client) throw new Error('Crucible not initialized');
+
+        const existing = await this.getMasterTileSheet(projectId);
+
+        if (typeof MasterSheetManager !== 'undefined') {
+            const manager = new MasterSheetManager();
+            const result = await manager.removeSprite(
+                existing.atlas,
+                existing.png,
+                tileName
+            );
+
+            await this.saveMasterTileSheet(projectId, result.png, result.atlas);
+            return result;
+        } else {
+            throw new Error('MasterSheetManager not available');
+        }
+    }
+
+    async publishDraftToMasterTileSheet(projectId, tileName) {
+        if (!this.client) throw new Error('Crucible not initialized');
+
+        // Get draft tile sheet
+        const draft = await this.getDraftTileSheet(projectId);
+        if (!draft.atlas?.sprites?.[tileName]) {
+            throw new Error(`Tile "${tileName}" not found in draft tile sheet`);
+        }
+
+        // Get master tile sheet
+        const master = await this.getMasterTileSheet(projectId);
+
+        if (typeof MasterSheetManager !== 'undefined') {
+            const manager = new MasterSheetManager();
+
+            // Extract sprite data from draft
+            const sprites = await manager.extractSpritesFromSheet(draft.atlas, draft.png);
+            const tileSprite = sprites.find(s => s.name === tileName);
+            if (!tileSprite) {
+                throw new Error(`Failed to extract tile "${tileName}" from draft`);
+            }
+
+            // Add to master tile sheet
+            const masterResult = await manager.addSprite(
+                master.atlas,
+                master.png,
+                tileSprite
+            );
+            await this.saveMasterTileSheet(projectId, masterResult.png, masterResult.atlas);
+
+            // Remove from draft
+            const draftResult = await manager.removeSprite(
+                draft.atlas,
+                draft.png,
+                tileName
+            );
+            await this.saveDraftTileSheet(projectId, draftResult.png, draftResult.atlas);
+
+            return { master: masterResult, draft: draftResult };
+        } else {
+            throw new Error('MasterSheetManager not available');
+        }
+    }
+
+    async publishAllDraftsToMasterTileSheet(projectId) {
+        if (!this.client) throw new Error('Crucible not initialized');
+
+        const draft = await this.getDraftTileSheet(projectId);
+        if (!draft.atlas?.sprites || Object.keys(draft.atlas.sprites).length === 0) {
+            return { published: 0 };
+        }
+
+        const tileNames = Object.keys(draft.atlas.sprites);
+        for (const tileName of tileNames) {
+            await this.publishDraftToMasterTileSheet(projectId, tileName);
+        }
+
+        return { published: tileNames.length };
+    }
+
+    // =============================================
+    // MASTER SPRITE SHEET
+    // =============================================
+    // Source of truth for sprites (Sprite-Rite → Animancer)
+
+    async getMasterSpriteSheet(projectId) {
+        if (!this.client) throw new Error('Crucible not initialized');
+
+        const { data, error } = await this.client
+            .from('projects')
+            .select('master_sprite_sheet_png, master_sprite_sheet_atlas, master_sprite_sheet_updated_at')
+            .eq('id', projectId)
+            .single();
+
+        if (error) throw error;
+        return {
+            png: data.master_sprite_sheet_png,
+            atlas: data.master_sprite_sheet_atlas || { size: { w: 0, h: 0 }, sprites: {} },
+            updatedAt: data.master_sprite_sheet_updated_at
+        };
+    }
+
+    async saveMasterSpriteSheet(projectId, png, atlas) {
+        if (!this.client) throw new Error('Crucible not initialized');
+
+        const { error } = await this.client
+            .from('projects')
+            .update({
+                master_sprite_sheet_png: png,
+                master_sprite_sheet_atlas: atlas,
+                master_sprite_sheet_updated_at: new Date().toISOString()
+            })
+            .eq('id', projectId);
+
+        if (error) throw error;
+    }
+
+    async publishToMasterSpriteSheet(projectId, name, imageData, width, height, source) {
+        if (!this.client) throw new Error('Crucible not initialized');
+
+        const existing = await this.getMasterSpriteSheet(projectId);
+
+        if (typeof MasterSheetManager !== 'undefined') {
+            const manager = new MasterSheetManager();
+            const newSprite = { name, imageData, width, height, source };
+            const result = await manager.addSprite(
+                existing.atlas,
+                existing.png,
+                newSprite
+            );
+
+            await this.saveMasterSpriteSheet(projectId, result.png, result.atlas);
+            return result;
+        } else {
+            throw new Error('MasterSheetManager not available');
+        }
+    }
+
+    async removeFromMasterSpriteSheet(projectId, spriteName) {
+        if (!this.client) throw new Error('Crucible not initialized');
+
+        const existing = await this.getMasterSpriteSheet(projectId);
+
+        if (typeof MasterSheetManager !== 'undefined') {
+            const manager = new MasterSheetManager();
+            const result = await manager.removeSprite(
+                existing.atlas,
+                existing.png,
+                spriteName
+            );
+
+            await this.saveMasterSpriteSheet(projectId, result.png, result.atlas);
+            return result;
+        } else {
+            throw new Error('MasterSheetManager not available');
+        }
+    }
+
+    async getMasterSpriteSheetSpritesFromSource(projectId, spritesheetId) {
+        const masterSheet = await this.getMasterSpriteSheet(projectId);
+        if (!masterSheet.atlas || !masterSheet.atlas.sprites) {
+            return [];
+        }
+
+        const sprites = [];
+        for (const [name, def] of Object.entries(masterSheet.atlas.sprites)) {
+            // Check if source is an object with spritesheetId
+            if (def.source && typeof def.source === 'object' && def.source.spritesheetId === spritesheetId) {
+                sprites.push({
+                    name,
+                    masterX: def.x,
+                    masterY: def.y,
+                    masterW: def.w,
+                    masterH: def.h,
+                    // Original position on source spritesheet
+                    x: def.source.originalX,
+                    y: def.source.originalY,
+                    width: def.source.originalW,
+                    height: def.source.originalH
+                });
+            }
+        }
+        return sprites;
+    }
+
+    // =============================================
+    // CONSOLIDATED MASTER SHEET (Export)
+    // =============================================
+    // Combines master tile sheet + master sprite sheet for game engine export
+
+    async buildMasterSheetForExport(projectId) {
+        if (!this.client) throw new Error('Crucible not initialized');
+
+        const masterTileSheet = await this.getMasterTileSheet(projectId);
+        const masterSpriteSheet = await this.getMasterSpriteSheet(projectId);
+
+        if (typeof MasterSheetManager !== 'undefined') {
+            const manager = new MasterSheetManager();
+
+            // Extract all assets from both master sheets
+            const tileSprites = masterTileSheet.png
+                ? await manager.extractSpritesFromSheet(masterTileSheet.atlas, masterTileSheet.png)
+                : [];
+            const spriteSprites = masterSpriteSheet.png
+                ? await manager.extractSpritesFromSheet(masterSpriteSheet.atlas, masterSpriteSheet.png)
+                : [];
+
+            // Combine and repack
+            const allAssets = [...tileSprites, ...spriteSprites];
+
+            if (allAssets.length === 0) {
+                return { png: null, atlas: { size: { w: 0, h: 0 }, sprites: {} } };
+            }
+
+            const { png, atlas } = await manager.packSprites(allAssets);
+
+            // Save consolidated master for export
+            await this.saveMasterSheet(projectId, png, atlas);
+            return { png, atlas };
+        } else {
+            throw new Error('MasterSheetManager not available');
+        }
+    }
+
+    // =============================================
+    // DATA MIGRATION (Legacy to Separate Sheets)
+    // =============================================
+    // Migrates data from unified master_sheet to separate master_tile_sheet and master_sprite_sheet
+
+    async migrateToSeparateMasterSheets(projectId) {
+        if (!this.client) throw new Error('Crucible not initialized');
+
+        try {
+            // Check if migration is needed
+            const masterTileSheet = await this.getMasterTileSheet(projectId).catch(() => ({ atlas: { sprites: {} } }));
+            const masterSpriteSheet = await this.getMasterSpriteSheet(projectId).catch(() => ({ atlas: { sprites: {} } }));
+
+            const tileSheetHasData = masterTileSheet.atlas?.sprites && Object.keys(masterTileSheet.atlas.sprites).length > 0;
+            const spriteSheetHasData = masterSpriteSheet.atlas?.sprites && Object.keys(masterSpriteSheet.atlas.sprites).length > 0;
+
+            // If either new sheet already has data, skip migration
+            if (tileSheetHasData || spriteSheetHasData) {
+                return { migrated: false, reason: 'New sheets already have data' };
+            }
+
+            // Get the old unified master sheet
+            const oldMaster = await this.getMasterSheet(projectId).catch(() => null);
+            if (!oldMaster || !oldMaster.png || !oldMaster.atlas?.sprites || Object.keys(oldMaster.atlas.sprites).length === 0) {
+                return { migrated: false, reason: 'No legacy master sheet data to migrate' };
+            }
+
+            if (typeof MasterSheetManager === 'undefined') {
+                throw new Error('MasterSheetManager not available for migration');
+            }
+
+            const manager = new MasterSheetManager();
+
+            // Separate sprites by source
+            const tileSprites = [];
+            const spriteSprites = [];
+
+            const allSprites = await manager.extractSpritesFromSheet(oldMaster.atlas, oldMaster.png);
+
+            for (const sprite of allSprites) {
+                if (sprite.source === 'tilesmith') {
+                    tileSprites.push(sprite);
+                } else {
+                    // Anything else (sprite-rite, objects with spritesheetId, etc.) goes to sprite sheet
+                    spriteSprites.push(sprite);
+                }
+            }
+
+            console.log(`Migrating ${tileSprites.length} tiles and ${spriteSprites.length} sprites to separate sheets`);
+
+            // Pack and save tile sheet if there are tiles
+            if (tileSprites.length > 0) {
+                const { png, atlas } = await manager.packSprites(tileSprites);
+                await this.saveMasterTileSheet(projectId, png, atlas);
+            }
+
+            // Pack and save sprite sheet if there are sprites
+            if (spriteSprites.length > 0) {
+                const { png, atlas } = await manager.packSprites(spriteSprites);
+                await this.saveMasterSpriteSheet(projectId, png, atlas);
+            }
+
+            return {
+                migrated: true,
+                tilesCount: tileSprites.length,
+                spritesCount: spriteSprites.length
+            };
+        } catch (err) {
+            console.error('Failed to migrate to separate master sheets:', err);
+            return { migrated: false, error: err.message };
+        }
     }
 
     // =============================================

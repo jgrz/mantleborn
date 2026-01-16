@@ -1309,47 +1309,64 @@
             }
 
             try {
-                // Load master sheet for this project
-                if (crucibleClient.getMasterSheet) {
-                    const masterSheet = await crucibleClient.getMasterSheet(projectId);
-                    if (masterSheet.png && masterSheet.atlas && Object.keys(masterSheet.atlas.sprites).length > 0) {
-                        const img = new Image();
-                        await new Promise((resolve, reject) => {
-                            img.onload = resolve;
-                            img.onerror = reject;
-                            img.src = masterSheet.png;
-                        });
-                        state.masterSheetAtlas = masterSheet.atlas;
-                        state.masterSheetImage = img;
+                // Load master sprite sheet for this project (or fallback to legacy master sheet)
+                let masterSheet = null;
 
-                        // Convert master sheet atlas to sprites array format
-                        state.sprites = Object.entries(masterSheet.atlas.sprites).map(([name, def]) => ({
-                            name,
-                            x: def.x,
-                            y: def.y,
-                            width: def.w,
-                            height: def.h,
-                            source: def.source
-                        }));
+                // Try new master sprite sheet first
+                if (crucibleClient.getMasterSpriteSheet) {
+                    try {
+                        masterSheet = await crucibleClient.getMasterSpriteSheet(projectId);
+                    } catch (e) {
+                        console.warn('Could not load master sprite sheet:', e.message);
+                    }
+                }
 
-                        // Populate source filter with unique sources
-                        populateSourceFilter();
+                // Fallback to old unified master sheet if sprite sheet empty or unavailable
+                if ((!masterSheet || !masterSheet.png || Object.keys(masterSheet.atlas?.sprites || {}).length === 0) && crucibleClient.getMasterSheet) {
+                    try {
+                        masterSheet = await crucibleClient.getMasterSheet(projectId);
+                    } catch (e) {
+                        console.warn('Could not load legacy master sheet:', e.message);
+                    }
+                }
 
-                        // Load project animations
-                        try {
-                            state.animations = await crucibleClient.getProjectAnimations(projectId);
-                        } catch (e) {
-                            console.warn('Could not load project animations:', e);
-                            state.animations = [];
-                        }
+                if (masterSheet && masterSheet.png && masterSheet.atlas && Object.keys(masterSheet.atlas.sprites).length > 0) {
+                    const img = new Image();
+                    await new Promise((resolve, reject) => {
+                        img.onload = resolve;
+                        img.onerror = reject;
+                        img.src = masterSheet.png;
+                    });
+                    state.masterSheetAtlas = masterSheet.atlas;
+                    state.masterSheetImage = img;
+
+                    // Convert master sheet atlas to sprites array format
+                    state.sprites = Object.entries(masterSheet.atlas.sprites).map(([name, def]) => ({
+                        name,
+                        x: def.x,
+                        y: def.y,
+                        width: def.w,
+                        height: def.h,
+                        source: def.source
+                    }));
+
+                    // Populate source filter with unique sources
+                    populateSourceFilter();
+
+                    // Load project animations
+                    try {
+                        state.animations = await crucibleClient.getProjectAnimations(projectId);
+                    } catch (e) {
+                        console.warn('Could not load project animations:', e);
+                        state.animations = [];
                     }
                 }
 
                 renderSpritePalette();
                 renderAnimationList();
             } catch (err) {
-                console.error('Failed to load master sheet:', err);
-                showToast('Failed to load master sheet');
+                console.error('Failed to load master sprite sheet:', err);
+                showToast('Failed to load master sprite sheet');
             }
         }
 
