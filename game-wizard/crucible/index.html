@@ -839,6 +839,272 @@
         .preset-preview-item span {
             color: var(--accent-gold);
         }
+
+        /* Project Wizard Modal */
+        .modal-wizard {
+            min-width: 580px;
+            max-width: 640px;
+        }
+
+        .wizard-steps {
+            display: flex;
+            justify-content: center;
+            gap: 8px;
+            margin-bottom: 24px;
+        }
+
+        .wizard-step {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 10px;
+            color: var(--stone-mid);
+        }
+
+        .wizard-step.active {
+            color: var(--accent-gold);
+        }
+
+        .wizard-step.completed {
+            color: var(--success);
+        }
+
+        .wizard-step-num {
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            background: var(--bg-surface);
+            border: 2px solid var(--stone-dark);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+        }
+
+        .wizard-step.active .wizard-step-num {
+            border-color: var(--accent-gold);
+            background: rgba(255, 165, 0, 0.1);
+        }
+
+        .wizard-step.completed .wizard-step-num {
+            border-color: var(--success);
+            background: var(--success);
+            color: #fff;
+        }
+
+        .wizard-step-line {
+            width: 40px;
+            height: 2px;
+            background: var(--stone-dark);
+        }
+
+        .wizard-step.completed + .wizard-step-line,
+        .wizard-step.active + .wizard-step-line {
+            background: var(--accent-gold);
+        }
+
+        .wizard-panel {
+            display: none;
+        }
+
+        .wizard-panel.active {
+            display: block;
+        }
+
+        .wizard-subtitle {
+            font-size: 11px;
+            color: var(--stone-mid);
+            margin-bottom: 20px;
+            line-height: 1.5;
+        }
+
+        /* Visual Example Cards */
+        .example-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 12px;
+            margin-bottom: 16px;
+        }
+
+        .example-card {
+            background: var(--bg-surface);
+            border: 2px solid var(--stone-dark);
+            border-radius: 8px;
+            padding: 12px;
+            cursor: pointer;
+            transition: all 0.2s;
+            text-align: center;
+        }
+
+        .example-card:hover {
+            border-color: var(--stone-mid);
+        }
+
+        .example-card.selected {
+            border-color: var(--accent-gold);
+            background: rgba(255, 165, 0, 0.05);
+        }
+
+        .example-card-visual {
+            height: 48px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 8px;
+            font-size: 32px;
+            filter: drop-shadow(0 2px 4px rgba(0,0,0,0.3));
+        }
+
+        .example-card-label {
+            font-size: 10px;
+            color: var(--stone-bright);
+            font-weight: 500;
+            margin-bottom: 4px;
+        }
+
+        .example-card-desc {
+            font-size: 9px;
+            color: var(--stone-mid);
+            line-height: 1.4;
+        }
+
+        /* View perspective examples with pixel art style */
+        .example-visual-topdown {
+            width: 40px;
+            height: 40px;
+            background: linear-gradient(180deg, #4a7c59 0%, #3d6b4a 100%);
+            border: 2px solid #2d4a36;
+            border-radius: 4px;
+            position: relative;
+        }
+
+        .example-visual-topdown::after {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 16px;
+            height: 16px;
+            background: #e8c170;
+            border: 2px solid #c9a050;
+            border-radius: 50%;
+        }
+
+        .example-visual-side {
+            width: 24px;
+            height: 40px;
+            background: linear-gradient(180deg, #5a8fd8 20%, #4a7cc8 20%, #4a7cc8 100%);
+            border: 2px solid #3a5c8a;
+            border-radius: 4px 4px 0 0;
+            position: relative;
+        }
+
+        .example-visual-side::before {
+            content: '';
+            position: absolute;
+            bottom: -2px;
+            left: -8px;
+            right: -8px;
+            height: 12px;
+            background: #5d4e37;
+            border: 2px solid #4a3d2a;
+        }
+
+        .example-visual-iso {
+            width: 48px;
+            height: 32px;
+            background: linear-gradient(135deg, #6a8caf 0%, #5a7c9f 50%, #4a6c8f 100%);
+            transform: skewX(-10deg);
+            border: 2px solid #3a5c7a;
+        }
+
+        /* Outline examples */
+        .example-outline-none {
+            width: 32px;
+            height: 32px;
+            background: #e07020;
+            border-radius: 4px;
+        }
+
+        .example-outline-black {
+            width: 32px;
+            height: 32px;
+            background: #e07020;
+            border: 3px solid #000;
+            border-radius: 4px;
+        }
+
+        .example-outline-colored {
+            width: 32px;
+            height: 32px;
+            background: #e07020;
+            border: 3px solid #8a4010;
+            border-radius: 4px;
+        }
+
+        /* Shading examples */
+        .example-shading-flat {
+            width: 32px;
+            height: 32px;
+            background: #4a7cc8;
+            border: 2px solid #000;
+            border-radius: 4px;
+        }
+
+        .example-shading-basic {
+            width: 32px;
+            height: 32px;
+            background: linear-gradient(135deg, #5a8cd8 0%, #4a7cc8 50%, #3a6cb8 100%);
+            border: 2px solid #000;
+            border-radius: 4px;
+        }
+
+        .example-shading-detailed {
+            width: 32px;
+            height: 32px;
+            background: linear-gradient(135deg, #7aadf8 0%, #5a8cd8 25%, #4a7cc8 50%, #3a6cb8 75%, #2a5ca8 100%);
+            border: 2px solid #000;
+            border-radius: 4px;
+            box-shadow: inset 2px 2px 0 rgba(255,255,255,0.3), inset -2px -2px 0 rgba(0,0,0,0.2);
+        }
+
+        .wizard-section {
+            margin-bottom: 24px;
+        }
+
+        .wizard-section-title {
+            font-size: 11px;
+            color: var(--stone-light);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 12px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .wizard-section-title::after {
+            content: '';
+            flex: 1;
+            height: 1px;
+            background: var(--stone-dark);
+        }
+
+        .wizard-tip {
+            background: rgba(255, 165, 0, 0.1);
+            border: 1px solid rgba(255, 165, 0, 0.3);
+            border-radius: 6px;
+            padding: 12px;
+            font-size: 11px;
+            color: var(--stone-light);
+            line-height: 1.5;
+        }
+
+        .wizard-tip-icon {
+            color: var(--accent-gold);
+            margin-right: 6px;
+        }
     </style>
 </head>
 <body>
@@ -1038,21 +1304,142 @@
         </main>
     </div>
 
-    <!-- New Project Modal -->
+    <!-- New Project Modal (Two-Step Wizard) -->
     <div class="modal-overlay" id="newProjectModal">
-        <div class="modal">
+        <div class="modal modal-wizard">
             <div class="modal-header">New Project</div>
-            <div class="form-group">
-                <label class="form-label">Project Name</label>
-                <input type="text" class="form-input" id="newProjectName" placeholder="My Game">
+
+            <!-- Wizard Steps Indicator -->
+            <div class="wizard-steps">
+                <div class="wizard-step active" data-step="1">
+                    <div class="wizard-step-num">1</div>
+                    <span>Basics</span>
+                </div>
+                <div class="wizard-step-line"></div>
+                <div class="wizard-step" data-step="2">
+                    <div class="wizard-step-num">2</div>
+                    <span>Style</span>
+                </div>
             </div>
-            <div class="form-group">
-                <label class="form-label">Description (optional)</label>
-                <input type="text" class="form-input" id="newProjectDesc" placeholder="A platformer adventure">
+
+            <!-- Step 1: Basic Info -->
+            <div class="wizard-panel active" id="wizardStep1">
+                <div class="wizard-subtitle">
+                    Give your project a name and choose the primary view style for your game.
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">Project Name</label>
+                    <input type="text" class="form-input" id="newProjectName" placeholder="My Game">
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">Description (optional)</label>
+                    <input type="text" class="form-input" id="newProjectDesc" placeholder="A platformer adventure">
+                </div>
+
+                <div class="wizard-section">
+                    <div class="wizard-section-title">Game View</div>
+                    <div class="example-grid" id="viewExamples">
+                        <div class="example-card selected" data-value="side-scroll">
+                            <div class="example-card-visual">
+                                <div class="example-visual-side"></div>
+                            </div>
+                            <div class="example-card-label">Side-Scroller</div>
+                            <div class="example-card-desc">Platformers, run & gun, beat 'em ups</div>
+                        </div>
+                        <div class="example-card" data-value="top-down">
+                            <div class="example-card-visual">
+                                <div class="example-visual-topdown"></div>
+                            </div>
+                            <div class="example-card-label">Top-Down</div>
+                            <div class="example-card-desc">RPGs, adventure, puzzle games</div>
+                        </div>
+                        <div class="example-card" data-value="isometric">
+                            <div class="example-card-visual">
+                                <div class="example-visual-iso"></div>
+                            </div>
+                            <div class="example-card-label">Isometric</div>
+                            <div class="example-card-desc">Strategy, sim, tactical RPGs</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="modal-actions">
+                    <button class="btn" id="cancelProjectBtn">Cancel</button>
+                    <button class="btn btn-primary" id="wizardNextBtn">Next: Style Settings →</button>
+                </div>
             </div>
-            <div class="modal-actions">
-                <button class="btn" id="cancelProjectBtn">Cancel</button>
-                <button class="btn btn-primary" id="createProjectBtn">Create Project</button>
+
+            <!-- Step 2: AI Style Settings -->
+            <div class="wizard-panel" id="wizardStep2">
+                <div class="wizard-subtitle">
+                    These settings help AI generation create consistent artwork. You can change them anytime and override per-generation.
+                </div>
+
+                <div class="wizard-section">
+                    <div class="wizard-section-title">Outline Style</div>
+                    <div class="example-grid" id="outlineExamples">
+                        <div class="example-card" data-value="none">
+                            <div class="example-card-visual">
+                                <div class="example-outline-none"></div>
+                            </div>
+                            <div class="example-card-label">No Outline</div>
+                            <div class="example-card-desc">Soft, painterly look</div>
+                        </div>
+                        <div class="example-card selected" data-value="single_color_black">
+                            <div class="example-card-visual">
+                                <div class="example-outline-black"></div>
+                            </div>
+                            <div class="example-card-label">Black Outline</div>
+                            <div class="example-card-desc">Classic pixel art style</div>
+                        </div>
+                        <div class="example-card" data-value="single_color_colored">
+                            <div class="example-card-visual">
+                                <div class="example-outline-colored"></div>
+                            </div>
+                            <div class="example-card-label">Colored Outline</div>
+                            <div class="example-card-desc">Softer, modern feel</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="wizard-section">
+                    <div class="wizard-section-title">Shading</div>
+                    <div class="example-grid" id="shadingExamples">
+                        <div class="example-card" data-value="flat">
+                            <div class="example-card-visual">
+                                <div class="example-shading-flat"></div>
+                            </div>
+                            <div class="example-card-label">Flat</div>
+                            <div class="example-card-desc">Simple, iconic, retro</div>
+                        </div>
+                        <div class="example-card selected" data-value="basic">
+                            <div class="example-card-visual">
+                                <div class="example-shading-basic"></div>
+                            </div>
+                            <div class="example-card-label">Basic</div>
+                            <div class="example-card-desc">Light depth, balanced</div>
+                        </div>
+                        <div class="example-card" data-value="detailed">
+                            <div class="example-card-visual">
+                                <div class="example-shading-detailed"></div>
+                            </div>
+                            <div class="example-card-label">Detailed</div>
+                            <div class="example-card-desc">Rich depth, realistic</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="wizard-tip">
+                    <span class="wizard-tip-icon">&#128161;</span>
+                    <strong>Tip:</strong> These defaults keep your game's art style consistent. When generating assets, you can still adjust settings for special cases (like a bonus level with a different look).
+                </div>
+
+                <div class="modal-actions">
+                    <button class="btn" id="wizardBackBtn">← Back</button>
+                    <button class="btn btn-primary" id="createProjectBtn">Create Project</button>
+                </div>
             </div>
         </div>
     </div>
@@ -1486,7 +1873,39 @@
                     return;
                 }
 
+                // Create project first
                 const project = await crucible.createProject(name, elements.newProjectDesc.value);
+
+                // Derive AI view setting from game view
+                let aiView = 'low_top_down';
+                if (wizardState.gameView === 'side-scroll') aiView = 'side';
+                else if (wizardState.gameView === 'isometric') aiView = 'isometric_thick';
+                else if (wizardState.gameView === 'top-down') aiView = 'low_top_down';
+
+                // Build settings from wizard choices
+                const settings = {
+                    gameView: wizardState.gameView,
+                    pixellab: {
+                        defaultStyle: {
+                            outline: wizardState.outline,
+                            shading: wizardState.shading,
+                            detail: 'medium',
+                            view: aiView
+                        },
+                        tileDefaults: {
+                            size: 16,
+                            transitionSize: 'medium'
+                        },
+                        characterDefaults: {
+                            size: 32,
+                            directions: wizardState.gameView === 'side-scroll' ? 1 : 4
+                        }
+                    }
+                };
+
+                // Update project with settings
+                await crucible.updateProject(project.id, { settings });
+                project.settings = settings;
 
                 state.projects.unshift(project);
                 renderProjectDropdown();
@@ -1494,8 +1913,7 @@
                 await selectProject(project.id);
 
                 hideModal(elements.newProjectModal);
-                elements.newProjectName.value = '';
-                elements.newProjectDesc.value = '';
+                resetWizard();
 
                 showToast('Project created!', 'success');
             } catch (err) {
@@ -1798,13 +2216,102 @@
             selectProject(e.target.value);
         });
 
+        // Wizard state
+        const wizardState = {
+            step: 1,
+            gameView: 'side-scroll',
+            outline: 'single_color_black',
+            shading: 'basic'
+        };
+
         elements.newProjectBtn.addEventListener('click', () => {
+            // Reset wizard to step 1
+            wizardState.step = 1;
+            updateWizardStep(1);
             showModal(elements.newProjectModal);
             elements.newProjectName.focus();
         });
 
         document.getElementById('cancelProjectBtn').addEventListener('click', () => {
             hideModal(elements.newProjectModal);
+            resetWizard();
+        });
+
+        // Wizard navigation
+        document.getElementById('wizardNextBtn').addEventListener('click', () => {
+            const name = elements.newProjectName.value.trim();
+            if (!name) {
+                showToast('Please enter a project name', 'error');
+                elements.newProjectName.focus();
+                return;
+            }
+            wizardState.step = 2;
+            updateWizardStep(2);
+        });
+
+        document.getElementById('wizardBackBtn').addEventListener('click', () => {
+            wizardState.step = 1;
+            updateWizardStep(1);
+        });
+
+        function updateWizardStep(step) {
+            // Update step indicators
+            document.querySelectorAll('.wizard-step').forEach(el => {
+                const stepNum = parseInt(el.dataset.step);
+                el.classList.remove('active', 'completed');
+                if (stepNum < step) el.classList.add('completed');
+                if (stepNum === step) el.classList.add('active');
+            });
+
+            // Update panels
+            document.getElementById('wizardStep1').classList.toggle('active', step === 1);
+            document.getElementById('wizardStep2').classList.toggle('active', step === 2);
+        }
+
+        function resetWizard() {
+            wizardState.step = 1;
+            wizardState.gameView = 'side-scroll';
+            wizardState.outline = 'single_color_black';
+            wizardState.shading = 'basic';
+            elements.newProjectName.value = '';
+            elements.newProjectDesc.value = '';
+            updateWizardStep(1);
+
+            // Reset example card selections
+            document.querySelectorAll('#viewExamples .example-card').forEach(card => {
+                card.classList.toggle('selected', card.dataset.value === 'side-scroll');
+            });
+            document.querySelectorAll('#outlineExamples .example-card').forEach(card => {
+                card.classList.toggle('selected', card.dataset.value === 'single_color_black');
+            });
+            document.querySelectorAll('#shadingExamples .example-card').forEach(card => {
+                card.classList.toggle('selected', card.dataset.value === 'basic');
+            });
+        }
+
+        // Example card selection
+        document.querySelectorAll('#viewExamples .example-card').forEach(card => {
+            card.addEventListener('click', () => {
+                document.querySelectorAll('#viewExamples .example-card').forEach(c => c.classList.remove('selected'));
+                card.classList.add('selected');
+                wizardState.gameView = card.dataset.value;
+            });
+        });
+
+        document.querySelectorAll('#outlineExamples .example-card').forEach(card => {
+            card.addEventListener('click', () => {
+                document.querySelectorAll('#outlineExamples .example-card').forEach(c => c.classList.remove('selected'));
+                card.classList.add('selected');
+                wizardState.outline = card.dataset.value;
+            });
+        });
+
+        document.querySelectorAll('#shadingExamples .example-card').forEach(card => {
+            card.addEventListener('click', () => {
+                document.querySelectorAll('#shadingExamples .example-card').forEach(c => c.classList.remove('selected'));
+                card.classList.add('selected');
+                wizardState.shading = card.dataset.value;
+            });
         });
 
         document.getElementById('createProjectBtn').addEventListener('click', createProject);
