@@ -180,6 +180,19 @@
             box-shadow: 0 0 15px rgba(224, 112, 32, 0.4);
         }
 
+        .btn-secondary {
+            background: var(--mystic-glow);
+            border-color: var(--mystic-glow);
+            color: white;
+            font-weight: 600;
+        }
+
+        .btn-secondary:hover {
+            background: #9070d0;
+            border-color: #9070d0;
+            box-shadow: 0 0 15px rgba(128, 96, 192, 0.4);
+        }
+
         .btn-danger {
             color: var(--accent-magma);
         }
@@ -1461,6 +1474,7 @@
 
                     <div class="form-actions">
                         <button class="btn btn-primary" id="saveSprite">Save Sprite</button>
+                        <button class="btn btn-secondary" id="renameSprite" style="display: none;">Rename</button>
                         <button class="btn" id="cancelSprite">Cancel</button>
                     </div>
                 </div>
@@ -1827,6 +1841,7 @@
             preview1x: document.getElementById('preview1x'),
             preview4x: document.getElementById('preview4x'),
             saveSprite: document.getElementById('saveSprite'),
+            renameSprite: document.getElementById('renameSprite'),
             cancelSprite: document.getElementById('cancelSprite'),
 
             // Sprite list
@@ -2941,8 +2956,10 @@
         function showCreatePanel() {
             elements.createPanel.classList.add('active');
             // Default to enabled save button for new sprites
+            elements.saveSprite.style.display = 'inline-block';
             elements.saveSprite.textContent = 'Save Sprite';
             elements.saveSprite.disabled = false;
+            elements.renameSprite.style.display = 'none';
             // Update tool button states
             updateToolButtonStates();
         }
@@ -2953,9 +2970,11 @@
             elements.spriteDesc.value = '';
             state.editingSpriteIndex = -1;
             state.selectedSpriteIndex = -1;
-            // Reset save button
+            // Reset button states
+            elements.saveSprite.style.display = 'inline-block';
             elements.saveSprite.textContent = 'Save Sprite';
             elements.saveSprite.disabled = false;
+            elements.renameSprite.style.display = 'none';
             // Update tool button states
             updateToolButtonStates();
             // Clear master sheet highlight
@@ -3078,6 +3097,61 @@
             }
         }
 
+        async function renameSprite() {
+            const newName = elements.spriteName.value.trim();
+            const originalName = elements.renameSprite.dataset.originalName;
+
+            if (!newName) {
+                showToast('Please enter a sprite name', 'error');
+                return;
+            }
+
+            if (newName === originalName) {
+                showToast('Name unchanged', 'info');
+                return;
+            }
+
+            if (!validateSpriteName(newName)) {
+                showToast('Name must start with a letter and contain only letters, numbers, underscores', 'error');
+                return;
+            }
+
+            if (!state.projectId) {
+                showToast('Please select a project first', 'error');
+                return;
+            }
+
+            try {
+                showToast('Renaming sprite...');
+
+                const renameMethod = crucibleClient.renameSpriteOnMasterSpriteSheet;
+                if (!renameMethod) {
+                    throw new Error('Rename method not available');
+                }
+
+                await renameMethod.call(crucibleClient, state.projectId, originalName, newName);
+
+                // Update local state
+                const sprite = state.sprites.find(s => s.name === originalName);
+                if (sprite) {
+                    sprite.name = newName;
+                }
+                const masterSprite = state.masterSheetSprites.find(s => s.name === originalName);
+                if (masterSprite) {
+                    masterSprite.name = newName;
+                }
+
+                hideCreatePanel();
+                updateSpriteList();
+                updateMasterSheetPreview();
+
+                showToast(`Sprite renamed to "${newName}"!`);
+            } catch (error) {
+                console.error('Failed to rename sprite:', error);
+                showToast('Failed to rename: ' + error.message, 'error');
+            }
+        }
+
         function cancelSprite() {
             state.selection = null;
             hideCreatePanel();
@@ -3173,10 +3247,13 @@
             elements.spriteName.value = sprite.name;
             elements.spriteDesc.value = sprite.description || '';
 
-            // Saved sprites - show panel but disable save button
+            // Saved sprites - show panel with rename option
             showCreatePanel();
-            elements.saveSprite.textContent = 'Already Saved';
-            elements.saveSprite.disabled = true;
+            elements.saveSprite.style.display = 'none';
+            elements.renameSprite.style.display = 'inline-block';
+            elements.renameSprite.disabled = false;
+            // Store original name for comparison
+            elements.renameSprite.dataset.originalName = sprite.name;
             updateSelectionInfo();
 
             // Highlight in master sheet preview
@@ -3645,6 +3722,7 @@
 
         // Create panel
         elements.saveSprite.addEventListener('click', saveSprite);
+        elements.renameSprite.addEventListener('click', renameSprite);
         elements.cancelSprite.addEventListener('click', cancelSprite);
 
         // Master sheet

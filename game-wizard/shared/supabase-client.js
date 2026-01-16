@@ -1882,6 +1882,41 @@ class CrucibleClient {
         }
     }
 
+    async renameSpriteOnMasterSpriteSheet(projectId, oldName, newName) {
+        if (!this.client) throw new Error('Crucible not initialized');
+
+        const master = await this.getMasterSpriteSheet(projectId);
+        if (!master.atlas?.sprites?.[oldName]) {
+            throw new Error(`Sprite "${oldName}" not found on master sprite sheet`);
+        }
+        if (master.atlas?.sprites?.[newName]) {
+            throw new Error(`Sprite "${newName}" already exists on master sprite sheet`);
+        }
+
+        // Update atlas with new name
+        const newAtlas = { ...master.atlas, sprites: { ...master.atlas.sprites } };
+        newAtlas.sprites[newName] = { ...newAtlas.sprites[oldName] };
+        delete newAtlas.sprites[oldName];
+
+        // Also update any animations that reference this sprite
+        if (newAtlas.animations) {
+            for (const animKey of Object.keys(newAtlas.animations)) {
+                const anim = newAtlas.animations[animKey];
+                if (anim.frames) {
+                    anim.frames = anim.frames.map(frame => {
+                        if (frame.spriteName === oldName) {
+                            return { ...frame, spriteName: newName };
+                        }
+                        return frame;
+                    });
+                }
+            }
+        }
+
+        await this.saveMasterSpriteSheet(projectId, master.png, newAtlas);
+        return { renamed: true, from: oldName, to: newName };
+    }
+
     async getMasterSpriteSheetSpritesFromSource(projectId, spritesheetId) {
         const masterSheet = await this.getMasterSpriteSheet(projectId);
         if (!masterSheet.atlas || !masterSheet.atlas.sprites) {
