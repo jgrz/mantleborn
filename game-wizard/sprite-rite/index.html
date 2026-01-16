@@ -1301,7 +1301,9 @@
 
             // Master sheet
             masterSheetSprites: [], // Sprites already saved to master (from this spritesheet)
-            masterSheetData: null   // { png, atlas, spriteCount } for preview
+            masterSheetData: null,  // { png, atlas, spriteCount } for preview
+            masterSheetImage: null, // Cached Image object for redrawing
+            masterSheetScale: 1     // Scale factor for preview canvas
         };
 
         // ==========================================
@@ -2411,11 +2413,14 @@
             elements.spriteName.value = '';
             elements.spriteDesc.value = '';
             state.editingSpriteIndex = -1;
+            state.selectedSpriteIndex = -1;
             // Reset save button
             elements.saveSprite.textContent = 'Save Sprite';
             elements.saveSprite.disabled = false;
             // Update tool button states
             updateToolButtonStates();
+            // Clear master sheet highlight
+            drawMasterSheetHighlight();
         }
 
         function updatePreviews() {
@@ -2628,6 +2633,9 @@
             elements.saveSprite.textContent = 'Already Saved';
             elements.saveSprite.disabled = true;
             updateSelectionInfo();
+
+            // Highlight in master sheet preview
+            drawMasterSheetHighlight();
             updatePreviews();
             updateSpriteList();
             renderSelection();
@@ -2730,6 +2738,8 @@
                 elements.masterSheetCount.textContent = '0';
                 elements.masterSheetPreviewCanvas.style.display = 'none';
                 elements.masterSheetEmpty.style.display = 'block';
+                state.masterSheetImage = null;
+                state.masterSheetScale = 1;
                 return;
             }
 
@@ -2745,6 +2755,9 @@
                         elements.masterSheetEmpty.style.display = 'none';
                         const img = new Image();
                         img.onload = () => {
+                            // Store image for redrawing with highlights
+                            state.masterSheetImage = img;
+
                             const canvas = elements.masterSheetPreviewCanvas;
                             const ctx = canvas.getContext('2d');
                             ctx.imageSmoothingEnabled = false;
@@ -2752,27 +2765,69 @@
                             // Scale to fit in preview area
                             const maxSize = 260;
                             const scale = Math.min(maxSize / img.width, maxSize / img.height, 1);
+                            state.masterSheetScale = scale;
                             canvas.width = img.width * scale;
                             canvas.height = img.height * scale;
                             canvas.style.display = 'block';
 
                             ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+
+                            // Draw highlight if there's a selected sprite
+                            drawMasterSheetHighlight();
                         };
                         img.src = masterSheet.png;
                     } else {
                         elements.masterSheetPreviewCanvas.style.display = 'none';
                         elements.masterSheetEmpty.style.display = 'block';
+                        state.masterSheetImage = null;
                     }
                 } else {
                     elements.masterSheetCount.textContent = '0';
                     elements.masterSheetPreviewCanvas.style.display = 'none';
                     elements.masterSheetEmpty.style.display = 'block';
+                    state.masterSheetImage = null;
                 }
             } catch (e) {
                 console.warn('Could not load master sheet preview:', e);
                 elements.masterSheetCount.textContent = '0';
                 elements.masterSheetPreviewCanvas.style.display = 'none';
                 elements.masterSheetEmpty.style.display = 'block';
+                state.masterSheetImage = null;
+            }
+        }
+
+        function drawMasterSheetHighlight() {
+            if (!state.masterSheetImage || !state.masterSheetData?.atlas?.sprites) return;
+
+            const canvas = elements.masterSheetPreviewCanvas;
+            const ctx = canvas.getContext('2d');
+            const scale = state.masterSheetScale || 1;
+
+            // Redraw the base image
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            ctx.imageSmoothingEnabled = false;
+            ctx.drawImage(state.masterSheetImage, 0, 0, canvas.width, canvas.height);
+
+            // If a sprite is selected, find it in the master sheet and highlight
+            if (state.selectedSpriteIndex >= 0 && state.sprites[state.selectedSpriteIndex]) {
+                const selectedSprite = state.sprites[state.selectedSpriteIndex];
+                const masterSprite = state.masterSheetData.atlas.sprites[selectedSprite.name];
+
+                if (masterSprite) {
+                    const x = masterSprite.x * scale;
+                    const y = masterSprite.y * scale;
+                    const w = masterSprite.w * scale;
+                    const h = masterSprite.h * scale;
+
+                    // Draw highlight border
+                    ctx.strokeStyle = '#e07020';
+                    ctx.lineWidth = 2;
+                    ctx.strokeRect(x + 0.5, y + 0.5, w - 1, h - 1);
+
+                    // Draw subtle fill
+                    ctx.fillStyle = 'rgba(224, 112, 32, 0.2)';
+                    ctx.fillRect(x, y, w, h);
+                }
             }
         }
 
