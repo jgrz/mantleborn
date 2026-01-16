@@ -159,6 +159,9 @@ const SPRITE_RITE_DOCS = [
             <h3>Upload New</h3>
             <p>Click "Upload" to add a new spritesheet to your project. The image is stored in the cloud and linked to your project.</p>
 
+            <h3>Delete Spritesheet</h3>
+            <p>To remove a spritesheet, select it and click "Delete Sheet". This removes the image file from storage. Sprites already saved to the master sheet are not affected—they are independent copies.</p>
+
             <h2>Image Recommendations</h2>
             <ul>
                 <li><strong>Size</strong> - Recommended max: 2048x2048 for best performance</li>
@@ -192,9 +195,10 @@ const SPRITE_RITE_DOCS = [
 
             <h3>Auto-Detect (Recommended)</h3>
             <ol>
-                <li>Click the Auto-Detect button in the toolbar</li>
+                <li>Click the Auto-Detect button in the toolbar (or press <kbd>A</kbd>)</li>
                 <li>Click on any sprite in the image</li>
                 <li>The selection automatically wraps the sprite</li>
+                <li>The name field is auto-focused—start typing immediately</li>
             </ol>
 
             <h3>Manual Selection</h3>
@@ -297,7 +301,18 @@ const SPRITE_RITE_DOCS = [
             <p>The right sidebar shows a preview of your master sheet with a count of total sprites. This updates in real-time as you save sprites.</p>
 
             <h2>Saved Sprites</h2>
-            <p>When you select a spritesheet, any sprites you've already saved from it appear with green outlines. This prevents duplicate saves and shows your progress.</p>
+            <p>When you select a spritesheet, any sprites you've already saved from it appear with green outlines on the canvas. This prevents duplicate saves and shows your progress.</p>
+
+            <h3>Selecting Sprites</h3>
+            <p>Click any sprite in the Saved Sprites list to:</p>
+            <ul>
+                <li>Highlight it on the source spritesheet canvas</li>
+                <li>Highlight it in the master sheet preview with an orange border</li>
+                <li>Edit its name or position</li>
+            </ul>
+
+            <h3>Removing Sprites</h3>
+            <p>To remove a sprite from the master sheet, click the <strong>×</strong> button next to the sprite name, or select it and press <kbd>Delete</kbd>. This removes the sprite from the master sheet entirely.</p>
 
             <h2>Atlas JSON Format</h2>
             <p>Click "Copy Atlas JSON" to copy the master sheet data:</p>
@@ -335,6 +350,7 @@ const SPRITE_RITE_DOCS = [
             <ul>
                 <li><kbd>Escape</kbd> - Cancel current selection</li>
                 <li><kbd>Enter</kbd> - Confirm and save selection</li>
+                <li><kbd>Delete</kbd> - Remove selected sprite from master sheet</li>
             </ul>
 
             <h2>Navigation</h2>
