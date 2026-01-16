@@ -1440,32 +1440,38 @@
                     // Load animations from master sprite sheet atlas (even if no sprites yet)
                     state.animations = masterSheet.atlas.animations || {};
 
-                    // Migrate old animations from database table if atlas is empty
-                    if (Object.keys(state.animations).length === 0) {
-                        try {
-                            const oldAnimations = await crucibleClient.getProjectAnimations(projectId);
-                            if (oldAnimations && oldAnimations.length > 0) {
-                                console.log(`Migrating ${oldAnimations.length} animations from database to atlas...`);
-                                for (const oldAnim of oldAnimations) {
-                                    const animKey = oldAnim.name.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '');
-                                    const animData = {
-                                        name: oldAnim.name,
-                                        description: oldAnim.description || '',
-                                        frames: (oldAnim.frames || []).map(f => ({
-                                            spriteName: f.spriteName || f.sprite_name,
-                                            duration: f.duration || 100
-                                        })),
-                                        fps: oldAnim.fps || 12,
-                                        loop: oldAnim.loop !== false
-                                    };
-                                    await crucibleClient.saveMasterSpriteSheetAnimation(projectId, animKey, animData);
-                                    state.animations[animKey] = animData;
+                    // Migrate old animations from database table (merge, don't skip)
+                    try {
+                        const oldAnimations = await crucibleClient.getProjectAnimations(projectId);
+                        if (oldAnimations && oldAnimations.length > 0) {
+                            let migratedCount = 0;
+                            for (const oldAnim of oldAnimations) {
+                                const animKey = oldAnim.name.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '');
+                                // Skip if already exists in atlas
+                                if (state.animations[animKey]) {
+                                    continue;
                                 }
-                                showToast(`Migrated ${oldAnimations.length} animations to new storage`);
+                                const animData = {
+                                    name: oldAnim.name,
+                                    description: oldAnim.description || '',
+                                    frames: (oldAnim.frames || []).map(f => ({
+                                        spriteName: f.spriteName || f.sprite_name,
+                                        duration: f.duration || 100
+                                    })),
+                                    fps: oldAnim.fps || 12,
+                                    loop: oldAnim.loop !== false
+                                };
+                                await crucibleClient.saveMasterSpriteSheetAnimation(projectId, animKey, animData);
+                                state.animations[animKey] = animData;
+                                migratedCount++;
                             }
-                        } catch (e) {
-                            console.warn('Could not migrate old animations:', e);
+                            if (migratedCount > 0) {
+                                console.log(`Migrated ${migratedCount} animations from database to atlas`);
+                                showToast(`Migrated ${migratedCount} animation(s) to new storage`);
+                            }
                         }
+                    } catch (e) {
+                        console.warn('Could not migrate old animations:', e);
                     }
 
                     // Load sprites if available
