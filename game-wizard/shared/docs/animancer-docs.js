@@ -17,15 +17,15 @@ const ANIMANCER_DOCS = [
                 <div class="step-num">1</div>
                 <div class="step-text">
                     <strong>Select a Project</strong><br>
-                    Choose your project from the dropdown. Your project's master spritesheet will be available automatically.
+                    Choose your project from the dropdown. Your project's master sheet loads automatically with all sprites from Tilesmith and Sprite-Rite.
                 </div>
             </div>
 
             <div class="step">
                 <div class="step-num">2</div>
                 <div class="step-text">
-                    <strong>Choose a Spritesheet</strong><br>
-                    Select "Master Sheet" to use sprites from Tilesmith and Sprite-Rite, or choose a specific spritesheet.
+                    <strong>Filter by Source (Optional)</strong><br>
+                    Use the source filter dropdown to show only sprites from a specific spritesheet, making it easier to find what you need.
                 </div>
             </div>
 
@@ -55,7 +55,7 @@ const ANIMANCER_DOCS = [
 
             <h2>Interface Overview</h2>
             <ul>
-                <li><strong>Sprite Palette</strong> - Left panel showing available sprites</li>
+                <li><strong>Sprite Palette</strong> - Left panel showing master sheet sprites with source filter</li>
                 <li><strong>Preview Canvas</strong> - Center area showing current frame</li>
                 <li><strong>Timeline</strong> - Bottom strip showing all frames in sequence</li>
                 <li><strong>Animation List</strong> - Right panel with saved animations</li>
@@ -65,6 +65,43 @@ const ANIMANCER_DOCS = [
             <div class="tip">
                 <div class="tip-label">Tip</div>
                 Name your animations descriptively: <code>player_run</code>, <code>enemy_idle</code>, <code>coin_spin</code>.
+            </div>
+        `
+    },
+    {
+        id: 'sprite-palette',
+        title: 'Sprite Palette',
+        content: `
+            <h1>Sprite Palette</h1>
+            <p>The sprite palette displays all sprites from your project's master sheet. Use the source filter to narrow down your selection.</p>
+
+            <h2>Master Sheet</h2>
+            <p>Animancer automatically loads your project's master sheet when you select a project. The master sheet contains all sprites saved from:</p>
+            <ul>
+                <li><strong>Tilesmith</strong> - Individual tiles and tilesets</li>
+                <li><strong>Sprite-Rite</strong> - Imported and detected sprites</li>
+                <li><strong>AI Generation</strong> - Characters and map objects</li>
+            </ul>
+
+            <h2>Source Filter</h2>
+            <p>The source filter dropdown (top-right of the palette) lets you filter sprites by their origin:</p>
+            <ul>
+                <li><strong>All Sources</strong> - Show every sprite in the master sheet</li>
+                <li><strong>[Spritesheet Name] (count)</strong> - Show only sprites from that specific sheet</li>
+            </ul>
+            <p>This is especially useful when you have many sprites and want to focus on a specific character or tileset.</p>
+
+            <h2>Using Sprites</h2>
+            <p>Click any sprite in the palette to add it as a frame to your animation timeline. The sprite's name appears below its preview.</p>
+
+            <div class="tip">
+                <div class="tip-label">Tip</div>
+                Use the source filter to quickly find all frames of a specific character when building animations.
+            </div>
+
+            <div class="warning">
+                <div class="warning-label">Note</div>
+                If a sprite isn't appearing in Animancer, make sure it's been saved to the master sheet from Tilesmith or Sprite-Rite first.
             </div>
         `
     },
@@ -247,7 +284,7 @@ const ANIMANCER_DOCS = [
             </ul>
 
             <h2>Animation List</h2>
-            <p>The right panel shows all animations saved to the current spritesheet:</p>
+            <p>The right panel shows all animations saved to your project:</p>
             <ul>
                 <li>Click an animation to load it into the editor</li>
                 <li>See frame count and duration at a glance</li>
