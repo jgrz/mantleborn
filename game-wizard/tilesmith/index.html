@@ -1007,35 +1007,95 @@
 
     <!-- AI Generation Modal -->
     <div class="modal-overlay" id="aiModal">
-        <div class="modal">
+        <div class="modal" style="max-width: 480px;">
             <div class="modal-header">
                 <span class="modal-title">AI Tile Generator</span>
                 <button class="modal-close" id="aiModalClose">&times;</button>
             </div>
             <div class="modal-body">
+                <!-- Generation Type Selector -->
                 <div class="form-group">
-                    <label class="form-label">Description *</label>
-                    <textarea class="form-input" id="aiDescription" rows="2" placeholder="e.g., mossy stone brick, wooden treasure chest, glowing crystal"></textarea>
-                </div>
-                <div class="form-row">
-                    <div class="form-group">
-                        <label class="form-label">Perspective</label>
-                        <select class="form-input" id="aiPerspective">
-                            <option value="high top-down">High Top-Down</option>
-                            <option value="low top-down" selected>Low Top-Down</option>
-                            <option value="side">Side View</option>
-                            <option value="isometric">Isometric</option>
-                        </select>
-                    </div>
-                    <div class="form-group">
-                        <label class="form-label">Isometric Shape</label>
-                        <select class="form-input" id="aiIsoShape" disabled>
-                            <option value="thin">Thin</option>
-                            <option value="thick">Thick</option>
-                            <option value="block" selected>Block</option>
-                        </select>
+                    <label class="form-label">Generation Type</label>
+                    <div style="display: flex; gap: 8px;">
+                        <label style="flex: 1; display: flex; align-items: center; gap: 6px; padding: 8px 12px; background: var(--stone-darker); border-radius: 4px; cursor: pointer; border: 2px solid var(--accent);" id="genTypeSingle">
+                            <input type="radio" name="genType" value="single" checked style="accent-color: var(--accent);">
+                            <span>Single Tile</span>
+                        </label>
+                        <label style="flex: 1; display: flex; align-items: center; gap: 6px; padding: 8px 12px; background: var(--stone-darker); border-radius: 4px; cursor: pointer; border: 2px solid transparent;" id="genTypeTileset">
+                            <input type="radio" name="genType" value="tileset" style="accent-color: var(--accent);">
+                            <span>Wang Tileset</span>
+                        </label>
                     </div>
                 </div>
+
+                <!-- Single Tile Form -->
+                <div id="singleTileForm">
+                    <div class="form-group">
+                        <label class="form-label">Description *</label>
+                        <textarea class="form-input" id="aiDescription" rows="2" placeholder="e.g., mossy stone brick, wooden treasure chest, glowing crystal"></textarea>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label class="form-label">Perspective</label>
+                            <select class="form-input" id="aiPerspective">
+                                <option value="high top-down">High Top-Down</option>
+                                <option value="low top-down" selected>Low Top-Down</option>
+                                <option value="side">Side View</option>
+                                <option value="isometric">Isometric</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Isometric Shape</label>
+                            <select class="form-input" id="aiIsoShape" disabled>
+                                <option value="thin">Thin</option>
+                                <option value="thick">Thick</option>
+                                <option value="block" selected>Block</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Tileset Form -->
+                <div id="tilesetForm" style="display: none;">
+                    <div class="form-group">
+                        <label class="form-label">Tileset Type</label>
+                        <select class="form-input" id="aiTilesetType">
+                            <option value="topdown" selected>Top-Down Terrain</option>
+                            <option value="sidescroller">Sidescroller Platform</option>
+                        </select>
+                    </div>
+                    <div class="form-group" id="lowerDescGroup">
+                        <label class="form-label" id="lowerDescLabel">Lower Material *</label>
+                        <input type="text" class="form-input" id="aiLowerDesc" placeholder="e.g., grass, water, stone">
+                    </div>
+                    <div class="form-group" id="upperDescGroup">
+                        <label class="form-label">Upper Material *</label>
+                        <input type="text" class="form-input" id="aiUpperDesc" placeholder="e.g., dirt path, sand, snow">
+                    </div>
+                    <div class="form-group" id="transitionDescGroup" style="display: none;">
+                        <label class="form-label">Surface Decoration</label>
+                        <input type="text" class="form-input" id="aiTransitionDesc" placeholder="e.g., mossy, cracked, rusted (optional)">
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label class="form-label">Transition Size</label>
+                            <select class="form-input" id="aiTransitionSize">
+                                <option value="0.1">Sharp</option>
+                                <option value="0.25" selected>Medium</option>
+                                <option value="0.5">Wide</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">View</label>
+                            <select class="form-input" id="aiTilesetView">
+                                <option value="high top-down">High Top-Down</option>
+                                <option value="low top-down" selected>Low Top-Down</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Shared Style Options -->
                 <div class="form-row">
                     <div class="form-group">
                         <label class="form-label">Outline</label>
@@ -1064,16 +1124,17 @@
                         </select>
                     </div>
                     <div class="form-group">
-                        <label class="form-label">Size</label>
+                        <label class="form-label">Tile Size</label>
                         <select class="form-input" id="aiSize">
-                            <option value="16">16px</option>
+                            <option value="16" selected>16px</option>
                             <option value="24">24px</option>
-                            <option value="32" selected>32px</option>
+                            <option value="32">32px</option>
                         </select>
                     </div>
                 </div>
                 <p style="font-size: 11px; color: var(--stone-mid); margin-top: 8px;">
                     Generation takes 2-5 minutes. Track progress in the queue panel.
+                    <span id="tilesetNote" style="display: none;"><br>Tilesets generate 16 Wang tiles in a 4×4 grid.</span>
                 </p>
             </div>
             <div class="modal-footer">
@@ -1257,6 +1318,8 @@
                         // Handle tile imports - download image and apply to canvas
                         if (job.jobType === 'isometric_tile' || job.jobType === 'map_object') {
                             await importGeneratedTile(job);
+                        } else if (job.jobType === 'tileset_topdown' || job.jobType === 'tileset_sidescroller') {
+                            await importGeneratedTileset(job);
                         } else {
                             showToast('Import this asset in Sprite-Rite');
                         }
@@ -1345,6 +1408,93 @@
             } catch (err) {
                 console.error('Failed to import tile:', err);
                 showToast('Failed to import tile: ' + err.message, true);
+            }
+        }
+
+        async function importGeneratedTileset(job) {
+            if (!job.resultUrl) {
+                showToast('No tileset URL available', true);
+                return;
+            }
+
+            try {
+                showToast('Importing tileset...');
+
+                // Download the tileset image
+                const response = await fetch(job.resultUrl);
+                if (!response.ok) throw new Error('Failed to download tileset');
+
+                const blob = await response.blob();
+                const img = new Image();
+
+                await new Promise((resolve, reject) => {
+                    img.onload = resolve;
+                    img.onerror = reject;
+                    img.src = URL.createObjectURL(blob);
+                });
+
+                // Wang tilesets are 4x4 = 16 tiles
+                const gridCols = 4;
+                const gridRows = 4;
+                const tileWidth = img.width / gridCols;
+                const tileHeight = img.height / gridRows;
+
+                // Update tile size and grid dimensions
+                state.width = tileWidth;
+                state.height = tileHeight;
+                state.gridCols = gridCols;
+                state.gridRows = gridRows;
+                elements.tileWidth.value = tileWidth;
+                elements.tileHeight.value = tileHeight;
+                elements.gridCols.value = gridCols;
+                elements.gridRows.value = gridRows;
+
+                // Create new pixel data for the entire tileset
+                const totalWidth = tileWidth * gridCols;
+                const totalHeight = tileHeight * gridRows;
+                state.pixels = ctx.createImageData(totalWidth, totalHeight);
+
+                // Draw entire tileset image to temp canvas
+                const tempCanvas = document.createElement('canvas');
+                tempCanvas.width = img.width;
+                tempCanvas.height = img.height;
+                const tempCtx = tempCanvas.getContext('2d');
+                tempCtx.drawImage(img, 0, 0);
+
+                const imageData = tempCtx.getImageData(0, 0, img.width, img.height);
+
+                // Copy all pixels to state
+                for (let y = 0; y < img.height; y++) {
+                    for (let x = 0; x < img.width; x++) {
+                        const srcIdx = (y * img.width + x) * 4;
+                        const r = imageData.data[srcIdx];
+                        const g = imageData.data[srcIdx + 1];
+                        const b = imageData.data[srcIdx + 2];
+                        const a = imageData.data[srcIdx + 3];
+
+                        const dstIdx = (y * totalWidth + x) * 4;
+                        state.pixels.data[dstIdx] = r;
+                        state.pixels.data[dstIdx + 1] = g;
+                        state.pixels.data[dstIdx + 2] = b;
+                        state.pixels.data[dstIdx + 3] = a;
+                    }
+                }
+
+                // Clean up
+                URL.revokeObjectURL(img.src);
+
+                // Reset selected tile to first position
+                state.selectedTileX = 0;
+                state.selectedTileY = 0;
+
+                // Update UI
+                renderTileSelector();
+                updateCanvasSize();
+                markDirty();
+                showToast(`Tileset imported! ${gridCols}×${gridRows} grid with ${tileWidth}×${tileHeight}px tiles.`);
+            } catch (err) {
+                console.error('Failed to import tileset:', err);
+                showToast('Failed to import tileset: ' + err.message, true);
             }
         }
 
@@ -2099,62 +2249,112 @@
         }
 
         async function generateTileWithPixelLab() {
-            const description = document.getElementById('aiDescription').value.trim();
-            const perspective = document.getElementById('aiPerspective').value;
-            const isoShape = document.getElementById('aiIsoShape').value;
+            const genType = document.querySelector('input[name="genType"]:checked').value;
             const outline = document.getElementById('aiOutline').value;
             const shading = document.getElementById('aiShading').value;
             const detail = document.getElementById('aiDetail').value;
             const size = parseInt(document.getElementById('aiSize').value);
 
-            if (!description) {
-                showToast('Enter a tile description', true);
-                return;
-            }
+            const style = {
+                outline: outline === 'none' ? undefined : outline,
+                shading: shading,
+                detail: detail
+            };
 
             elements.aiModalGenerate.disabled = true;
             elements.aiModalGenerate.textContent = 'Queueing...';
 
             try {
                 const client = new PixelLabClient();
-                const style = {
-                    outline: outline === 'none' ? undefined : outline,
-                    shading: shading,
-                    detail: detail
-                };
-
                 let result;
                 let jobType;
+                let prompt;
 
-                if (perspective === 'isometric') {
-                    // Use isometric tile endpoint
-                    result = await client.createIsometricTile({
-                        description,
-                        size,
-                        tileShape: isoShape,
-                        style
-                    });
-                    jobType = 'isometric_tile';
+                if (genType === 'tileset') {
+                    // Tileset generation
+                    const tilesetType = document.getElementById('aiTilesetType').value;
+                    const lowerDesc = document.getElementById('aiLowerDesc').value.trim();
+                    const upperDesc = document.getElementById('aiUpperDesc').value.trim();
+                    const transitionDesc = document.getElementById('aiTransitionDesc').value.trim();
+                    const transitionSize = parseFloat(document.getElementById('aiTransitionSize').value);
+                    const view = document.getElementById('aiTilesetView').value;
+
+                    if (tilesetType === 'topdown') {
+                        if (!lowerDesc || !upperDesc) {
+                            showToast('Enter both lower and upper material descriptions', true);
+                            elements.aiModalGenerate.disabled = false;
+                            elements.aiModalGenerate.textContent = 'Generate Tile';
+                            return;
+                        }
+                        result = await client.createTopdownTileset({
+                            lowerDescription: lowerDesc,
+                            upperDescription: upperDesc,
+                            transitionSize,
+                            tileSize: size,
+                            view,
+                            style
+                        });
+                        jobType = 'tileset_topdown';
+                        prompt = `${lowerDesc} → ${upperDesc}`;
+                    } else {
+                        if (!lowerDesc) {
+                            showToast('Enter a material description', true);
+                            elements.aiModalGenerate.disabled = false;
+                            elements.aiModalGenerate.textContent = 'Generate Tile';
+                            return;
+                        }
+                        result = await client.createSidescrollerTileset({
+                            lowerDescription: lowerDesc,
+                            transitionDescription: transitionDesc || undefined,
+                            transitionSize,
+                            tileSize: size,
+                            style
+                        });
+                        jobType = 'tileset_sidescroller';
+                        prompt = transitionDesc ? `${lowerDesc} (${transitionDesc})` : lowerDesc;
+                    }
                 } else {
-                    // Use map object endpoint for other perspectives
-                    result = await client.createMapObject({
-                        description,
-                        width: size,
-                        height: size,
-                        view: perspective,
-                        style
-                    });
-                    jobType = 'map_object';
+                    // Single tile generation
+                    const description = document.getElementById('aiDescription').value.trim();
+                    const perspective = document.getElementById('aiPerspective').value;
+                    const isoShape = document.getElementById('aiIsoShape').value;
+
+                    if (!description) {
+                        showToast('Enter a tile description', true);
+                        elements.aiModalGenerate.disabled = false;
+                        elements.aiModalGenerate.textContent = 'Generate Tile';
+                        return;
+                    }
+
+                    prompt = description;
+
+                    if (perspective === 'isometric') {
+                        result = await client.createIsometricTile({
+                            description,
+                            size,
+                            tileShape: isoShape,
+                            style
+                        });
+                        jobType = 'isometric_tile';
+                    } else {
+                        result = await client.createMapObject({
+                            description,
+                            width: size,
+                            height: size,
+                            view: perspective,
+                            style
+                        });
+                        jobType = 'map_object';
+                    }
                 }
 
                 if (result.job_id) {
-                    // Add to generation queue
                     if (state.generationQueue) {
                         await state.generationQueue.addJob({
                             pixellab_job_id: result.job_id,
                             job_type: jobType,
-                            prompt: description,
-                            parameters: { perspective, size, style },
+                            prompt: prompt,
+                            parameters: { genType, size, style },
                             project_id: state.projectId,
                             user_id: state.user?.id
                         });
@@ -2166,7 +2366,7 @@
                     throw new Error('No job ID returned from PixelLab');
                 }
             } catch (err) {
-                console.error('Failed to queue tile generation:', err);
+                console.error('Failed to queue generation:', err);
                 showToast(err.message || 'Failed to queue generation', true);
             } finally {
                 elements.aiModalGenerate.disabled = false;
@@ -2511,6 +2711,32 @@
             document.getElementById('aiPerspective').addEventListener('change', (e) => {
                 const isoShape = document.getElementById('aiIsoShape');
                 isoShape.disabled = e.target.value !== 'isometric';
+            });
+
+            // Toggle between single tile and tileset forms
+            document.querySelectorAll('input[name="genType"]').forEach(radio => {
+                radio.addEventListener('change', (e) => {
+                    const isTileset = e.target.value === 'tileset';
+                    document.getElementById('singleTileForm').style.display = isTileset ? 'none' : 'block';
+                    document.getElementById('tilesetForm').style.display = isTileset ? 'block' : 'none';
+                    document.getElementById('tilesetNote').style.display = isTileset ? 'inline' : 'none';
+                    elements.aiModalGenerate.textContent = isTileset ? 'Generate Tileset' : 'Generate Tile';
+
+                    // Update visual selection
+                    document.getElementById('genTypeSingle').style.borderColor = isTileset ? 'transparent' : 'var(--accent)';
+                    document.getElementById('genTypeTileset').style.borderColor = isTileset ? 'var(--accent)' : 'transparent';
+                });
+            });
+
+            // Toggle tileset type (top-down vs sidescroller)
+            document.getElementById('aiTilesetType').addEventListener('change', (e) => {
+                const isTopdown = e.target.value === 'topdown';
+                document.getElementById('upperDescGroup').style.display = isTopdown ? 'block' : 'none';
+                document.getElementById('transitionDescGroup').style.display = isTopdown ? 'none' : 'block';
+                document.getElementById('lowerDescLabel').textContent = isTopdown ? 'Lower Material *' : 'Platform Material *';
+                document.getElementById('aiLowerDesc').placeholder = isTopdown ? 'e.g., grass, water, stone' : 'e.g., stone brick, wood plank, metal';
+                // Hide view selector for sidescroller (it's always side view)
+                document.getElementById('aiTilesetView').closest('.form-group').style.display = isTopdown ? 'block' : 'none';
             });
 
             // Export

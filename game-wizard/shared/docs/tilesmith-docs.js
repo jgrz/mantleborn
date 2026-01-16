@@ -155,15 +155,22 @@ const TILESMITH_DOCS = [
         title: 'AI Generation',
         content: `
             <h1>AI Tile Generation</h1>
-            <p>Tilesmith uses PixelLab AI to generate pixel art tiles. Describe what you want, and the AI creates production-ready tile images.</p>
+            <p>Tilesmith uses PixelLab AI to generate pixel art. Choose between single tiles or complete Wang tilesets.</p>
 
-            <h2>Generating a Tile</h2>
+            <h2>Generation Types</h2>
+            <p>Select your generation type at the top of the AI modal:</p>
+            <ul>
+                <li><strong>Single Tile</strong> - Generate one tile (props, decorations, objects)</li>
+                <li><strong>Wang Tileset</strong> - Generate 16 tiles for terrain transitions</li>
+            </ul>
+
+            <h2>Single Tile Generation</h2>
 
             <div class="step">
                 <div class="step-num">1</div>
                 <div class="step-text">
                     <strong>Click "AI Generate"</strong><br>
-                    Opens the generation modal in the toolbar.
+                    Opens the generation modal. Select "Single Tile".
                 </div>
             </div>
 
@@ -179,7 +186,7 @@ const TILESMITH_DOCS = [
                 <div class="step-num">3</div>
                 <div class="step-text">
                     <strong>Set Options</strong><br>
-                    Choose perspective, style settings, and size.
+                    Choose perspective (top-down, side, isometric), style settings, and size.
                 </div>
             </div>
 
@@ -191,29 +198,48 @@ const TILESMITH_DOCS = [
                 </div>
             </div>
 
-            <h2>Generation Options</h2>
-
-            <h3>Perspective</h3>
+            <h3>Perspective Options</h3>
             <ul>
                 <li><strong>High Top-Down</strong> - Looking straight down (classic RPGs)</li>
-                <li><strong>Low Top-Down</strong> - Slight angle, shows some depth (action RPGs)</li>
+                <li><strong>Low Top-Down</strong> - Slight angle, shows some depth</li>
                 <li><strong>Side View</strong> - Looking from the side (platformers)</li>
-                <li><strong>Isometric</strong> - 3/4 angled view with depth</li>
+                <li><strong>Isometric</strong> - 3/4 angled view with thin/thick/block shapes</li>
             </ul>
 
-            <h3>Isometric Shape</h3>
-            <p>Only available when Isometric perspective is selected:</p>
+            <h2>Wang Tileset Generation</h2>
+            <p>Generate complete 16-tile Wang sets for terrain transitions or platform pieces.</p>
+
+            <h3>Top-Down Terrain</h3>
+            <p>Creates tiles for transitioning between two terrain types:</p>
             <ul>
-                <li><strong>Thin</strong> - Flat tiles (floors, paths)</li>
-                <li><strong>Thick</strong> - Medium height (platforms, low walls)</li>
-                <li><strong>Block</strong> - Full cube (crates, buildings)</li>
+                <li><strong>Lower Material</strong> - The base terrain (grass, water, stone)</li>
+                <li><strong>Upper Material</strong> - The overlapping terrain (dirt, sand, snow)</li>
+                <li><strong>Transition Size</strong> - Sharp, medium, or wide blend</li>
             </ul>
 
-            <h3>Style Settings</h3>
+            <h3>Sidescroller Platforms</h3>
+            <p>Creates platform pieces with proper edges:</p>
+            <ul>
+                <li><strong>Platform Material</strong> - The surface material (stone brick, wood plank)</li>
+                <li><strong>Surface Decoration</strong> - Optional details (mossy, cracked, rusted)</li>
+            </ul>
+
+            <h3>Importing Tilesets</h3>
+            <p>When a tileset completes:</p>
+            <ol>
+                <li>Click <strong>Import</strong> on the completed job</li>
+                <li>Tilesmith automatically sets up a 4×4 grid</li>
+                <li>All 16 Wang tiles are imported at once</li>
+                <li>Edit individual tiles with drawing tools as needed</li>
+            </ol>
+
+            <h2>Style Settings</h2>
+            <p>Shared across both generation types:</p>
             <ul>
                 <li><strong>Outline</strong> - None, black outline, or colored outline</li>
                 <li><strong>Shading</strong> - Flat, basic, or detailed shading</li>
                 <li><strong>Detail</strong> - Low, medium, or high detail level</li>
+                <li><strong>Tile Size</strong> - 16, 24, or 32 pixels</li>
             </ul>
 
             <h2>Generation Queue</h2>
@@ -224,16 +250,7 @@ const TILESMITH_DOCS = [
                 <li><strong>❌ Failed</strong> - Click Retry</li>
             </ul>
 
-            <p>The queue is shared across all Game Wizard tools. Jobs started in other tools (Sprite-Rite, Incarnum, Level Forge) appear here too.</p>
-
-            <h2>Importing to Canvas</h2>
-            <p>When generation completes:</p>
-            <ol>
-                <li>Click <strong>Import</strong> on the completed job</li>
-                <li>The tile image is applied to the currently selected tile position</li>
-                <li>Edit the tile with drawing tools as needed</li>
-                <li>Save or export when finished</li>
-            </ol>
+            <p>The queue is shared across all Game Wizard tools.</p>
 
             <h2>Tips for Good Results</h2>
 
@@ -248,13 +265,13 @@ const TILESMITH_DOCS = [
             </div>
 
             <div class="tip">
-                <div class="tip-label">Multi-Tile Objects</div>
-                For larger objects, set up a multi-tile grid first, then generate and import to each tile position.
+                <div class="tip-label">Chain Tilesets</div>
+                For multi-terrain games, generate grass→dirt, then dirt→water for seamless transitions.
             </div>
 
             <div class="warning">
                 <div class="warning-label">Note</div>
-                Generation takes 2-5 minutes. The imported tile replaces only the currently selected tile in a multi-tile grid.
+                Generation takes 2-5 minutes. Tileset imports replace your current canvas with a 4×4 grid.
             </div>
         `
     },
