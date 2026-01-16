@@ -1174,16 +1174,25 @@ class CrucibleClient {
 
         const user = await this.getUser();
 
+        const insertData = {
+            user_id: user?.id || null,
+            name: name,
+            frames: frames,
+            fps: options.fps || 12,
+            loop: options.loop !== undefined ? options.loop : true
+        };
+
+        // Support either spritesheet_id or project_id (for master sheet animations)
+        if (options.projectId) {
+            insertData.project_id = options.projectId;
+        }
+        if (spritesheetId && spritesheetId !== '__master__') {
+            insertData.spritesheet_id = spritesheetId;
+        }
+
         const { data, error } = await this.client
             .from('animations')
-            .insert({
-                spritesheet_id: spritesheetId,
-                user_id: user?.id || null,
-                name: name,
-                frames: frames,
-                fps: options.fps || 12,
-                loop: options.loop !== undefined ? options.loop : true
-            })
+            .insert(insertData)
             .select()
             .single();
 
@@ -1198,6 +1207,19 @@ class CrucibleClient {
             .from('animations')
             .select('*')
             .eq('spritesheet_id', spritesheetId)
+            .order('created_at', { ascending: true });
+
+        if (error) throw error;
+        return data || [];
+    }
+
+    async getProjectAnimations(projectId) {
+        if (!this.client) throw new Error('Crucible not initialized');
+
+        const { data, error } = await this.client
+            .from('animations')
+            .select('*')
+            .eq('project_id', projectId)
             .order('created_at', { ascending: true });
 
         if (error) throw error;

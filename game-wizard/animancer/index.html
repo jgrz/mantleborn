@@ -1257,7 +1257,16 @@
                     height: def.h,
                     source: def.source
                 }));
-                state.animations = []; // Master sheet doesn't store animations directly
+
+                // Load project animations for master sheet
+                try {
+                    state.animations = state.projectId
+                        ? await crucibleClient.getProjectAnimations(state.projectId)
+                        : [];
+                } catch (e) {
+                    console.warn('Could not load project animations:', e);
+                    state.animations = [];
+                }
 
                 renderSpritePalette();
                 renderAnimationList();
@@ -1953,8 +1962,12 @@
                     state.animations[idx] = { ...state.animations[idx], name, frames, fps, loop };
                 }
             } else {
-                // Create new
-                const newAnim = await crucibleClient.createAnimation(state.spritesheetId, name, frames, { fps, loop });
+                // Create new - pass projectId for master sheet animations
+                const options = { fps, loop };
+                if (state.spritesheetId === '__master__' && state.projectId) {
+                    options.projectId = state.projectId;
+                }
+                const newAnim = await crucibleClient.createAnimation(state.spritesheetId, name, frames, options);
                 state.currentAnimationId = newAnim.id;
                 state.animations.push(newAnim);
             }
