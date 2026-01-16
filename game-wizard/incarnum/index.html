@@ -2597,11 +2597,64 @@
         // ==========================================
         // AI Character Generation
         // ==========================================
-        function openGenerateModal() {
+        async function openGenerateModal() {
             elements.generateModal.classList.add('active');
             elements.generateForm.style.display = 'block';
             elements.generateFooter.style.display = 'flex';
             elements.generationProgress.classList.remove('active');
+
+            // Load project settings for PixelLab form defaults
+            if (state.projectId && typeof crucibleClient !== 'undefined') {
+                try {
+                    const settings = await crucibleClient.getProjectSettings(state.projectId);
+                    const style = settings.pixellab?.defaultStyle || {};
+                    const charDefaults = settings.pixellab?.characterDefaults || {};
+
+                    // Map outline values (project uses short form, modal uses long form)
+                    if (style.outline) {
+                        const outlineMap = {
+                            'no_outline': 'no_outline',
+                            'single_color_black': 'single_color_black_outline',
+                            'single_color_colored': 'colored_outline'
+                        };
+                        const plOutline = document.getElementById('plOutline');
+                        if (plOutline) plOutline.value = outlineMap[style.outline] || style.outline;
+                    }
+                    // Map shading values
+                    if (style.shading) {
+                        const shadingMap = {
+                            'flat': 'flat_shading',
+                            'basic': 'basic_shading',
+                            'detailed': 'detailed_shading'
+                        };
+                        const plShading = document.getElementById('plShading');
+                        if (plShading) plShading.value = shadingMap[style.shading] || style.shading;
+                    }
+                    // Character size
+                    if (charDefaults.size) {
+                        const plSize = document.getElementById('plSize');
+                        if (plSize) plSize.value = String(charDefaults.size);
+                    }
+                    // Directions
+                    if (charDefaults.directions) {
+                        const plDirections = document.getElementById('plDirections');
+                        if (plDirections) plDirections.value = String(charDefaults.directions);
+                    }
+
+                    // Also update the classic form perspective based on game view
+                    if (settings.gameView) {
+                        const perspectiveMap = {
+                            'side-scroll': 'side_view',
+                            'top-down': 'top_down',
+                            'isometric': 'top_down'
+                        };
+                        elements.genPerspective.value = perspectiveMap[settings.gameView] || 'side_view';
+                    }
+                } catch (err) {
+                    console.warn('Could not load project settings:', err);
+                }
+            }
+
             elements.genPrompt.focus();
         }
 

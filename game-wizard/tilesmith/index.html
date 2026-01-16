@@ -2245,7 +2245,54 @@
         // ==========================================
         // AI GENERATION
         // ==========================================
-        function openAiModal() {
+        async function openAiModal() {
+            // Pre-fill with project settings if available
+            if (state.projectId) {
+                try {
+                    const settings = await crucibleClient.getProjectSettings(state.projectId);
+                    const style = settings.pixellab?.defaultStyle || {};
+                    const tileDefaults = settings.pixellab?.tileDefaults || {};
+
+                    // Pre-fill style settings
+                    if (style.outline) {
+                        document.getElementById('aiOutline').value = style.outline;
+                    }
+                    if (style.shading) {
+                        document.getElementById('aiShading').value = style.shading;
+                    }
+                    if (style.detail) {
+                        document.getElementById('aiDetail').value = style.detail;
+                    }
+                    if (style.view) {
+                        // Map project view to perspective dropdown
+                        const perspectiveEl = document.getElementById('aiPerspective');
+                        const tilesetViewEl = document.getElementById('aiTilesetView');
+                        if (style.view.includes('top_down')) {
+                            perspectiveEl.value = style.view === 'high_top_down' ? 'high_top_down' : 'low_top_down';
+                            if (tilesetViewEl) tilesetViewEl.value = style.view;
+                        } else if (style.view === 'side') {
+                            perspectiveEl.value = 'side';
+                        } else if (style.view.includes('isometric')) {
+                            perspectiveEl.value = style.view;
+                        }
+                    }
+
+                    // Pre-fill tile size
+                    if (tileDefaults.size) {
+                        document.getElementById('aiSize').value = tileDefaults.size;
+                    }
+
+                    // Pre-fill transition size for tilesets
+                    const transitionEl = document.getElementById('aiTransitionSize');
+                    if (transitionEl && tileDefaults.transitionSize) {
+                        const transitionMap = { 'sharp': 0, 'medium': 0.25, 'wide': 0.5 };
+                        transitionEl.value = transitionMap[tileDefaults.transitionSize] || 0.25;
+                    }
+                } catch (err) {
+                    console.warn('Could not load project settings:', err);
+                }
+            }
+
             elements.aiModal.classList.add('active');
         }
 

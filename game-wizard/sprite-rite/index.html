@@ -3738,17 +3738,55 @@
             elements.submitMapObjectGen.addEventListener('click', submitMapObjectGeneration);
         }
 
-        function openCharacterModal() {
+        async function openCharacterModal() {
             elements.characterModal.classList.add('open');
             // Reset form
             elements.aiCharacterDesc.value = '';
             elements.aiNegativePrompt.value = '';
-            elements.aiDirections.value = '8';
-            elements.aiSize.value = '48';
-            elements.aiOutline.value = 'single_color_black_outline';
-            elements.aiShading.value = 'basic_shading';
             elements.aiSkeletonGuidance.value = '2';
             elements.guidanceValue.textContent = '2.0';
+
+            // Load project settings for defaults
+            let outline = 'single_color_black_outline';
+            let shading = 'basic_shading';
+            let size = 48;
+            let directions = 8;
+
+            if (state.projectId && typeof crucibleClient !== 'undefined') {
+                try {
+                    const settings = await crucibleClient.getProjectSettings(state.projectId);
+                    const style = settings.pixellab?.defaultStyle || {};
+                    const charDefaults = settings.pixellab?.characterDefaults || {};
+
+                    // Map outline values (project uses short form, modal uses long form)
+                    if (style.outline) {
+                        const outlineMap = {
+                            'no_outline': 'no_outline',
+                            'single_color_black': 'single_color_black_outline',
+                            'single_color_colored': 'single_color_colored_outline'
+                        };
+                        outline = outlineMap[style.outline] || style.outline;
+                    }
+                    // Map shading values
+                    if (style.shading) {
+                        const shadingMap = {
+                            'flat': 'flat_shading',
+                            'basic': 'basic_shading',
+                            'detailed': 'detailed_shading'
+                        };
+                        shading = shadingMap[style.shading] || style.shading;
+                    }
+                    if (charDefaults.size) size = charDefaults.size;
+                    if (charDefaults.directions) directions = charDefaults.directions;
+                } catch (err) {
+                    console.warn('Could not load project settings:', err);
+                }
+            }
+
+            elements.aiDirections.value = String(directions);
+            elements.aiSize.value = String(size);
+            elements.aiOutline.value = outline;
+            elements.aiShading.value = shading;
 
             // Reset skeleton to idle
             document.querySelectorAll('.ai-skeleton-preset').forEach(b => b.classList.remove('active'));
@@ -3762,15 +3800,43 @@
             elements.characterModal.classList.remove('open');
         }
 
-        function openMapObjectModal() {
+        async function openMapObjectModal() {
             elements.mapObjectModal.classList.add('open');
             // Reset form
             elements.aiMapObjectDesc.value = '';
             elements.aiMapObjectNegative.value = '';
-            elements.aiMapObjectWidth.value = '32';
-            elements.aiMapObjectHeight.value = '32';
-            elements.aiMapObjectOutline.value = 'single_color_black_outline';
-            elements.aiMapObjectView.value = 'low_top_down';
+
+            // Load project settings for defaults
+            let width = 32;
+            let height = 32;
+            let outline = 'single_color_black_outline';
+            let view = 'low_top_down';
+
+            if (state.projectId && typeof crucibleClient !== 'undefined') {
+                try {
+                    const settings = await crucibleClient.getProjectSettings(state.projectId);
+                    const style = settings.pixellab?.defaultStyle || {};
+
+                    // Map outline values
+                    if (style.outline) {
+                        const outlineMap = {
+                            'no_outline': 'no_outline',
+                            'single_color_black': 'single_color_black_outline',
+                            'single_color_colored': 'single_color_colored_outline'
+                        };
+                        outline = outlineMap[style.outline] || style.outline;
+                    }
+                    // Use project view setting
+                    if (style.view) view = style.view;
+                } catch (err) {
+                    console.warn('Could not load project settings:', err);
+                }
+            }
+
+            elements.aiMapObjectWidth.value = String(width);
+            elements.aiMapObjectHeight.value = String(height);
+            elements.aiMapObjectOutline.value = outline;
+            elements.aiMapObjectView.value = view;
         }
 
         function closeMapObjectModal() {
