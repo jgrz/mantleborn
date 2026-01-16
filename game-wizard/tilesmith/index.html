@@ -2715,6 +2715,51 @@
             }
         }
 
+        // Migrate legacy tiles from tiles table to master sheet
+        async function migrateLegacyTiles(projectId) {
+            try {
+                // Check if getTiles exists (for legacy support)
+                if (!crucibleClient.getTiles) return;
+
+                // Get legacy tiles from tiles table
+                const legacyTiles = await crucibleClient.getTiles(projectId);
+                if (!legacyTiles || legacyTiles.length === 0) return;
+
+                // Check if master sheet already has sprites (already migrated)
+                const masterSheet = await crucibleClient.getMasterSheet(projectId);
+                if (masterSheet.atlas?.sprites && Object.keys(masterSheet.atlas.sprites).length > 0) {
+                    // Already migrated - skip
+                    return;
+                }
+
+                // Migrate each tile to master sheet
+                console.log(`Migrating ${legacyTiles.length} legacy tiles to master sheet...`);
+                showToast(`Migrating ${legacyTiles.length} tiles to new system...`);
+
+                for (const tile of legacyTiles) {
+                    if (tile.pixel_data) {
+                        try {
+                            await crucibleClient.saveToMaster(
+                                projectId,
+                                tile.name,
+                                tile.pixel_data,
+                                tile.width,
+                                tile.height
+                            );
+                        } catch (err) {
+                            console.warn(`Failed to migrate tile "${tile.name}":`, err);
+                        }
+                    }
+                }
+
+                showToast(`Migrated ${legacyTiles.length} tiles to Master Sheet`);
+                console.log('Legacy tile migration complete');
+            } catch (err) {
+                console.warn('Legacy tile migration check failed:', err);
+                // Non-fatal - continue loading
+            }
+        }
+
         async function selectProject(projectId) {
             state.projectId = projectId;
             state.tiles = [];
@@ -2735,6 +2780,9 @@
             }
 
             try {
+                // Check for legacy tiles that need migration
+                await migrateLegacyTiles(projectId);
+
                 // Load sheets and groups in parallel
                 const [draftResult, masterResult, groups] = await Promise.all([
                     crucibleClient.getDraftSheet(projectId),
