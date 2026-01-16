@@ -236,6 +236,7 @@
             flex-direction: column;
             overflow: hidden;
             min-height: 0;
+            max-height: calc(100vh - 53px); /* Header height */
         }
 
         /* Sprite Palette */
@@ -244,7 +245,8 @@
             padding: 16px;
             overflow-y: auto;
             border-bottom: 1px solid var(--stone-dark);
-            min-height: 0;
+            min-height: 120px;
+            max-height: calc(100vh - 400px); /* Leave room for timeline + library */
         }
 
         .sprite-palette::-webkit-scrollbar {
@@ -322,6 +324,7 @@
             border-top: 1px solid var(--stone-dark);
             padding: 16px;
             flex-shrink: 0;
+            min-height: 160px;
             max-height: 180px;
         }
 
