@@ -622,6 +622,16 @@ const bosses = characters.filter(c =>
                 <li><strong>Guidance</strong> - Slider controls how strictly the AI follows your pose</li>
             </ul>
 
+            <h2>Project Presets</h2>
+            <p>When you open the Generate modal, settings are pre-filled from your project's defaults (configured in Crucible):</p>
+            <ul>
+                <li><strong>Outline &amp; Shading</strong> - Your project's visual style</li>
+                <li><strong>Character Size</strong> - Default sprite dimensions (32, 48, or 64px)</li>
+                <li><strong>Directions</strong> - Number of directional views (1, 4, or 8)</li>
+                <li><strong>Perspective</strong> - Side view or top-down based on your game view</li>
+            </ul>
+            <p>All settings remain fully editable—adjust them per-character as needed.</p>
+
             <h2>Generation Queue</h2>
             <p>Track your generation jobs in the queue panel (bottom-right):</p>
             <ul>

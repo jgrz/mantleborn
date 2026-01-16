@@ -242,6 +242,10 @@ const TILESMITH_DOCS = [
                 <li><strong>Tile Size</strong> - 16, 24, or 32 pixels</li>
             </ul>
 
+            <h3>Project Presets</h3>
+            <p>When you open the AI Generate modal, settings are pre-filled from your project's defaults (set in Crucible). This ensures visual consistency across your game.</p>
+            <p>You can always adjust these settings per-generation—they're editable but start with your project's style.</p>
+
             <h2>Generation Queue</h2>
             <p>Track all your AI generation jobs in the queue panel (bottom-right corner):</p>
             <ul>

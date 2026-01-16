@@ -86,13 +86,40 @@ const CRUCIBLE_DOCS = [
             <p>Projects are containers for your game. Each project has its own levels, master spritesheet, and settings.</p>
 
             <h2>Creating a Project</h2>
+            <p>Click the <strong>+ New Project</strong> button in the header to start the two-step creation wizard:</p>
+
+            <h3>Step 1: Basic Info & Game View</h3>
             <ol>
-                <li>Click the <strong>+ New Project</strong> button in the header</li>
                 <li>Enter a project name (e.g., "My Platformer")</li>
                 <li>Optionally add a description</li>
-                <li>Click <strong>Create Project</strong></li>
+                <li>Select your game view type:
+                    <ul>
+                        <li><strong>Side-Scroller</strong> - Characters move left/right with gravity (platformers, run &amp; gun)</li>
+                        <li><strong>Top-Down</strong> - Overhead view with free movement (RPGs, adventure games)</li>
+                        <li><strong>Isometric</strong> - Angled 3D-like view (tactics, city builders)</li>
+                    </ul>
+                </li>
             </ol>
-            <p>Your new project is automatically selected and ready for levels.</p>
+
+            <h3>Step 2: Visual Style</h3>
+            <ol>
+                <li>Choose your outline style:
+                    <ul>
+                        <li><strong>Black Outline</strong> - Classic pixel art look with dark borders</li>
+                        <li><strong>Colored Outline</strong> - Softer look with tinted borders</li>
+                        <li><strong>No Outline</strong> - Clean, modern pixel art</li>
+                    </ul>
+                </li>
+                <li>Choose your shading style:
+                    <ul>
+                        <li><strong>Flat</strong> - Minimal shading, retro 8-bit feel</li>
+                        <li><strong>Basic</strong> - Simple highlights and shadows</li>
+                        <li><strong>Detailed</strong> - Rich shading and depth</li>
+                    </ul>
+                </li>
+            </ol>
+
+            <p>These settings become your project's defaults for AI generation across all cartridges.</p>
 
             <h2>Switching Projects</h2>
             <p>Use the project dropdown in the header to switch between projects. Each project has:</p>
@@ -124,6 +151,71 @@ const CRUCIBLE_DOCS = [
             <div class="tip">
                 <div class="tip-label">Tip</div>
                 Give projects descriptive names. "Platformer_v2" is better than "test" when you have multiple projects.
+            </div>
+        `
+    },
+    {
+        id: 'project-settings',
+        title: 'Project Settings',
+        content: `
+            <h1>Project Settings</h1>
+            <p>Each project has settings that control AI generation defaults and asset behavior across all Game Wizard tools.</p>
+
+            <h2>Opening Settings</h2>
+            <p>Click the <strong>⚙️ Settings</strong> button in the project sidebar to open the Project Settings modal.</p>
+
+            <h2>Settings Tabs</h2>
+
+            <h3>General</h3>
+            <p>Basic project configuration:</p>
+            <ul>
+                <li><strong>Project Name</strong> - The display name for your project</li>
+                <li><strong>Description</strong> - Optional notes about the project</li>
+                <li><strong>Game View</strong> - Side-Scroller, Top-Down, or Isometric</li>
+            </ul>
+
+            <h3>AI Generation</h3>
+            <p>Default style settings for AI-generated assets:</p>
+            <ul>
+                <li><strong>Outline Style</strong> - Black, colored, or no outline</li>
+                <li><strong>Shading Style</strong> - Flat, basic, or detailed shading</li>
+                <li><strong>Detail Level</strong> - Low, medium, or high detail</li>
+                <li><strong>Perspective</strong> - View angle for generated assets</li>
+            </ul>
+
+            <h3>Asset Defaults</h3>
+            <p>Default sizes for generated assets:</p>
+            <ul>
+                <li><strong>Tile Size</strong> - Default tile dimensions (16, 24, or 32px)</li>
+                <li><strong>Character Size</strong> - Default sprite dimensions (32, 48, or 64px)</li>
+                <li><strong>Directions</strong> - Number of directional views for characters (1, 4, or 8)</li>
+            </ul>
+
+            <h2>How Settings Propagate</h2>
+            <p>Your project settings automatically flow to other cartridges:</p>
+            <ul>
+                <li><strong>Tilesmith</strong> - AI tile generation uses your style defaults</li>
+                <li><strong>Sprite-Rite</strong> - Character and map object generation uses your style and size defaults</li>
+                <li><strong>Incarnum</strong> - Character generation uses your style, size, and direction defaults</li>
+                <li><strong>Level Forge</strong> - Tileset generation uses your style and tile size defaults</li>
+            </ul>
+
+            <h2>Per-Generation Overrides</h2>
+            <p>While project settings provide defaults, you can always override them when generating:</p>
+            <ul>
+                <li>Settings are pre-filled in generation modals</li>
+                <li>Adjust any setting before generating</li>
+                <li>Useful for special cases (e.g., a side-scroll bonus level in a top-down game)</li>
+            </ul>
+
+            <div class="tip">
+                <div class="tip-label">Tip</div>
+                Set your project's visual style early. Consistent settings across all assets create a cohesive game aesthetic.
+            </div>
+
+            <div class="warning">
+                <div class="warning-label">Note</div>
+                Changing project settings doesn't affect already-generated assets. New generations will use the updated settings.
             </div>
         `
     },

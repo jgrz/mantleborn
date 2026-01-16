@@ -430,6 +430,15 @@ const SPRITE_RITE_DOCS = [
                 <li><strong>Detail</strong> - Low, medium, or high detail level</li>
             </ul>
 
+            <h3>Project Presets</h3>
+            <p>When you open either generation modal (Character or Map Object), the settings are pre-filled from your project's defaults configured in Crucible. This includes:</p>
+            <ul>
+                <li>Outline and shading style</li>
+                <li>Character size and directions (for character generation)</li>
+                <li>View perspective (for map objects)</li>
+            </ul>
+            <p>All settings remain editable—adjust them per-generation as needed for special cases.</p>
+
             <div class="tip">
                 <div class="tip-label">Tip</div>
                 Set project-wide style defaults in Crucible to maintain visual consistency across all generated assets.
