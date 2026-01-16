@@ -1213,7 +1213,7 @@
             <div class="dialog-title" id="dialogTitle">Confirm</div>
             <div class="dialog-message" id="dialogMessage">Are you sure?</div>
             <div class="dialog-actions">
-                <button class="btn btn-danger" id="dialogConfirm">Delete</button>
+                <button class="btn btn-danger" id="dialogConfirm">Remove</button>
                 <button class="btn" id="dialogCancel">Cancel</button>
             </div>
         </div>
@@ -2559,6 +2559,7 @@
                             <div class="sprite-name">${sprite.name}</div>
                             <div class="sprite-coords">(${sprite.x},${sprite.y}) ${sprite.width}×${sprite.height}</div>
                         </div>
+                        <button class="sprite-delete" data-index="${index}" data-name="${sprite.name}" title="Remove from master sheet">×</button>
                     </div>
                 `;
             }).join('');
@@ -2586,11 +2587,22 @@
                 }
             });
 
-            // Add click handlers - just for viewing/highlighting saved sprites
+            // Add click handlers
             elements.spriteList.querySelectorAll('.sprite-item').forEach(item => {
                 item.addEventListener('click', (e) => {
+                    if (e.target.classList.contains('sprite-delete')) return;
                     const index = parseInt(item.dataset.index);
                     selectSprite(index);
+                });
+            });
+
+            // Delete button handlers
+            elements.spriteList.querySelectorAll('.sprite-delete').forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    const index = parseInt(btn.dataset.index);
+                    const name = btn.dataset.name;
+                    confirmDeleteSprite(index, name);
                 });
             });
         }
@@ -2631,32 +2643,48 @@
         }
 
         let pendingDeleteIndex = -1;
+        let pendingDeleteName = '';
 
-        function confirmDeleteSprite(index) {
+        function confirmDeleteSprite(index, name) {
             pendingDeleteIndex = index;
+            pendingDeleteName = name;
             const sprite = state.sprites[index];
-            elements.dialogTitle.textContent = 'Delete Sprite?';
-            elements.dialogMessage.textContent = `Are you sure you want to delete "${sprite.name}"?`;
+            elements.dialogTitle.textContent = 'Remove from Master Sheet?';
+            elements.dialogMessage.textContent = `Remove "${sprite.name}" from the master sheet? This cannot be undone.`;
             elements.confirmDialog.classList.add('show');
         }
 
-        function deleteSprite() {
-            if (pendingDeleteIndex >= 0) {
-                state.sprites.splice(pendingDeleteIndex, 1);
-                if (state.selectedSpriteIndex === pendingDeleteIndex) {
-                    state.selectedSpriteIndex = -1;
-                    state.selection = null;
-                    hideCreatePanel();
-                } else if (state.selectedSpriteIndex > pendingDeleteIndex) {
-                    state.selectedSpriteIndex--;
-                }
-                pendingDeleteIndex = -1;
+        async function deleteSprite() {
+            if (pendingDeleteIndex >= 0 && pendingDeleteName) {
+                try {
+                    showToast('Removing from master sheet...');
 
-                updateSpriteList();
-                updateJsonPreview();
-                scheduleAutoSave();
-                render();
-                showToast('Sprite deleted');
+                    // Remove from master sheet
+                    await crucibleClient.removeFromMasterSheet(state.projectId, pendingDeleteName);
+
+                    // Remove from local state
+                    state.sprites.splice(pendingDeleteIndex, 1);
+                    state.masterSheetSprites = state.masterSheetSprites.filter(s => s.name !== pendingDeleteName);
+
+                    if (state.selectedSpriteIndex === pendingDeleteIndex) {
+                        state.selectedSpriteIndex = -1;
+                        state.selection = null;
+                        hideCreatePanel();
+                    } else if (state.selectedSpriteIndex > pendingDeleteIndex) {
+                        state.selectedSpriteIndex--;
+                    }
+
+                    updateSpriteList();
+                    updateMasterSheetPreview();
+                    render();
+                    showToast('Sprite removed from master sheet');
+                } catch (error) {
+                    console.error('Failed to delete sprite:', error);
+                    showToast('Failed to remove: ' + error.message, 'error');
+                }
+
+                pendingDeleteIndex = -1;
+                pendingDeleteName = '';
             }
             elements.confirmDialog.classList.remove('show');
         }
