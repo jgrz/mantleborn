@@ -92,22 +92,23 @@ const SPRITE_RITE_DOCS = [
             </div>
 
             <h2>Flip Horizontal</h2>
-            <p>Mirror your entire spritesheet horizontally. Essential for correcting sprite direction.</p>
+            <p>Mirror a selected sprite region horizontally. Essential for correcting sprite direction.</p>
 
             <h3>Why Flip?</h3>
-            <p>Game development convention: <strong>all sprites should face right</strong>. Games flip sprites at runtime to show left-facing movement. If your sprites face left, use this tool to correct them.</p>
+            <p>Game development convention: <strong>all sprites should face right</strong>. Games flip sprites at runtime to show left-facing movement. If a sprite faces left, use this tool to correct it before saving.</p>
 
             <h3>How It Works</h3>
             <ol>
+                <li>Select a sprite area (auto-detect or manual drag)</li>
                 <li>Click the <strong>Flip H</strong> button in the toolbar</li>
-                <li>The entire spritesheet is mirrored horizontally</li>
-                <li>If you have existing sprite definitions, you'll be asked to clear them (positions become invalid after flip)</li>
+                <li>The selected region is mirrored horizontally</li>
                 <li>The modified image is saved to the cloud automatically</li>
+                <li>Now save the correctly-facing sprite to the master sheet</li>
             </ol>
 
-            <div class="warning">
-                <div class="warning-label">Note</div>
-                Flipping invalidates any existing sprite definitions since their X positions are reversed. You'll need to redefine sprites after flipping.
+            <div class="tip">
+                <div class="tip-label">Tip</div>
+                The Flip H button is only active when you have a selection. Select your sprite first, then flip if needed.
             </div>
 
             <h2>Auto-Detect Sprites</h2>

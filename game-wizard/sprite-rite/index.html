@@ -1460,6 +1460,9 @@
                 elements.projectSelect.value = projectId;
                 await selectProject(projectId);
             }
+
+            // Set initial button states
+            updateToolButtonStates();
         }
 
         function updateAuthIndicator() {
@@ -2011,62 +2014,73 @@
         }
 
         function flipHorizontal() {
-            if (!state.image) return;
+            if (!state.image || !state.selection) {
+                showToast('Select a sprite area first', 'error');
+                return;
+            }
 
-            const tempCanvas = document.createElement('canvas');
-            tempCanvas.width = state.imageWidth;
-            tempCanvas.height = state.imageHeight;
-            const tempCtx = tempCanvas.getContext('2d');
+            const { x, y, w, h } = state.selection;
 
-            // Flip horizontally by scaling -1 on X axis
-            tempCtx.translate(state.imageWidth, 0);
-            tempCtx.scale(-1, 1);
-            tempCtx.drawImage(state.image, 0, 0);
+            // Create a canvas with just the selected region
+            const regionCanvas = document.createElement('canvas');
+            regionCanvas.width = w;
+            regionCanvas.height = h;
+            const regionCtx = regionCanvas.getContext('2d');
+            regionCtx.imageSmoothingEnabled = false;
 
-            // Create new image from flipped canvas
+            // Draw the selected region
+            regionCtx.drawImage(state.image, x, y, w, h, 0, 0, w, h);
+
+            // Create flipped canvas
+            const flippedCanvas = document.createElement('canvas');
+            flippedCanvas.width = w;
+            flippedCanvas.height = h;
+            const flippedCtx = flippedCanvas.getContext('2d');
+            flippedCtx.imageSmoothingEnabled = false;
+
+            // Flip horizontally
+            flippedCtx.translate(w, 0);
+            flippedCtx.scale(-1, 1);
+            flippedCtx.drawImage(regionCanvas, 0, 0);
+
+            // Draw the flipped region back onto the main image
+            const mainCanvas = document.createElement('canvas');
+            mainCanvas.width = state.imageWidth;
+            mainCanvas.height = state.imageHeight;
+            const mainCtx = mainCanvas.getContext('2d');
+            mainCtx.imageSmoothingEnabled = false;
+
+            // Draw original image
+            mainCtx.drawImage(state.image, 0, 0);
+
+            // Draw flipped selection over the original area
+            mainCtx.drawImage(flippedCanvas, x, y);
+
+            // Update the image
             const newImg = new Image();
             newImg.onload = async () => {
                 state.image = newImg;
                 state.imageData = null; // Clear cache
                 state.islandMap = null; // Clear island cache
 
-                // Clear existing sprite definitions since their positions are now invalid
-                if (state.sprites.length > 0) {
-                    const confirmClear = confirm(
-                        'Flipping the image will invalidate existing sprite positions. ' +
-                        'Clear all sprite definitions?\n\n' +
-                        'Click OK to clear sprites, or Cancel to keep them (you\'ll need to redefine them).'
-                    );
-                    if (confirmClear) {
-                        state.sprites = [];
-                        state.selection = null;
-                        state.selectedSpriteIndex = -1;
-                        hideCreatePanel();
-                        updateSpriteList();
-                    }
-                }
-
                 render();
+                updatePreviews();
 
                 // Save modified image to cloud if logged in
                 if (state.spritesheetId && state.user) {
                     try {
-                        showToast('Saving flipped image...');
-                        const blob = await new Promise(resolve => tempCanvas.toBlob(resolve, 'image/png'));
+                        const blob = await new Promise(resolve => mainCanvas.toBlob(resolve, 'image/png'));
                         await crucibleClient.updateSpritesheetImage(state.spritesheetId, blob);
-                        showToast('Image flipped and saved!');
-                        scheduleAutoSave(); // Save cleared sprites
+                        showToast('Selection flipped!');
                     } catch (error) {
                         console.error('Failed to save image:', error);
-                        showToast('Flipped image (save failed)', 'error');
+                        showToast('Flipped (save failed)', 'error');
                     }
                 } else {
-                    showToast('Image flipped horizontally.');
+                    showToast('Selection flipped.');
                 }
-
-                updateJsonPreview();
             };
-            newImg.src = tempCanvas.toDataURL('image/png');
+            newImg.src = mainCanvas.toDataURL('image/png');
         }
 
         function buildIslandMap() {
@@ -2163,6 +2177,13 @@
             };
         }
 
+        function updateToolButtonStates() {
+            // Flip H only available when there's a selection
+            const hasSelection = !!state.selection;
+            elements.flipHorizontalBtn.disabled = !hasSelection;
+            elements.flipHorizontalBtn.style.opacity = hasSelection ? '1' : '0.5';
+        }
+
         function setToolMode(mode) {
             // Toggle off if clicking same mode
             if (state.toolMode === mode) {
@@ -2192,8 +2213,11 @@
                     state.selectedSpriteIndex = -1;
                     state.editingSpriteIndex = -1;
                     updateSelectionInfo();
+                    updatePreviews();
                     renderSelection();
                     showCreatePanel();
+                    // Auto-focus sprite name for immediate typing
+                    setTimeout(() => elements.spriteName.focus(), 50);
                 } else {
                     showToast('No sprite detected. Click on a non-transparent pixel.', 'error');
                 }
@@ -2356,9 +2380,10 @@
                 } else {
                     updatePreviews();
                     updateJsonPreview();
-                    // Auto-suggest name for new selections
-                    if (wasNewSelection || !elements.spriteName.value) {
-                        elements.spriteName.value = generateSpriteName();
+                    // Auto-suggest name and focus for new selections
+                    if (wasNewSelection) {
+                        elements.spriteName.value = '';
+                        setTimeout(() => elements.spriteName.focus(), 50);
                     }
                 }
             }
@@ -2372,6 +2397,8 @@
             // Default to enabled save button for new sprites
             elements.saveSprite.textContent = 'Save Sprite';
             elements.saveSprite.disabled = false;
+            // Update tool button states
+            updateToolButtonStates();
         }
 
         function hideCreatePanel() {
@@ -2382,6 +2409,8 @@
             // Reset save button
             elements.saveSprite.textContent = 'Save Sprite';
             elements.saveSprite.disabled = false;
+            // Update tool button states
+            updateToolButtonStates();
         }
 
         function updatePreviews() {
