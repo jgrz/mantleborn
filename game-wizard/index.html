@@ -369,45 +369,39 @@
         }
 
         .cartridge--locked .cartridge-body {
-            filter: grayscale(0.5) brightness(0.6);
+            filter: grayscale(0.4) brightness(0.8);
         }
 
         .cart-locked-overlay {
             position: absolute;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background: rgba(13, 13, 20, 0.7);
+            bottom: 28px;
+            left: 8px;
+            right: 8px;
+            background: rgba(13, 13, 20, 0.95);
             display: flex;
-            flex-direction: column;
             align-items: center;
-            justify-content: center;
+            gap: 8px;
+            padding: 8px 10px;
             border-radius: 4px;
+            border: 1px solid var(--stone-dark);
             z-index: 10;
         }
 
         .cart-lock-icon {
-            font-size: 32px;
-            margin-bottom: 8px;
-            animation: lockPulse 2s ease-in-out infinite;
-        }
-
-        @keyframes lockPulse {
-            0%, 100% { opacity: 0.6; transform: scale(1); }
-            50% { opacity: 1; transform: scale(1.1); }
+            font-size: 16px;
+            opacity: 0.8;
         }
 
         .cart-locked-text {
-            font-family: 'Press Start 2P', cursive;
-            font-size: 7px;
-            color: var(--stone-mid);
-            text-align: center;
-            line-height: 1.6;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 9px;
+            color: var(--stone-light);
+            line-height: 1.4;
         }
 
         .cart-locked-text span {
             color: var(--accent-ember);
+            font-weight: 600;
         }
 
         /* Footer */
@@ -880,16 +874,16 @@
                 // Add locked class
                 cartridge.classList.add('cartridge--locked');
 
-                // Add lock overlay if not already present
-                const body = cartridge.querySelector('.cartridge-body');
-                if (body && !body.querySelector('.cart-locked-overlay')) {
+                // Add lock banner if not already present
+                const label = cartridge.querySelector('.cart-label');
+                if (label && !label.querySelector('.cart-locked-overlay')) {
                     const overlay = document.createElement('div');
                     overlay.className = 'cart-locked-overlay';
                     overlay.innerHTML = `
                         <div class="cart-lock-icon">&#128274;</div>
-                        <div class="cart-locked-text">Create a project in<br><span>CRUCIBLE</span> first</div>
+                        <div class="cart-locked-text">Create a project in <span>CRUCIBLE</span> first</div>
                     `;
-                    body.appendChild(overlay);
+                    label.appendChild(overlay);
                 }
             });
         }
