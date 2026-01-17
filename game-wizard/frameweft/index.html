@@ -752,6 +752,10 @@
                 <div class="method-desc" id="methodDesc">
                     High quality, good default for photographs and detailed art.
                 </div>
+                <div style="display: flex; gap: 8px; margin-top: 12px;">
+                    <button class="btn" id="applyResampleBtn" disabled style="flex: 1;">Apply</button>
+                    <button class="btn" id="undoResampleBtn" disabled style="flex: 1;">Undo</button>
+                </div>
             </div>
 
             <!-- Export As -->
@@ -781,7 +785,7 @@
 
             <!-- Preview -->
             <div class="preview-panel">
-                <div class="preview-title">Resampled Preview</div>
+                <div class="preview-title" id="previewTitle">Preview (Original)</div>
                 <div class="preview-canvas-wrapper">
                     <canvas id="previewCanvas" width="128" height="72"></canvas>
                 </div>
@@ -854,6 +858,8 @@
 
             // Resampling
             resampleMethod: 'lanczos',
+            resamplingApplied: false,
+            appliedResampleMethod: null,  // Track which method was applied
 
             // Export
             exportType: 'background',
@@ -894,6 +900,9 @@
             imageInfo: document.getElementById('imageInfo'),
             resampleMethod: document.getElementById('resampleMethod'),
             methodDesc: document.getElementById('methodDesc'),
+            applyResampleBtn: document.getElementById('applyResampleBtn'),
+            undoResampleBtn: document.getElementById('undoResampleBtn'),
+            previewTitle: document.getElementById('previewTitle'),
             exportBackground: document.getElementById('exportBackground'),
             exportTiles: document.getElementById('exportTiles'),
             exportSprite: document.getElementById('exportSprite'),
@@ -1110,8 +1119,13 @@
             elements.resampleMethod.addEventListener('change', (e) => {
                 state.resampleMethod = e.target.value;
                 elements.methodDesc.textContent = methodDescriptions[state.resampleMethod];
-                updatePreview();
+                // Don't auto-apply - just update the Apply button state
+                updateResampleButtons();
             });
+
+            // Apply/Undo resampling
+            elements.applyResampleBtn.addEventListener('click', applyResampling);
+            elements.undoResampleBtn.addEventListener('click', undoResampling);
 
             // Export type
             document.querySelectorAll('input[name="exportType"]').forEach(radio => {
@@ -1168,6 +1182,10 @@
                     state.imageScaleX = 1;
                     state.imageScaleY = 1;
 
+                    // Reset resampling state for new image
+                    state.resamplingApplied = false;
+                    state.appliedResampleMethod = null;
+
                     // Update UI
                     elements.dropZone.classList.add('hidden');
                     elements.imageInfo.classList.remove('hidden');
@@ -1182,6 +1200,7 @@
 
                     fitToImage();
                     updateSaveButton();
+                    updateResampleButtons();
                     updatePreview();
                 };
                 img.src = e.target.result;
@@ -1228,8 +1247,47 @@
         }
 
         function updateSaveButton() {
-            const canSave = state.sourceImage && state.assetName && state.projectId;
+            const canSave = state.sourceImage && state.assetName && state.projectId && state.resamplingApplied;
             elements.saveBtn.disabled = !canSave;
+        }
+
+        // ==========================================
+        // RESAMPLING APPLY/UNDO
+        // ==========================================
+        function updateResampleButtons() {
+            // Enable Apply if we have an image and haven't applied this method yet
+            const canApply = state.sourceImage && (!state.resamplingApplied || state.appliedResampleMethod !== state.resampleMethod);
+            elements.applyResampleBtn.disabled = !canApply;
+
+            // Enable Undo if resampling has been applied
+            elements.undoResampleBtn.disabled = !state.resamplingApplied;
+
+            // Update preview title
+            if (state.resamplingApplied) {
+                elements.previewTitle.textContent = `Preview (${state.appliedResampleMethod})`;
+            } else {
+                elements.previewTitle.textContent = 'Preview (Original)';
+            }
+        }
+
+        function applyResampling() {
+            if (!state.sourceImage) return;
+
+            state.resamplingApplied = true;
+            state.appliedResampleMethod = state.resampleMethod;
+            updateResampleButtons();
+            updatePreview();
+            updateSaveButton();
+            showToast(`Applied ${state.resampleMethod} resampling`);
+        }
+
+        function undoResampling() {
+            state.resamplingApplied = false;
+            state.appliedResampleMethod = null;
+            updateResampleButtons();
+            updatePreview();
+            updateSaveButton();
+            showToast('Resampling undone');
         }
 
         // ==========================================
@@ -1653,8 +1711,11 @@
             const imgH = state.sourceImage.height * state.imageScaleY;
             tempCtx.drawImage(state.sourceImage, state.imageX, state.imageY, imgW, imgH);
 
-            // Apply resampling
-            const resampled = applyResampling(tempCanvas, pixelW, pixelH);
+            // Only apply resampling if it's been explicitly applied
+            let resultCanvas = tempCanvas;
+            if (state.resamplingApplied) {
+                resultCanvas = resampleCanvas(tempCanvas, pixelW, pixelH, state.appliedResampleMethod);
+            }
 
             // Draw to preview canvas
             const previewCtx = elements.previewCanvas.getContext('2d');
@@ -1666,11 +1727,11 @@
             elements.previewCanvas.width = pw;
             elements.previewCanvas.height = ph;
             previewCtx.imageSmoothingEnabled = false;
-            previewCtx.drawImage(resampled, 0, 0, pw, ph);
+            previewCtx.drawImage(resultCanvas, 0, 0, pw, ph);
         }
 
-        function applyResampling(sourceCanvas, targetW, targetH) {
-            switch (state.resampleMethod) {
+        function resampleCanvas(sourceCanvas, targetW, targetH, method) {
+            switch (method) {
                 case 'lanczos':
                 case 'bicubic':
                     return canvasResample(sourceCanvas, targetW, targetH, 'high');
@@ -1807,7 +1868,7 @@
         // SAVE ASSET
         // ==========================================
         async function saveAsset() {
-            if (!state.sourceImage || !state.assetName || !state.projectId) return;
+            if (!state.sourceImage || !state.assetName || !state.projectId || !state.resamplingApplied) return;
 
             elements.saveBtn.disabled = true;
             elements.saveBtn.textContent = 'Saving...';
@@ -1826,7 +1887,7 @@
                 const imgH = state.sourceImage.height * state.imageScaleY;
                 tempCtx.drawImage(state.sourceImage, state.imageX, state.imageY, imgW, imgH);
 
-                const resampled = applyResampling(tempCanvas, pixelW, pixelH);
+                const resampled = resampleCanvas(tempCanvas, pixelW, pixelH, state.appliedResampleMethod);
                 const imageData = resampled.toDataURL('image/png');
 
                 switch (state.exportType) {

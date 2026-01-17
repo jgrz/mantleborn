@@ -1471,6 +1471,88 @@
             font-size: 9px;
             padding: 3px 6px;
         }
+
+        /* Background Library Modal */
+        .bg-library-modal {
+            max-width: 600px;
+            max-height: 80vh;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .bg-library-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+            gap: 12px;
+            padding: 16px;
+            overflow-y: auto;
+            flex: 1;
+            min-height: 200px;
+            max-height: 400px;
+            background: var(--bg-deep);
+            border-radius: 4px;
+        }
+
+        .bg-library-item {
+            aspect-ratio: 16/9;
+            background: var(--bg-surface);
+            border: 2px solid var(--stone-dark);
+            border-radius: 4px;
+            overflow: hidden;
+            cursor: pointer;
+            transition: all 0.15s;
+            position: relative;
+        }
+
+        .bg-library-item:hover {
+            border-color: var(--accent-ember);
+            transform: scale(1.02);
+        }
+
+        .bg-library-item.selected {
+            border-color: var(--accent-ember);
+            box-shadow: 0 0 12px rgba(224, 112, 32, 0.5);
+        }
+
+        .bg-library-item img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            image-rendering: pixelated;
+        }
+
+        .bg-library-item-name {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            padding: 4px 6px;
+            background: rgba(0, 0, 0, 0.8);
+            font-size: 9px;
+            color: var(--stone-light);
+            text-align: center;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .bg-library-empty {
+            grid-column: 1 / -1;
+            text-align: center;
+            padding: 40px 20px;
+            color: var(--stone-mid);
+            font-size: 12px;
+        }
+
+        .bg-library-empty a {
+            color: var(--accent-ember);
+            text-decoration: none;
+        }
+
+        .bg-library-empty a:hover {
+            text-decoration: underline;
+        }
     </style>
 </head>
 <body>
@@ -1551,6 +1633,7 @@
                                 <button class="btn btn-small">+ Add Layer</button>
                                 <input type="file" id="bgFileInput" accept="image/*">
                             </div>
+                            <button class="btn btn-small btn-ai" id="fromLibraryBtn">From Library</button>
                             <button class="btn btn-small" id="pixelifyBtn" disabled>Pixelify</button>
                         </div>
                         <div class="background-preview-wrapper">
@@ -1864,6 +1947,20 @@
         </div>
     </div>
 
+    <!-- Background Library Modal -->
+    <div class="modal-overlay" id="bgLibraryModal">
+        <div class="modal bg-library-modal">
+            <div class="modal-header">Background Library</div>
+            <div class="bg-library-grid" id="bgLibraryGrid">
+                <div class="bg-library-empty">Loading...</div>
+            </div>
+            <div class="modal-actions">
+                <button class="btn" id="cancelBgLibraryBtn">Cancel</button>
+                <button class="btn btn-primary" id="addFromLibraryBtn" disabled>Add to Level</button>
+            </div>
+        </div>
+    </div>
+
     <!-- Toast -->
     <div class="toast" id="toast"></div>
 
@@ -1940,6 +2037,11 @@
             bgDragStart: { x: 0, y: 0 },
             bgDragLayerStart: { x: 0, y: 0 },
 
+            // Background library state
+            bgLibrary: {},           // Atlas of saved backgrounds
+            bgLibrarySheet: null,    // Master background sheet image
+            selectedLibraryBg: null, // Selected background name in modal
+
             // Portal metadata (spawns, exits, returns)
             spawnMetadata: {},   // { "x,y": { name, direction, isPrimary } }
             exitMetadata: {},    // { "x,y": { name, direction, type } }
@@ -1996,9 +2098,16 @@
 
             // Background editor
             bgFileInput: document.getElementById('bgFileInput'),
+            fromLibraryBtn: document.getElementById('fromLibraryBtn'),
             pixelifyBtn: document.getElementById('pixelifyBtn'),
             backgroundCanvas: document.getElementById('backgroundCanvas'),
             backgroundLayers: document.getElementById('backgroundLayers'),
+
+            // Background library modal
+            bgLibraryModal: document.getElementById('bgLibraryModal'),
+            bgLibraryGrid: document.getElementById('bgLibraryGrid'),
+            cancelBgLibraryBtn: document.getElementById('cancelBgLibraryBtn'),
+            addFromLibraryBtn: document.getElementById('addFromLibraryBtn'),
             bgLayerControls: document.getElementById('bgLayerControls'),
             bgLayerName: document.getElementById('bgLayerName'),
             bgDepth: document.getElementById('bgDepth'),
@@ -3512,6 +3621,135 @@
             }
         });
 
+        // Background Library Modal Functions
+        function openBgLibraryModal() {
+            if (!state.currentProjectId) {
+                showToast('Please select a project first');
+                return;
+            }
+
+            state.selectedLibraryBg = null;
+            elements.addFromLibraryBtn.disabled = true;
+            renderBgLibraryGrid();
+            elements.bgLibraryModal.classList.add('active');
+        }
+
+        function closeBgLibraryModal() {
+            elements.bgLibraryModal.classList.remove('active');
+            state.selectedLibraryBg = null;
+        }
+
+        function renderBgLibraryGrid() {
+            const bgNames = Object.keys(state.bgLibrary);
+
+            if (bgNames.length === 0) {
+                elements.bgLibraryGrid.innerHTML = `
+                    <div class="bg-library-empty">
+                        No backgrounds in library.<br><br>
+                        Create backgrounds in <a href="../frameweft/" target="_blank">Frameweft</a>
+                    </div>
+                `;
+                return;
+            }
+
+            elements.bgLibraryGrid.innerHTML = bgNames.map(name => {
+                const bg = state.bgLibrary[name];
+                return `
+                    <div class="bg-library-item ${state.selectedLibraryBg === name ? 'selected' : ''}" data-name="${name}">
+                        <canvas width="140" height="79" data-bg="${name}"></canvas>
+                        <div class="bg-library-item-name">${name}</div>
+                    </div>
+                `;
+            }).join('');
+
+            // Draw thumbnails from sheet
+            if (state.bgLibrarySheet) {
+                elements.bgLibraryGrid.querySelectorAll('canvas[data-bg]').forEach(canvas => {
+                    const name = canvas.dataset.bg;
+                    const bg = state.bgLibrary[name];
+                    if (!bg) return;
+
+                    const ctx = canvas.getContext('2d');
+                    ctx.imageSmoothingEnabled = false;
+
+                    // Calculate thumbnail scale to fit
+                    const scale = Math.min(140 / bg.w, 79 / bg.h);
+                    const drawW = bg.w * scale;
+                    const drawH = bg.h * scale;
+                    const drawX = (140 - drawW) / 2;
+                    const drawY = (79 - drawH) / 2;
+
+                    ctx.drawImage(
+                        state.bgLibrarySheet,
+                        bg.x, bg.y, bg.w, bg.h,
+                        drawX, drawY, drawW, drawH
+                    );
+                });
+            }
+
+            // Add click handlers
+            elements.bgLibraryGrid.querySelectorAll('.bg-library-item').forEach(item => {
+                item.addEventListener('click', () => {
+                    state.selectedLibraryBg = item.dataset.name;
+                    elements.bgLibraryGrid.querySelectorAll('.bg-library-item').forEach(i => {
+                        i.classList.toggle('selected', i.dataset.name === state.selectedLibraryBg);
+                    });
+                    elements.addFromLibraryBtn.disabled = false;
+                });
+            });
+        }
+
+        function addBgFromLibrary() {
+            if (!state.selectedLibraryBg || !state.bgLibrarySheet) return;
+
+            const bg = state.bgLibrary[state.selectedLibraryBg];
+            if (!bg) return;
+
+            // Extract the background image from the sheet
+            const tempCanvas = document.createElement('canvas');
+            tempCanvas.width = bg.w;
+            tempCanvas.height = bg.h;
+            const ctx = tempCanvas.getContext('2d');
+            ctx.imageSmoothingEnabled = false;
+            ctx.drawImage(
+                state.bgLibrarySheet,
+                bg.x, bg.y, bg.w, bg.h,
+                0, 0, bg.w, bg.h
+            );
+
+            // Create Image from canvas
+            const img = new Image();
+            img.onload = () => {
+                const layer = {
+                    name: state.selectedLibraryBg,
+                    image: img,
+                    imageSrc: tempCanvas.toDataURL('image/png'),
+                    depth: state.backgrounds.length,
+                    scrollRate: 1,
+                    offsetX: 0,
+                    offsetY: 0,
+                    scale: 1,
+                    visible: true,
+                    originalImageData: null
+                };
+                state.backgrounds.push(layer);
+                state.selectedBgLayer = state.backgrounds.length - 1;
+                elements.pixelifyBtn.disabled = false;
+                renderBackgroundLayers();
+                renderBackgroundPreview();
+                updateBgLayerControls();
+                updateJsonOutput();
+                closeBgLibraryModal();
+                showToast(`Added "${state.selectedLibraryBg}" from library`);
+            };
+            img.src = tempCanvas.toDataURL('image/png');
+        }
+
+        // Background Library event listeners
+        elements.fromLibraryBtn.addEventListener('click', openBgLibraryModal);
+        elements.cancelBgLibraryBtn.addEventListener('click', closeBgLibraryModal);
+        elements.addFromLibraryBtn.addEventListener('click', addBgFromLibrary);
+
         elements.bgLayerName.addEventListener('input', (e) => updateSelectedBgLayer('name', e.target.value));
         elements.bgDepth.addEventListener('input', (e) => updateSelectedBgLayer('depth', parseInt(e.target.value) || 0));
         elements.bgScrollRate.addEventListener('input', (e) => updateSelectedBgLayer('scrollRate', parseFloat(e.target.value) || 1));
@@ -4005,7 +4243,17 @@
                     promises.push(Promise.resolve({ png: null, atlas: { sprites: {} } }));
                 }
 
-                const [groups, masterTileSheet, masterSpriteSheet, legacyMasterSheet] = await Promise.all(promises);
+                // Load master background sheet
+                if (crucibleClient.getMasterBackgroundSheet) {
+                    promises.push(crucibleClient.getMasterBackgroundSheet(projectId).catch(e => {
+                        console.warn('Could not load master background sheet:', e.message);
+                        return { png: null, atlas: { backgrounds: {} } };
+                    }));
+                } else {
+                    promises.push(Promise.resolve({ png: null, atlas: { backgrounds: {} } }));
+                }
+
+                const [groups, masterTileSheet, masterSpriteSheet, legacyMasterSheet, masterBgSheet] = await Promise.all(promises);
 
                 state.tileGroups = groups || [];
                 state.currentProjectId = projectId;
@@ -4046,6 +4294,21 @@
                 state.masterSheetAtlas = state.masterTileSheetAtlas || state.masterSpriteSheetAtlas;
                 state.masterSheetImage = state.masterTileSheetImage || state.masterSpriteSheetImage;
 
+                // Load master background sheet
+                if (masterBgSheet.png && masterBgSheet.atlas && Object.keys(masterBgSheet.atlas.backgrounds || {}).length > 0) {
+                    state.bgLibrary = masterBgSheet.atlas.backgrounds;
+                    const bgImg = new Image();
+                    await new Promise((resolve, reject) => {
+                        bgImg.onload = resolve;
+                        bgImg.onerror = reject;
+                        bgImg.src = masterBgSheet.png;
+                    });
+                    state.bgLibrarySheet = bgImg;
+                } else {
+                    state.bgLibrary = {};
+                    state.bgLibrarySheet = null;
+                }
+
                 populateSpriteSheetSelect();
 
                 // Auto-select master tiles if available
@@ -4069,6 +4332,8 @@
                 state.masterSpriteSheetAtlas = null;
                 state.masterSpriteSheetImage = null;
                 state.tileGroups = [];
+                state.bgLibrary = {};
+                state.bgLibrarySheet = null;
             }
         }
 
