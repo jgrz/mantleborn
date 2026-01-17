@@ -828,7 +828,8 @@
             // Image transform (in workspace coordinates)
             imageX: 0,
             imageY: 0,
-            imageScale: 1,
+            imageScaleX: 1,
+            imageScaleY: 1,
 
             // Frame settings
             frameType: 'background',
@@ -848,7 +849,8 @@
             dragStartY: 0,
             dragStartImageX: 0,
             dragStartImageY: 0,
-            dragStartImageScale: 0,
+            dragStartImageScaleX: 1,
+            dragStartImageScaleY: 1,
 
             // Resampling
             resampleMethod: 'lanczos',
@@ -1163,7 +1165,8 @@
                     // Position image at origin, scale 1
                     state.imageX = 0;
                     state.imageY = 0;
-                    state.imageScale = 1;
+                    state.imageScaleX = 1;
+                    state.imageScaleY = 1;
 
                     // Update UI
                     elements.dropZone.classList.add('hidden');
@@ -1261,8 +1264,8 @@
             if (state.sourceImage) {
                 ctx.save();
                 ctx.imageSmoothingEnabled = false;
-                const imgW = state.sourceImage.width * state.imageScale;
-                const imgH = state.sourceImage.height * state.imageScale;
+                const imgW = state.sourceImage.width * state.imageScaleX;
+                const imgH = state.sourceImage.height * state.imageScaleY;
                 ctx.drawImage(state.sourceImage, state.imageX, state.imageY, imgW, imgH);
 
                 // Draw resize handles
@@ -1301,17 +1304,32 @@
             ctx.strokeStyle = '#000';
             ctx.lineWidth = 1 / state.zoom;
 
-            // Corners
-            const handles = [
+            // Corner handles (squares)
+            const corners = [
                 { x: x - hs/2, y: y - hs/2 },                   // TL
                 { x: x + w - hs/2, y: y - hs/2 },               // TR
                 { x: x - hs/2, y: y + h - hs/2 },               // BL
                 { x: x + w - hs/2, y: y + h - hs/2 },           // BR
             ];
 
-            handles.forEach(h => {
+            corners.forEach(h => {
                 ctx.fillRect(h.x, h.y, hs, hs);
                 ctx.strokeRect(h.x, h.y, hs, hs);
+            });
+
+            // Edge handles (smaller rectangles)
+            const edgeW = hs * 1.5;
+            const edgeH = hs * 0.7;
+            const edges = [
+                { x: x + w/2 - edgeW/2, y: y - edgeH/2, w: edgeW, h: edgeH },           // Top
+                { x: x + w/2 - edgeW/2, y: y + h - edgeH/2, w: edgeW, h: edgeH },       // Bottom
+                { x: x - edgeH/2, y: y + h/2 - edgeW/2, w: edgeH, h: edgeW },           // Left
+                { x: x + w - edgeH/2, y: y + h/2 - edgeW/2, w: edgeH, h: edgeW },       // Right
+            ];
+
+            edges.forEach(e => {
+                ctx.fillRect(e.x, e.y, e.w, e.h);
+                ctx.strokeRect(e.x, e.y, e.w, e.h);
             });
         }
 
@@ -1328,8 +1346,8 @@
             if (!state.sourceImage) return;
 
             const canvas = elements.workspaceCanvas;
-            const imgW = state.sourceImage.width * state.imageScale;
-            const imgH = state.sourceImage.height * state.imageScale;
+            const imgW = state.sourceImage.width * state.imageScaleX;
+            const imgH = state.sourceImage.height * state.imageScaleY;
             const padding = 50;
 
             const scaleX = (canvas.width - padding) / imgW;
@@ -1363,7 +1381,8 @@
             if (!state.sourceImage) return;
             state.imageX = 0;
             state.imageY = 0;
-            state.imageScale = 1;
+            state.imageScaleX = 1;
+            state.imageScaleY = 1;
             fitToImage();
             updatePreview();
         }
@@ -1383,37 +1402,55 @@
         function getResizeHandle(wx, wy) {
             if (!state.sourceImage) return null;
 
-            const imgW = state.sourceImage.width * state.imageScale;
-            const imgH = state.sourceImage.height * state.imageScale;
+            const imgW = state.sourceImage.width * state.imageScaleX;
+            const imgH = state.sourceImage.height * state.imageScaleY;
             const hs = HANDLE_SIZE / state.zoom;
 
-            const handles = [
+            // Check corners first (higher priority)
+            const corners = [
                 { id: 'tl', x: state.imageX, y: state.imageY },
                 { id: 'tr', x: state.imageX + imgW, y: state.imageY },
                 { id: 'bl', x: state.imageX, y: state.imageY + imgH },
                 { id: 'br', x: state.imageX + imgW, y: state.imageY + imgH },
             ];
 
-            for (const h of handles) {
+            for (const h of corners) {
                 if (Math.abs(wx - h.x) < hs && Math.abs(wy - h.y) < hs) {
                     return h.id;
                 }
             }
+
+            // Check edges
+            const edgeW = hs * 1.5;
+            const edgeH = hs * 0.7;
+            const edges = [
+                { id: 't', x: state.imageX + imgW/2, y: state.imageY, tolX: edgeW, tolY: edgeH },
+                { id: 'b', x: state.imageX + imgW/2, y: state.imageY + imgH, tolX: edgeW, tolY: edgeH },
+                { id: 'l', x: state.imageX, y: state.imageY + imgH/2, tolX: edgeH, tolY: edgeW },
+                { id: 'r', x: state.imageX + imgW, y: state.imageY + imgH/2, tolX: edgeH, tolY: edgeW },
+            ];
+
+            for (const e of edges) {
+                if (Math.abs(wx - e.x) < e.tolX && Math.abs(wy - e.y) < e.tolY) {
+                    return e.id;
+                }
+            }
+
             return null;
         }
 
         function isInsideImage(wx, wy) {
             if (!state.sourceImage) return false;
-            const imgW = state.sourceImage.width * state.imageScale;
-            const imgH = state.sourceImage.height * state.imageScale;
+            const imgW = state.sourceImage.width * state.imageScaleX;
+            const imgH = state.sourceImage.height * state.imageScaleY;
             return wx >= state.imageX && wx <= state.imageX + imgW &&
                    wy >= state.imageY && wy <= state.imageY + imgH;
         }
 
         function updateCursor() {
             const canvas = elements.workspaceCanvas;
-            if (state.isResizing) {
-                canvas.style.cursor = 'nwse-resize';
+            if (state.isResizing && state.resizeHandle) {
+                canvas.style.cursor = getCursorForHandle(state.resizeHandle);
             } else if (state.isDragging) {
                 canvas.style.cursor = 'grabbing';
             } else {
@@ -1436,7 +1473,8 @@
                 state.dragStartY = sy;
                 state.dragStartImageX = state.imageX;
                 state.dragStartImageY = state.imageY;
-                state.dragStartImageScale = state.imageScale;
+                state.dragStartImageScaleX = state.imageScaleX;
+                state.dragStartImageScaleY = state.imageScaleY;
                 return;
             }
 
@@ -1460,37 +1498,79 @@
                 const dx = (sx - state.dragStartX) / state.zoom;
                 const dy = (sy - state.dragStartY) / state.zoom;
 
-                // Calculate new scale based on diagonal drag
-                const origW = state.sourceImage.width * state.dragStartImageScale;
-                const origH = state.sourceImage.height * state.dragStartImageScale;
+                const origW = state.sourceImage.width * state.dragStartImageScaleX;
+                const origH = state.sourceImage.height * state.dragStartImageScaleY;
 
-                let newScale = state.dragStartImageScale;
+                let newScaleX = state.dragStartImageScaleX;
+                let newScaleY = state.dragStartImageScaleY;
                 let newX = state.dragStartImageX;
                 let newY = state.dragStartImageY;
 
-                if (state.resizeHandle === 'br') {
-                    // Bottom-right: just scale from top-left
+                const handle = state.resizeHandle;
+
+                // Corner handles - preserve aspect ratio
+                if (handle === 'br' || handle === 'tl' || handle === 'tr' || handle === 'bl') {
+                    // Use diagonal movement to determine scale change
+                    const diagDelta = (dx + dy) / 2;
+                    const aspectRatio = origW / origH;
+
+                    if (handle === 'br') {
+                        // Bottom-right: scale from top-left (anchor)
+                        const newW = origW + diagDelta;
+                        newScaleX = newW / state.sourceImage.width;
+                        newScaleY = newScaleX; // maintain aspect ratio
+                    } else if (handle === 'tl') {
+                        // Top-left: scale and move, anchor at bottom-right
+                        const newW = origW - diagDelta;
+                        newScaleX = newW / state.sourceImage.width;
+                        newScaleY = newScaleX;
+                        const scaleDiff = newScaleX - state.dragStartImageScaleX;
+                        newX = state.dragStartImageX - scaleDiff * state.sourceImage.width;
+                        newY = state.dragStartImageY - scaleDiff * state.sourceImage.height;
+                    } else if (handle === 'tr') {
+                        // Top-right: anchor at bottom-left
+                        const diagDeltaTR = (dx - dy) / 2;
+                        const newW = origW + diagDeltaTR;
+                        newScaleX = newW / state.sourceImage.width;
+                        newScaleY = newScaleX;
+                        const scaleDiff = newScaleX - state.dragStartImageScaleX;
+                        newY = state.dragStartImageY - scaleDiff * state.sourceImage.height;
+                    } else if (handle === 'bl') {
+                        // Bottom-left: anchor at top-right
+                        const diagDeltaBL = (-dx + dy) / 2;
+                        const newW = origW + diagDeltaBL;
+                        newScaleX = newW / state.sourceImage.width;
+                        newScaleY = newScaleX;
+                        const scaleDiff = newScaleX - state.dragStartImageScaleX;
+                        newX = state.dragStartImageX - scaleDiff * state.sourceImage.width;
+                    }
+                }
+                // Edge handles - stretch one dimension only
+                else if (handle === 'r') {
+                    // Right edge: stretch width, anchor left
                     const newW = origW + dx;
-                    newScale = newW / state.sourceImage.width;
-                } else if (state.resizeHandle === 'tl') {
-                    // Top-left: scale and move
+                    newScaleX = newW / state.sourceImage.width;
+                } else if (handle === 'l') {
+                    // Left edge: stretch width, anchor right
                     const newW = origW - dx;
-                    newScale = newW / state.sourceImage.width;
+                    newScaleX = newW / state.sourceImage.width;
                     newX = state.dragStartImageX + dx;
-                    newY = state.dragStartImageY + dy * (state.sourceImage.height / state.sourceImage.width);
-                } else if (state.resizeHandle === 'tr') {
-                    const newW = origW + dx;
-                    newScale = newW / state.sourceImage.width;
-                    newY = state.dragStartImageY - (newScale - state.dragStartImageScale) * state.sourceImage.height;
-                } else if (state.resizeHandle === 'bl') {
-                    const newW = origW - dx;
-                    newScale = newW / state.sourceImage.width;
-                    newX = state.dragStartImageX + dx;
+                } else if (handle === 'b') {
+                    // Bottom edge: stretch height, anchor top
+                    const newH = origH + dy;
+                    newScaleY = newH / state.sourceImage.height;
+                } else if (handle === 't') {
+                    // Top edge: stretch height, anchor bottom
+                    const newH = origH - dy;
+                    newScaleY = newH / state.sourceImage.height;
+                    newY = state.dragStartImageY + dy;
                 }
 
-                // Clamp scale
-                newScale = Math.max(0.01, Math.min(10, newScale));
-                state.imageScale = newScale;
+                // Clamp scales
+                newScaleX = Math.max(0.01, Math.min(10, newScaleX));
+                newScaleY = Math.max(0.01, Math.min(10, newScaleY));
+                state.imageScaleX = newScaleX;
+                state.imageScaleY = newScaleY;
                 state.imageX = newX;
                 state.imageY = newY;
 
@@ -1513,11 +1593,30 @@
             const { x: wx, y: wy } = screenToWorld(sx, sy);
             const handle = getResizeHandle(wx, wy);
             if (handle) {
-                elements.workspaceCanvas.style.cursor = 'nwse-resize';
+                elements.workspaceCanvas.style.cursor = getCursorForHandle(handle);
             } else if (isInsideImage(wx, wy)) {
                 elements.workspaceCanvas.style.cursor = 'grab';
             } else {
                 elements.workspaceCanvas.style.cursor = 'default';
+            }
+        }
+
+        function getCursorForHandle(handle) {
+            switch (handle) {
+                case 'tl':
+                case 'br':
+                    return 'nwse-resize';
+                case 'tr':
+                case 'bl':
+                    return 'nesw-resize';
+                case 't':
+                case 'b':
+                    return 'ns-resize';
+                case 'l':
+                case 'r':
+                    return 'ew-resize';
+                default:
+                    return 'default';
             }
         }
 
@@ -1550,8 +1649,8 @@
             tempCtx.imageSmoothingEnabled = false;
 
             // Draw the portion of the image that's inside the frame
-            const imgW = state.sourceImage.width * state.imageScale;
-            const imgH = state.sourceImage.height * state.imageScale;
+            const imgW = state.sourceImage.width * state.imageScaleX;
+            const imgH = state.sourceImage.height * state.imageScaleY;
             tempCtx.drawImage(state.sourceImage, state.imageX, state.imageY, imgW, imgH);
 
             // Apply resampling
@@ -1723,8 +1822,8 @@
                 const tempCtx = tempCanvas.getContext('2d');
                 tempCtx.imageSmoothingEnabled = false;
 
-                const imgW = state.sourceImage.width * state.imageScale;
-                const imgH = state.sourceImage.height * state.imageScale;
+                const imgW = state.sourceImage.width * state.imageScaleX;
+                const imgH = state.sourceImage.height * state.imageScaleY;
                 tempCtx.drawImage(state.sourceImage, state.imageX, state.imageY, imgW, imgH);
 
                 const resampled = applyResampling(tempCanvas, pixelW, pixelH);
