@@ -3314,8 +3314,8 @@
                 try {
                     showToast('Removing from master sheet...');
 
-                    // Remove from master sheet
-                    await crucibleClient.removeFromMasterSheet(state.projectId, pendingDeleteName);
+                    // Remove from master sprite sheet
+                    await crucibleClient.removeFromMasterSpriteSheet(state.projectId, pendingDeleteName);
 
                     // Remove from local state
                     state.sprites.splice(pendingDeleteIndex, 1);
