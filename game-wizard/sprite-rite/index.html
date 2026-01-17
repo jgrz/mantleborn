@@ -457,11 +457,33 @@
 
         /* Create Sprite Panel */
         .create-sprite-panel {
-            display: none;
+            display: block;
         }
 
-        .create-sprite-panel.active {
-            display: block;
+        .create-panel-placeholder {
+            padding: 24px 16px;
+            text-align: center;
+            color: var(--stone-mid);
+        }
+
+        .placeholder-icon {
+            font-size: 32px;
+            margin-bottom: 12px;
+            opacity: 0.5;
+        }
+
+        .placeholder-text {
+            font-size: 11px;
+            line-height: 1.6;
+        }
+
+        .placeholder-text kbd {
+            background: var(--bg-surface);
+            border: 1px solid var(--stone-dark);
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-family: inherit;
+            color: var(--accent-ember);
         }
 
         .form-group {
@@ -1566,7 +1588,13 @@
                     <span>Create Sprite <span class="speed-mode-indicator" id="speedModeIndicator">SPEED</span></span>
                     <button class="settings-btn" id="speedSettingsBtn" title="Speed Mode Settings">&#9881;</button>
                 </div>
-                <div class="sidebar-content">
+                <!-- Placeholder when no sprite selected -->
+                <div class="create-panel-placeholder" id="createPanelPlaceholder">
+                    <div class="placeholder-icon">&#9634;</div>
+                    <div class="placeholder-text">Draw a selection or use<br><kbd>A</kbd> + click to auto-detect</div>
+                </div>
+                <!-- Form content when sprite is selected -->
+                <div class="sidebar-content" id="createPanelContent" style="display: none;">
                     <div class="form-group">
                         <label class="form-label">Sprite Name *</label>
                         <input type="text" class="form-input" id="spriteName" placeholder="hero_idle_01">
@@ -1991,6 +2019,8 @@
 
             // Create panel
             createPanel: document.getElementById('createPanel'),
+            createPanelPlaceholder: document.getElementById('createPanelPlaceholder'),
+            createPanelContent: document.getElementById('createPanelContent'),
             spriteName: document.getElementById('spriteName'),
             spriteDesc: document.getElementById('spriteDesc'),
             preview1x: document.getElementById('preview1x'),
@@ -3262,6 +3292,9 @@
         // Create Sprite Panel
         // ==========================================
         function showCreatePanel() {
+            // Show form content, hide placeholder
+            elements.createPanelPlaceholder.style.display = 'none';
+            elements.createPanelContent.style.display = 'block';
             elements.createPanel.classList.add('active');
             // Default to enabled save button for new sprites
             elements.saveSprite.style.display = 'inline-block';
@@ -3273,6 +3306,9 @@
         }
 
         function hideCreatePanel() {
+            // Show placeholder, hide form content
+            elements.createPanelPlaceholder.style.display = 'block';
+            elements.createPanelContent.style.display = 'none';
             elements.createPanel.classList.remove('active');
             elements.spriteName.value = '';
             elements.spriteDesc.value = '';
