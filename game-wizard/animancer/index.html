@@ -783,6 +783,43 @@
             background: #ff4444;
         }
 
+        /* Broken animation state */
+        .animation-card.broken {
+            border-color: var(--accent-magma);
+            background: rgba(255, 68, 68, 0.1);
+        }
+
+        .animation-card.broken:hover {
+            border-color: #ff4444;
+            background: rgba(255, 68, 68, 0.15);
+        }
+
+        .animation-card-warning {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            font-size: 9px;
+            color: var(--accent-magma);
+            margin-top: 6px;
+            padding-top: 6px;
+            border-top: 1px solid rgba(255, 68, 68, 0.3);
+        }
+
+        .animation-card-warning-icon {
+            font-size: 12px;
+        }
+
+        .animation-card-actions {
+            display: flex;
+            gap: 4px;
+            margin-top: 6px;
+        }
+
+        .animation-card-actions .btn {
+            font-size: 9px;
+            padding: 3px 6px;
+        }
+
         /* Legacy list style hidden */
         .animation-list-section {
             display: none;
@@ -1659,6 +1696,22 @@
         // Track hover animation intervals
         const hoverAnimations = new Map();
 
+        function validateAnimationSprites(anim) {
+            // Check if all sprites referenced in animation exist
+            const missingSprites = [];
+            const spriteNames = new Set(state.sprites.map(s => s.name));
+
+            for (const frame of (anim.frames || [])) {
+                const spriteName = frame.spriteName;
+                if (spriteName && !spriteNames.has(spriteName)) {
+                    if (!missingSprites.includes(spriteName)) {
+                        missingSprites.push(spriteName);
+                    }
+                }
+            }
+            return missingSprites;
+        }
+
         function renderAnimationLibrary() {
             const animKeys = Object.keys(state.animations);
 
@@ -1681,10 +1734,17 @@
                 const fps = anim.fps || 12;
                 const totalDuration = frameCount > 0 ? (anim.frames.reduce((sum, f) => sum + (f.duration || 1000/fps), 0) / 1000).toFixed(1) : '0.0';
 
+                // Validate sprites
+                const missingSprites = validateAnimationSprites(anim);
+                const isBroken = missingSprites.length > 0;
+
                 const card = document.createElement('div');
                 card.className = 'animation-card';
                 if (state.currentAnimationKey === key) {
                     card.classList.add('active');
+                }
+                if (isBroken) {
+                    card.classList.add('broken');
                 }
 
                 // Create preview container
@@ -1698,8 +1758,17 @@
                 const ctx = canvas.getContext('2d');
                 ctx.imageSmoothingEnabled = false;
 
-                // Draw first frame as static preview
-                drawAnimationFrame(ctx, anim, 0);
+                if (isBroken) {
+                    // Draw warning icon for broken animations
+                    ctx.fillStyle = '#ff4444';
+                    ctx.font = '24px sans-serif';
+                    ctx.textAlign = 'center';
+                    ctx.textBaseline = 'middle';
+                    ctx.fillText('⚠', 32, 32);
+                } else {
+                    // Draw first frame as static preview
+                    drawAnimationFrame(ctx, anim, 0);
+                }
 
                 preview.appendChild(canvas);
 
@@ -1729,30 +1798,65 @@
                 card.appendChild(metaEl);
                 card.appendChild(deleteBtn);
 
-                // Hover animation playback
-                let hoverFrame = 0;
-                card.addEventListener('mouseenter', () => {
-                    if (frameCount <= 1) return;
-                    hoverFrame = 0;
-                    const interval = setInterval(() => {
-                        hoverFrame = (hoverFrame + 1) % frameCount;
-                        drawAnimationFrame(ctx, anim, hoverFrame);
-                    }, 1000 / fps);
-                    hoverAnimations.set(key, interval);
-                });
+                // Warning and actions for broken animations
+                if (isBroken) {
+                    const warningEl = document.createElement('div');
+                    warningEl.className = 'animation-card-warning';
+                    warningEl.innerHTML = `<span class="animation-card-warning-icon">⚠</span> ${missingSprites.length} missing sprite${missingSprites.length > 1 ? 's' : ''}`;
+                    card.appendChild(warningEl);
 
-                card.addEventListener('mouseleave', () => {
-                    const interval = hoverAnimations.get(key);
-                    if (interval) {
-                        clearInterval(interval);
-                        hoverAnimations.delete(key);
-                    }
-                    // Reset to first frame
-                    drawAnimationFrame(ctx, anim, 0);
-                });
+                    const actionsEl = document.createElement('div');
+                    actionsEl.className = 'animation-card-actions';
 
-                // Click to load
-                card.addEventListener('click', () => loadAnimation(key));
+                    const copyBtn = document.createElement('button');
+                    copyBtn.className = 'btn btn-small';
+                    copyBtn.textContent = 'Copy Names';
+                    copyBtn.title = 'Copy missing sprite names to clipboard';
+                    copyBtn.addEventListener('click', (e) => {
+                        e.stopPropagation();
+                        navigator.clipboard.writeText(missingSprites.join('\n'));
+                        showToast(`Copied ${missingSprites.length} sprite name(s) to clipboard`);
+                    });
+
+                    const deleteAnimBtn = document.createElement('button');
+                    deleteAnimBtn.className = 'btn btn-small btn-danger';
+                    deleteAnimBtn.textContent = 'Delete';
+                    deleteAnimBtn.addEventListener('click', async (e) => {
+                        e.stopPropagation();
+                        await deleteAnimation(key);
+                    });
+
+                    actionsEl.appendChild(copyBtn);
+                    actionsEl.appendChild(deleteAnimBtn);
+                    card.appendChild(actionsEl);
+                } else {
+                    // Hover animation playback (only for valid animations)
+                    let hoverFrame = 0;
+                    card.addEventListener('mouseenter', () => {
+                        if (frameCount <= 1) return;
+                        hoverFrame = 0;
+                        const interval = setInterval(() => {
+                            hoverFrame = (hoverFrame + 1) % frameCount;
+                            drawAnimationFrame(ctx, anim, hoverFrame);
+                        }, 1000 / fps);
+                        hoverAnimations.set(key, interval);
+                    });
+
+                    card.addEventListener('mouseleave', () => {
+                        const interval = hoverAnimations.get(key);
+                        if (interval) {
+                            clearInterval(interval);
+                            hoverAnimations.delete(key);
+                        }
+                        // Reset to first frame
+                        drawAnimationFrame(ctx, anim, 0);
+                    });
+                }
+
+                // Click to load (only for valid animations)
+                if (!isBroken) {
+                    card.addEventListener('click', () => loadAnimation(key));
+                }
 
                 elements.animationLibrary.appendChild(card);
             });
