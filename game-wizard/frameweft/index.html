@@ -159,37 +159,93 @@
             flex-direction: column;
             padding: 20px;
             overflow: hidden;
+            background: var(--bg-deep);
         }
 
+        /* Toolbar */
+        .toolbar {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 12px;
+            padding: 8px 12px;
+            background: var(--bg-mid);
+            border-radius: 4px;
+        }
+
+        .toolbar-group {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+        .toolbar-divider {
+            width: 1px;
+            height: 24px;
+            background: var(--stone-dark);
+            margin: 0 8px;
+        }
+
+        .toolbar-btn {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 11px;
+            padding: 6px 10px;
+            background: var(--bg-surface);
+            border: 1px solid var(--stone-dark);
+            border-radius: 4px;
+            color: var(--stone-light);
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .toolbar-btn:hover {
+            background: var(--stone-dark);
+            border-color: var(--stone-mid);
+        }
+
+        .toolbar-btn.active {
+            background: var(--accent);
+            border-color: var(--accent);
+            color: white;
+        }
+
+        .toolbar-label {
+            font-size: 10px;
+            color: var(--stone-mid);
+            margin-right: 4px;
+        }
+
+        .zoom-display {
+            font-size: 11px;
+            color: var(--stone-light);
+            min-width: 50px;
+            text-align: center;
+        }
+
+        /* Canvas Area */
         .canvas-area {
             flex: 1;
             display: flex;
-            flex-direction: column;
             align-items: center;
             justify-content: center;
             min-height: 0;
+            overflow: hidden;
+            position: relative;
         }
 
-        .canvas-wrapper {
+        .workspace {
             position: relative;
             background: repeating-conic-gradient(
-                var(--bg-surface) 0% 25%,
-                var(--bg-mid) 0% 50%
-            ) 50% / 16px 16px;
-            border: 2px solid var(--stone-dark);
+                #1a1a2e 0% 25%,
+                #151525 0% 50%
+            ) 50% / 20px 20px;
+            border: 1px solid var(--stone-dark);
             border-radius: 4px;
             overflow: hidden;
-            cursor: move;
         }
 
-        .canvas-wrapper.empty {
-            cursor: default;
-        }
-
-        #previewCanvas {
+        #workspaceCanvas {
             display: block;
-            image-rendering: pixelated;
-            image-rendering: crisp-edges;
         }
 
         .drop-zone {
@@ -207,6 +263,7 @@
             border: 2px dashed var(--stone-dark);
             border-radius: 4px;
             transition: all 0.2s;
+            z-index: 10;
         }
 
         .drop-zone.drag-over {
@@ -243,17 +300,6 @@
 
         .upload-btn:hover {
             background: var(--accent-glow);
-        }
-
-        .dimensions-info {
-            margin-top: 12px;
-            font-size: 11px;
-            color: var(--stone-mid);
-            text-align: center;
-        }
-
-        .dimensions-info strong {
-            color: var(--accent);
         }
 
         /* Right Panel */
@@ -515,6 +561,40 @@
             font-size: 11px;
         }
 
+        /* Preview Panel */
+        .preview-panel {
+            padding: 12px;
+            background: var(--bg-surface);
+            border-top: 1px solid var(--stone-dark);
+        }
+
+        .preview-title {
+            font-size: 10px;
+            color: var(--stone-mid);
+            margin-bottom: 8px;
+        }
+
+        .preview-canvas-wrapper {
+            background: repeating-conic-gradient(
+                var(--bg-mid) 0% 25%,
+                var(--bg-deep) 0% 50%
+            ) 50% / 8px 8px;
+            border: 1px solid var(--stone-dark);
+            border-radius: 4px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 8px;
+            min-height: 100px;
+        }
+
+        #previewCanvas {
+            image-rendering: pixelated;
+            image-rendering: crisp-edges;
+            max-width: 100%;
+            max-height: 120px;
+        }
+
         /* Toast */
         .toast {
             position: fixed;
@@ -554,6 +634,20 @@
             margin-top: 6px;
             line-height: 1.4;
         }
+
+        /* Image info */
+        .image-info {
+            font-size: 10px;
+            color: var(--stone-mid);
+            margin-top: 8px;
+            padding: 8px;
+            background: var(--bg-surface);
+            border-radius: 4px;
+        }
+
+        .image-info strong {
+            color: var(--stone-light);
+        }
     </style>
 </head>
 <body>
@@ -578,17 +672,34 @@
     <div class="main">
         <!-- Editor Panel -->
         <section class="editor-panel">
-            <div class="canvas-area">
-                <div class="canvas-wrapper empty" id="canvasWrapper" style="width: 512px; height: 288px;">
-                    <canvas id="previewCanvas" width="512" height="288"></canvas>
+            <!-- Toolbar -->
+            <div class="toolbar">
+                <div class="toolbar-group">
+                    <span class="toolbar-label">Zoom:</span>
+                    <button class="toolbar-btn" id="zoomOutBtn">−</button>
+                    <span class="zoom-display" id="zoomDisplay">100%</span>
+                    <button class="toolbar-btn" id="zoomInBtn">+</button>
+                </div>
+                <div class="toolbar-divider"></div>
+                <div class="toolbar-group">
+                    <button class="toolbar-btn" id="fitImageBtn">Fit Image</button>
+                    <button class="toolbar-btn" id="fitFrameBtn">Fit Frame</button>
+                </div>
+                <div class="toolbar-divider"></div>
+                <div class="toolbar-group">
+                    <button class="toolbar-btn" id="resetImageBtn">Reset Image</button>
+                </div>
+            </div>
+
+            <!-- Canvas Area -->
+            <div class="canvas-area" id="canvasArea">
+                <div class="workspace" id="workspace">
+                    <canvas id="workspaceCanvas" width="800" height="600"></canvas>
                     <div class="drop-zone" id="dropZone">
                         <div class="drop-icon">🖼️</div>
                         <div class="drop-text">Drop an image here</div>
                         <button class="upload-btn" id="uploadBtn">Choose File</button>
                     </div>
-                </div>
-                <div class="dimensions-info" id="dimensionsInfo">
-                    Output: <strong>512 × 288</strong> pixels (32 × 18 tiles at 16px)
                 </div>
             </div>
         </section>
@@ -619,7 +730,10 @@
                     </div>
                 </div>
                 <div class="final-dimensions" id="finalDimensions">
-                    <strong>512 × 288</strong> px (32 × 18 tiles)
+                    Frame: <strong>512 × 288</strong> px (32 × 18 tiles)
+                </div>
+                <div class="image-info hidden" id="imageInfo">
+                    Image: <strong>0 × 0</strong> px
                 </div>
             </div>
 
@@ -665,6 +779,14 @@
                 </div>
             </div>
 
+            <!-- Preview -->
+            <div class="preview-panel">
+                <div class="preview-title">Resampled Preview</div>
+                <div class="preview-canvas-wrapper">
+                    <canvas id="previewCanvas" width="128" height="72"></canvas>
+                </div>
+            </div>
+
             <!-- Library -->
             <div class="panel-section library-section">
                 <div class="section-title">Background Library</div>
@@ -702,20 +824,31 @@
 
             // Image state
             sourceImage: null,
-            sourceCanvas: null,
+
+            // Image transform (in workspace coordinates)
+            imageX: 0,
+            imageY: 0,
+            imageScale: 1,
 
             // Frame settings
             frameType: 'background',
             customCols: 4,
             customRows: 4,
 
-            // Positioning
-            offsetX: 0,
-            offsetY: 0,
-            scale: 1,
+            // Viewport
+            zoom: 1,
+            panX: 0,
+            panY: 0,
+
+            // Interaction
             isDragging: false,
+            isResizing: false,
+            resizeHandle: null,
             dragStartX: 0,
             dragStartY: 0,
+            dragStartImageX: 0,
+            dragStartImageY: 0,
+            dragStartImageScale: 0,
 
             // Resampling
             resampleMethod: 'lanczos',
@@ -724,12 +857,12 @@
             exportType: 'background',
             assetName: '',
 
-            // Preview
-            previewCanvas: null,
-
             // Library
             backgrounds: {}
         };
+
+        // Resize handle size
+        const HANDLE_SIZE = 10;
 
         // ==========================================
         // ELEMENTS
@@ -737,18 +870,26 @@
         const elements = {
             projectSelect: document.getElementById('projectSelect'),
             authIndicator: document.getElementById('authIndicator'),
-            canvasWrapper: document.getElementById('canvasWrapper'),
+            canvasArea: document.getElementById('canvasArea'),
+            workspace: document.getElementById('workspace'),
+            workspaceCanvas: document.getElementById('workspaceCanvas'),
             previewCanvas: document.getElementById('previewCanvas'),
             dropZone: document.getElementById('dropZone'),
             fileInput: document.getElementById('fileInput'),
             uploadBtn: document.getElementById('uploadBtn'),
-            dimensionsInfo: document.getElementById('dimensionsInfo'),
+            zoomDisplay: document.getElementById('zoomDisplay'),
+            zoomInBtn: document.getElementById('zoomInBtn'),
+            zoomOutBtn: document.getElementById('zoomOutBtn'),
+            fitImageBtn: document.getElementById('fitImageBtn'),
+            fitFrameBtn: document.getElementById('fitFrameBtn'),
+            resetImageBtn: document.getElementById('resetImageBtn'),
             frameBackground: document.getElementById('frameBackground'),
             frameCustom: document.getElementById('frameCustom'),
             customSizeInputs: document.getElementById('customSizeInputs'),
             customCols: document.getElementById('customCols'),
             customRows: document.getElementById('customRows'),
             finalDimensions: document.getElementById('finalDimensions'),
+            imageInfo: document.getElementById('imageInfo'),
             resampleMethod: document.getElementById('resampleMethod'),
             methodDesc: document.getElementById('methodDesc'),
             exportBackground: document.getElementById('exportBackground'),
@@ -793,6 +934,8 @@
             populateProjectSelector(projects);
 
             setupEventListeners();
+            resizeWorkspace();
+            renderWorkspace();
         }
 
         function updateAuthIndicator() {
@@ -820,7 +963,6 @@
                 elements.projectSelect.appendChild(option);
             });
 
-            // Check for saved context
             const context = crucibleClient.getContext();
             if (context?.projectId) {
                 elements.projectSelect.value = context.projectId;
@@ -833,12 +975,10 @@
             crucibleClient.setContext(projectId);
 
             try {
-                // Get project settings
                 const settings = await crucibleClient.getProjectSettings(projectId);
                 const tileDefaults = settings.pixellab?.tileDefaults || {};
                 state.tileSize = parseInt(tileDefaults.size) || 16;
 
-                // Get level dimensions (use first level or default)
                 const levels = await crucibleClient.getLevels(projectId);
                 if (levels && levels.length > 0) {
                     state.levelWidth = levels[0].width || 32;
@@ -847,6 +987,7 @@
 
                 updateDimensions();
                 await loadLibrary();
+                renderWorkspace();
             } catch (err) {
                 console.error('Failed to load project:', err);
                 showToast('Failed to load project', true);
@@ -875,7 +1016,6 @@
 
             elements.libraryGrid.innerHTML = '';
 
-            // Load sheet image to extract thumbnails
             if (sheetPng) {
                 const img = new Image();
                 img.onload = () => {
@@ -884,14 +1024,12 @@
                         const item = document.createElement('div');
                         item.className = 'library-item';
 
-                        // Create thumbnail canvas
                         const thumbCanvas = document.createElement('canvas');
                         thumbCanvas.width = 80;
                         thumbCanvas.height = 45;
                         const ctx = thumbCanvas.getContext('2d');
                         ctx.imageSmoothingEnabled = false;
 
-                        // Draw portion from sheet
                         ctx.drawImage(img,
                             def.x, def.y, def.w, def.h,
                             0, 0, 80, 45
@@ -919,16 +1057,11 @@
         function setupEventListeners() {
             // Project selection
             elements.projectSelect.addEventListener('change', (e) => {
-                if (e.target.value) {
-                    loadProject(e.target.value);
-                }
+                if (e.target.value) loadProject(e.target.value);
             });
 
             // File upload
-            elements.uploadBtn.addEventListener('click', () => {
-                elements.fileInput.click();
-            });
-
+            elements.uploadBtn.addEventListener('click', () => elements.fileInput.click());
             elements.fileInput.addEventListener('change', handleFileSelect);
 
             // Drag and drop
@@ -936,51 +1069,49 @@
                 e.preventDefault();
                 elements.dropZone.classList.add('drag-over');
             });
-
             elements.dropZone.addEventListener('dragleave', () => {
                 elements.dropZone.classList.remove('drag-over');
             });
-
             elements.dropZone.addEventListener('drop', (e) => {
                 e.preventDefault();
                 elements.dropZone.classList.remove('drag-over');
                 const file = e.dataTransfer.files[0];
-                if (file && file.type.startsWith('image/')) {
-                    loadImage(file);
-                }
+                if (file && file.type.startsWith('image/')) loadImage(file);
             });
 
-            // Frame type selection
+            // Frame type
             document.querySelectorAll('input[name="frameType"]').forEach(radio => {
                 radio.addEventListener('change', (e) => {
                     state.frameType = e.target.value;
                     updateFrameTypeUI();
                     updateDimensions();
-                    if (state.sourceImage) resampleImage();
+                    renderWorkspace();
+                    updatePreview();
                 });
             });
 
-            // Custom size inputs
+            // Custom size
             elements.customCols.addEventListener('input', (e) => {
                 state.customCols = parseInt(e.target.value) || 1;
                 updateDimensions();
-                if (state.sourceImage) resampleImage();
+                renderWorkspace();
+                updatePreview();
             });
-
             elements.customRows.addEventListener('input', (e) => {
                 state.customRows = parseInt(e.target.value) || 1;
                 updateDimensions();
-                if (state.sourceImage) resampleImage();
+                renderWorkspace();
+                updatePreview();
             });
 
-            // Resampling method
+            // Resampling
             elements.resampleMethod.addEventListener('change', (e) => {
                 state.resampleMethod = e.target.value;
                 elements.methodDesc.textContent = methodDescriptions[state.resampleMethod];
-                if (state.sourceImage) resampleImage();
+                updatePreview();
             });
 
-            // Export type selection
+            // Export type
             document.querySelectorAll('input[name="exportType"]').forEach(radio => {
                 radio.addEventListener('change', (e) => {
                     state.exportType = e.target.value;
@@ -994,20 +1125,32 @@
                 updateSaveButton();
             });
 
-            // Save button
+            // Save
             elements.saveBtn.addEventListener('click', saveAsset);
 
-            // Canvas drag for repositioning
-            elements.canvasWrapper.addEventListener('mousedown', startDrag);
-            document.addEventListener('mousemove', drag);
-            document.addEventListener('mouseup', endDrag);
+            // Zoom controls
+            elements.zoomInBtn.addEventListener('click', () => setZoom(state.zoom * 1.25));
+            elements.zoomOutBtn.addEventListener('click', () => setZoom(state.zoom / 1.25));
+            elements.fitImageBtn.addEventListener('click', fitToImage);
+            elements.fitFrameBtn.addEventListener('click', fitToFrame);
+            elements.resetImageBtn.addEventListener('click', resetImage);
+
+            // Canvas interactions
+            elements.workspaceCanvas.addEventListener('mousedown', onMouseDown);
+            document.addEventListener('mousemove', onMouseMove);
+            document.addEventListener('mouseup', onMouseUp);
+            elements.workspaceCanvas.addEventListener('wheel', onWheel);
+
+            // Resize
+            window.addEventListener('resize', () => {
+                resizeWorkspace();
+                renderWorkspace();
+            });
         }
 
         function handleFileSelect(e) {
             const file = e.target.files[0];
-            if (file) {
-                loadImage(file);
-            }
+            if (file) loadImage(file);
         }
 
         function loadImage(file) {
@@ -1017,30 +1160,26 @@
                 img.onload = () => {
                     state.sourceImage = img;
 
-                    // Create source canvas
-                    state.sourceCanvas = document.createElement('canvas');
-                    state.sourceCanvas.width = img.width;
-                    state.sourceCanvas.height = img.height;
-                    const ctx = state.sourceCanvas.getContext('2d');
-                    ctx.drawImage(img, 0, 0);
+                    // Position image at origin, scale 1
+                    state.imageX = 0;
+                    state.imageY = 0;
+                    state.imageScale = 1;
 
-                    // Calculate initial fit
-                    calculateFit();
-
-                    // Hide drop zone
+                    // Update UI
                     elements.dropZone.classList.add('hidden');
-                    elements.canvasWrapper.classList.remove('empty');
+                    elements.imageInfo.classList.remove('hidden');
+                    elements.imageInfo.innerHTML = `Image: <strong>${img.width} × ${img.height}</strong> px`;
 
-                    // Auto-populate asset name
+                    // Auto name
                     if (!state.assetName) {
                         const baseName = file.name.replace(/\.[^.]+$/, '');
                         elements.assetName.value = baseName;
                         state.assetName = baseName;
                     }
 
-                    // Resample
-                    resampleImage();
+                    fitToImage();
                     updateSaveButton();
+                    updatePreview();
                 };
                 img.src = e.target.result;
             };
@@ -1070,34 +1209,12 @@
 
         function updateDimensions() {
             const { cols, rows, pixelW, pixelH } = getFrameDimensions();
-
-            elements.finalDimensions.innerHTML = `<strong>${pixelW} × ${pixelH}</strong> px (${cols} × ${rows} tiles)`;
-            elements.dimensionsInfo.innerHTML = `Output: <strong>${pixelW} × ${pixelH}</strong> pixels (${cols} × ${rows} tiles at ${state.tileSize}px)`;
-
-            // Update canvas wrapper size (scaled for display)
-            const maxDisplaySize = 600;
-            const displayScale = Math.min(1, maxDisplaySize / Math.max(pixelW, pixelH));
-            const displayW = Math.round(pixelW * displayScale);
-            const displayH = Math.round(pixelH * displayScale);
-
-            elements.canvasWrapper.style.width = displayW + 'px';
-            elements.canvasWrapper.style.height = displayH + 'px';
-            elements.previewCanvas.width = pixelW;
-            elements.previewCanvas.height = pixelH;
-            elements.previewCanvas.style.width = displayW + 'px';
-            elements.previewCanvas.style.height = displayH + 'px';
-
-            if (state.sourceImage) {
-                calculateFit();
-            }
+            elements.finalDimensions.innerHTML = `Frame: <strong>${pixelW} × ${pixelH}</strong> px (${cols} × ${rows} tiles)`;
         }
 
         function updateFrameTypeUI() {
-            // Update radio button UI
             elements.frameBackground.classList.toggle('selected', state.frameType === 'background');
             elements.frameCustom.classList.toggle('selected', state.frameType === 'custom');
-
-            // Show/hide custom inputs
             elements.customSizeInputs.classList.toggle('hidden', state.frameType !== 'custom');
         }
 
@@ -1113,122 +1230,371 @@
         }
 
         // ==========================================
-        // IMAGE POSITIONING
+        // WORKSPACE RENDERING
         // ==========================================
-        function calculateFit() {
+        function resizeWorkspace() {
+            const area = elements.canvasArea;
+            const w = area.clientWidth - 40;
+            const h = area.clientHeight - 40;
+            elements.workspace.style.width = w + 'px';
+            elements.workspace.style.height = h + 'px';
+            elements.workspaceCanvas.width = w;
+            elements.workspaceCanvas.height = h;
+        }
+
+        function renderWorkspace() {
+            const canvas = elements.workspaceCanvas;
+            const ctx = canvas.getContext('2d');
+            const { pixelW, pixelH } = getFrameDimensions();
+
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            // Center of canvas
+            const cx = canvas.width / 2;
+            const cy = canvas.height / 2;
+
+            ctx.save();
+            ctx.translate(cx + state.panX, cy + state.panY);
+            ctx.scale(state.zoom, state.zoom);
+
+            // Draw image if loaded
+            if (state.sourceImage) {
+                ctx.save();
+                ctx.imageSmoothingEnabled = false;
+                const imgW = state.sourceImage.width * state.imageScale;
+                const imgH = state.sourceImage.height * state.imageScale;
+                ctx.drawImage(state.sourceImage, state.imageX, state.imageY, imgW, imgH);
+
+                // Draw resize handles
+                drawResizeHandles(ctx, state.imageX, state.imageY, imgW, imgH);
+                ctx.restore();
+            }
+
+            // Draw frame overlay (tile grid)
+            ctx.strokeStyle = '#a855f7';
+            ctx.lineWidth = 2 / state.zoom;
+            ctx.setLineDash([5 / state.zoom, 5 / state.zoom]);
+            ctx.strokeRect(0, 0, pixelW, pixelH);
+            ctx.setLineDash([]);
+
+            // Draw frame fill (semi-transparent outside)
+            ctx.fillStyle = 'rgba(168, 85, 247, 0.1)';
+            ctx.fillRect(0, 0, pixelW, pixelH);
+
+            // Frame corner markers
+            ctx.fillStyle = '#a855f7';
+            const m = 6 / state.zoom;
+            ctx.fillRect(0, 0, m, m);
+            ctx.fillRect(pixelW - m, 0, m, m);
+            ctx.fillRect(0, pixelH - m, m, m);
+            ctx.fillRect(pixelW - m, pixelH - m, m, m);
+
+            ctx.restore();
+
+            // Update cursor
+            updateCursor();
+        }
+
+        function drawResizeHandles(ctx, x, y, w, h) {
+            const hs = HANDLE_SIZE / state.zoom;
+            ctx.fillStyle = '#fff';
+            ctx.strokeStyle = '#000';
+            ctx.lineWidth = 1 / state.zoom;
+
+            // Corners
+            const handles = [
+                { x: x - hs/2, y: y - hs/2 },                   // TL
+                { x: x + w - hs/2, y: y - hs/2 },               // TR
+                { x: x - hs/2, y: y + h - hs/2 },               // BL
+                { x: x + w - hs/2, y: y + h - hs/2 },           // BR
+            ];
+
+            handles.forEach(h => {
+                ctx.fillRect(h.x, h.y, hs, hs);
+                ctx.strokeRect(h.x, h.y, hs, hs);
+            });
+        }
+
+        // ==========================================
+        // ZOOM & PAN
+        // ==========================================
+        function setZoom(z) {
+            state.zoom = Math.max(0.1, Math.min(10, z));
+            elements.zoomDisplay.textContent = Math.round(state.zoom * 100) + '%';
+            renderWorkspace();
+        }
+
+        function fitToImage() {
             if (!state.sourceImage) return;
 
-            const { pixelW, pixelH } = getFrameDimensions();
-            const imgW = state.sourceImage.width;
-            const imgH = state.sourceImage.height;
+            const canvas = elements.workspaceCanvas;
+            const imgW = state.sourceImage.width * state.imageScale;
+            const imgH = state.sourceImage.height * state.imageScale;
+            const padding = 50;
 
-            // Calculate scale to cover the frame
-            const scaleX = pixelW / imgW;
-            const scaleY = pixelH / imgH;
-            state.scale = Math.max(scaleX, scaleY);
+            const scaleX = (canvas.width - padding) / imgW;
+            const scaleY = (canvas.height - padding) / imgH;
+            state.zoom = Math.min(scaleX, scaleY, 2);
 
-            // Center the image
-            const scaledW = imgW * state.scale;
-            const scaledH = imgH * state.scale;
-            state.offsetX = (pixelW - scaledW) / 2;
-            state.offsetY = (pixelH - scaledH) / 2;
+            // Center on image
+            state.panX = -(state.imageX + imgW/2) * state.zoom + imgW/2 * state.zoom;
+            state.panY = -(state.imageY + imgH/2) * state.zoom + imgH/2 * state.zoom;
+
+            elements.zoomDisplay.textContent = Math.round(state.zoom * 100) + '%';
+            renderWorkspace();
         }
 
-        function startDrag(e) {
+        function fitToFrame() {
+            const canvas = elements.workspaceCanvas;
+            const { pixelW, pixelH } = getFrameDimensions();
+            const padding = 50;
+
+            const scaleX = (canvas.width - padding) / pixelW;
+            const scaleY = (canvas.height - padding) / pixelH;
+            state.zoom = Math.min(scaleX, scaleY, 2);
+            state.panX = 0;
+            state.panY = 0;
+
+            elements.zoomDisplay.textContent = Math.round(state.zoom * 100) + '%';
+            renderWorkspace();
+        }
+
+        function resetImage() {
             if (!state.sourceImage) return;
-            state.isDragging = true;
-            state.dragStartX = e.clientX - state.offsetX;
-            state.dragStartY = e.clientY - state.offsetY;
-            elements.canvasWrapper.style.cursor = 'grabbing';
+            state.imageX = 0;
+            state.imageY = 0;
+            state.imageScale = 1;
+            fitToImage();
+            updatePreview();
         }
 
-        function drag(e) {
-            if (!state.isDragging) return;
-
-            const { pixelW, pixelH } = getFrameDimensions();
-            const scaledW = state.sourceImage.width * state.scale;
-            const scaledH = state.sourceImage.height * state.scale;
-
-            // Calculate new offset
-            let newX = e.clientX - state.dragStartX;
-            let newY = e.clientY - state.dragStartY;
-
-            // Constrain to keep image covering frame
-            const maxX = 0;
-            const minX = pixelW - scaledW;
-            const maxY = 0;
-            const minY = pixelH - scaledH;
-
-            state.offsetX = Math.max(minX, Math.min(maxX, newX));
-            state.offsetY = Math.max(minY, Math.min(maxY, newY));
-
-            resampleImage();
+        // ==========================================
+        // MOUSE INTERACTIONS
+        // ==========================================
+        function screenToWorld(sx, sy) {
+            const canvas = elements.workspaceCanvas;
+            const cx = canvas.width / 2;
+            const cy = canvas.height / 2;
+            const wx = (sx - cx - state.panX) / state.zoom;
+            const wy = (sy - cy - state.panY) / state.zoom;
+            return { x: wx, y: wy };
         }
 
-        function endDrag() {
-            if (state.isDragging) {
-                state.isDragging = false;
-                elements.canvasWrapper.style.cursor = 'move';
+        function getResizeHandle(wx, wy) {
+            if (!state.sourceImage) return null;
+
+            const imgW = state.sourceImage.width * state.imageScale;
+            const imgH = state.sourceImage.height * state.imageScale;
+            const hs = HANDLE_SIZE / state.zoom;
+
+            const handles = [
+                { id: 'tl', x: state.imageX, y: state.imageY },
+                { id: 'tr', x: state.imageX + imgW, y: state.imageY },
+                { id: 'bl', x: state.imageX, y: state.imageY + imgH },
+                { id: 'br', x: state.imageX + imgW, y: state.imageY + imgH },
+            ];
+
+            for (const h of handles) {
+                if (Math.abs(wx - h.x) < hs && Math.abs(wy - h.y) < hs) {
+                    return h.id;
+                }
+            }
+            return null;
+        }
+
+        function isInsideImage(wx, wy) {
+            if (!state.sourceImage) return false;
+            const imgW = state.sourceImage.width * state.imageScale;
+            const imgH = state.sourceImage.height * state.imageScale;
+            return wx >= state.imageX && wx <= state.imageX + imgW &&
+                   wy >= state.imageY && wy <= state.imageY + imgH;
+        }
+
+        function updateCursor() {
+            const canvas = elements.workspaceCanvas;
+            if (state.isResizing) {
+                canvas.style.cursor = 'nwse-resize';
+            } else if (state.isDragging) {
+                canvas.style.cursor = 'grabbing';
+            } else {
+                canvas.style.cursor = 'default';
             }
         }
 
+        function onMouseDown(e) {
+            const rect = elements.workspaceCanvas.getBoundingClientRect();
+            const sx = e.clientX - rect.left;
+            const sy = e.clientY - rect.top;
+            const { x: wx, y: wy } = screenToWorld(sx, sy);
+
+            // Check resize handles first
+            const handle = getResizeHandle(wx, wy);
+            if (handle) {
+                state.isResizing = true;
+                state.resizeHandle = handle;
+                state.dragStartX = sx;
+                state.dragStartY = sy;
+                state.dragStartImageX = state.imageX;
+                state.dragStartImageY = state.imageY;
+                state.dragStartImageScale = state.imageScale;
+                return;
+            }
+
+            // Check if inside image for dragging
+            if (isInsideImage(wx, wy)) {
+                state.isDragging = true;
+                state.dragStartX = sx;
+                state.dragStartY = sy;
+                state.dragStartImageX = state.imageX;
+                state.dragStartImageY = state.imageY;
+                return;
+            }
+        }
+
+        function onMouseMove(e) {
+            const rect = elements.workspaceCanvas.getBoundingClientRect();
+            const sx = e.clientX - rect.left;
+            const sy = e.clientY - rect.top;
+
+            if (state.isResizing) {
+                const dx = (sx - state.dragStartX) / state.zoom;
+                const dy = (sy - state.dragStartY) / state.zoom;
+
+                // Calculate new scale based on diagonal drag
+                const origW = state.sourceImage.width * state.dragStartImageScale;
+                const origH = state.sourceImage.height * state.dragStartImageScale;
+
+                let newScale = state.dragStartImageScale;
+                let newX = state.dragStartImageX;
+                let newY = state.dragStartImageY;
+
+                if (state.resizeHandle === 'br') {
+                    // Bottom-right: just scale from top-left
+                    const newW = origW + dx;
+                    newScale = newW / state.sourceImage.width;
+                } else if (state.resizeHandle === 'tl') {
+                    // Top-left: scale and move
+                    const newW = origW - dx;
+                    newScale = newW / state.sourceImage.width;
+                    newX = state.dragStartImageX + dx;
+                    newY = state.dragStartImageY + dy * (state.sourceImage.height / state.sourceImage.width);
+                } else if (state.resizeHandle === 'tr') {
+                    const newW = origW + dx;
+                    newScale = newW / state.sourceImage.width;
+                    newY = state.dragStartImageY - (newScale - state.dragStartImageScale) * state.sourceImage.height;
+                } else if (state.resizeHandle === 'bl') {
+                    const newW = origW - dx;
+                    newScale = newW / state.sourceImage.width;
+                    newX = state.dragStartImageX + dx;
+                }
+
+                // Clamp scale
+                newScale = Math.max(0.01, Math.min(10, newScale));
+                state.imageScale = newScale;
+                state.imageX = newX;
+                state.imageY = newY;
+
+                renderWorkspace();
+                updatePreview();
+                return;
+            }
+
+            if (state.isDragging) {
+                const dx = (sx - state.dragStartX) / state.zoom;
+                const dy = (sy - state.dragStartY) / state.zoom;
+                state.imageX = state.dragStartImageX + dx;
+                state.imageY = state.dragStartImageY + dy;
+                renderWorkspace();
+                updatePreview();
+                return;
+            }
+
+            // Update cursor based on hover
+            const { x: wx, y: wy } = screenToWorld(sx, sy);
+            const handle = getResizeHandle(wx, wy);
+            if (handle) {
+                elements.workspaceCanvas.style.cursor = 'nwse-resize';
+            } else if (isInsideImage(wx, wy)) {
+                elements.workspaceCanvas.style.cursor = 'grab';
+            } else {
+                elements.workspaceCanvas.style.cursor = 'default';
+            }
+        }
+
+        function onMouseUp() {
+            state.isDragging = false;
+            state.isResizing = false;
+            state.resizeHandle = null;
+            updateCursor();
+        }
+
+        function onWheel(e) {
+            e.preventDefault();
+            const delta = e.deltaY > 0 ? 0.9 : 1.1;
+            setZoom(state.zoom * delta);
+        }
+
         // ==========================================
-        // RESAMPLING
+        // RESAMPLING & PREVIEW
         // ==========================================
-        function resampleImage() {
+        function updatePreview() {
             if (!state.sourceImage) return;
 
             const { pixelW, pixelH } = getFrameDimensions();
 
-            // Create work canvas with source positioned
-            const workCanvas = document.createElement('canvas');
-            workCanvas.width = pixelW;
-            workCanvas.height = pixelH;
-            const workCtx = workCanvas.getContext('2d');
+            // Create temp canvas for the frame region
+            const tempCanvas = document.createElement('canvas');
+            tempCanvas.width = pixelW;
+            tempCanvas.height = pixelH;
+            const tempCtx = tempCanvas.getContext('2d');
+            tempCtx.imageSmoothingEnabled = false;
 
-            // Draw source image with current offset/scale
-            workCtx.drawImage(
-                state.sourceImage,
-                state.offsetX, state.offsetY,
-                state.sourceImage.width * state.scale,
-                state.sourceImage.height * state.scale
-            );
+            // Draw the portion of the image that's inside the frame
+            const imgW = state.sourceImage.width * state.imageScale;
+            const imgH = state.sourceImage.height * state.imageScale;
+            tempCtx.drawImage(state.sourceImage, state.imageX, state.imageY, imgW, imgH);
 
             // Apply resampling
-            let result;
+            const resampled = applyResampling(tempCanvas, pixelW, pixelH);
+
+            // Draw to preview canvas
+            const previewCtx = elements.previewCanvas.getContext('2d');
+            const maxPreviewSize = 120;
+            const scale = Math.min(maxPreviewSize / pixelW, maxPreviewSize / pixelH, 1);
+            const pw = Math.round(pixelW * scale);
+            const ph = Math.round(pixelH * scale);
+
+            elements.previewCanvas.width = pw;
+            elements.previewCanvas.height = ph;
+            previewCtx.imageSmoothingEnabled = false;
+            previewCtx.drawImage(resampled, 0, 0, pw, ph);
+        }
+
+        function applyResampling(sourceCanvas, targetW, targetH) {
             switch (state.resampleMethod) {
                 case 'lanczos':
                 case 'bicubic':
-                    result = canvasResample(workCanvas, pixelW, pixelH, 'high');
-                    break;
+                    return canvasResample(sourceCanvas, targetW, targetH, 'high');
                 case 'bilinear':
-                    result = canvasResample(workCanvas, pixelW, pixelH, 'medium');
-                    break;
+                    return canvasResample(sourceCanvas, targetW, targetH, 'medium');
                 case 'box':
-                    result = canvasResample(workCanvas, pixelW, pixelH, 'low');
-                    break;
+                    return canvasResample(sourceCanvas, targetW, targetH, 'low');
                 case 'nearest':
-                    result = canvasResample(workCanvas, pixelW, pixelH, 'pixelated');
-                    break;
+                    return canvasResample(sourceCanvas, targetW, targetH, 'pixelated');
                 case 'dominant':
-                    result = dominantColorResample(workCanvas, pixelW, pixelH);
-                    break;
+                    return dominantColorResample(sourceCanvas, targetW, targetH);
                 case 'median':
-                    result = medianResample(workCanvas, pixelW, pixelH);
-                    break;
+                    return medianResample(sourceCanvas, targetW, targetH);
                 default:
-                    result = workCanvas;
+                    return sourceCanvas;
             }
-
-            state.previewCanvas = result;
-            renderPreview();
         }
 
-        function canvasResample(sourceCanvas, targetWidth, targetHeight, quality) {
-            const targetCanvas = document.createElement('canvas');
-            targetCanvas.width = targetWidth;
-            targetCanvas.height = targetHeight;
-            const ctx = targetCanvas.getContext('2d');
+        function canvasResample(sourceCanvas, targetW, targetH, quality) {
+            const target = document.createElement('canvas');
+            target.width = targetW;
+            target.height = targetH;
+            const ctx = target.getContext('2d');
 
             if (quality === 'pixelated') {
                 ctx.imageSmoothingEnabled = false;
@@ -1237,39 +1603,37 @@
                 ctx.imageSmoothingQuality = quality;
             }
 
-            ctx.drawImage(sourceCanvas, 0, 0, targetWidth, targetHeight);
-            return targetCanvas;
+            ctx.drawImage(sourceCanvas, 0, 0, targetW, targetH);
+            return target;
         }
 
-        function dominantColorResample(sourceCanvas, targetWidth, targetHeight) {
-            const sourceCtx = sourceCanvas.getContext('2d');
-            const sourceData = sourceCtx.getImageData(0, 0, sourceCanvas.width, sourceCanvas.height);
+        function dominantColorResample(sourceCanvas, targetW, targetH) {
+            const srcCtx = sourceCanvas.getContext('2d');
+            const srcData = srcCtx.getImageData(0, 0, sourceCanvas.width, sourceCanvas.height);
 
-            const targetCanvas = document.createElement('canvas');
-            targetCanvas.width = targetWidth;
-            targetCanvas.height = targetHeight;
-            const targetCtx = targetCanvas.getContext('2d');
-            const targetData = targetCtx.createImageData(targetWidth, targetHeight);
+            const target = document.createElement('canvas');
+            target.width = targetW;
+            target.height = targetH;
+            const tgtCtx = target.getContext('2d');
+            const tgtData = tgtCtx.createImageData(targetW, targetH);
 
-            const scaleX = sourceCanvas.width / targetWidth;
-            const scaleY = sourceCanvas.height / targetHeight;
+            const scaleX = sourceCanvas.width / targetW;
+            const scaleY = sourceCanvas.height / targetH;
 
-            for (let y = 0; y < targetHeight; y++) {
-                for (let x = 0; x < targetWidth; x++) {
+            for (let y = 0; y < targetH; y++) {
+                for (let x = 0; x < targetW; x++) {
                     const srcX = Math.floor(x * scaleX);
                     const srcY = Math.floor(y * scaleY);
                     const srcW = Math.max(1, Math.ceil(scaleX));
                     const srcH = Math.max(1, Math.ceil(scaleY));
 
-                    // Find dominant color in region
                     const colorCounts = {};
                     for (let sy = srcY; sy < srcY + srcH && sy < sourceCanvas.height; sy++) {
                         for (let sx = srcX; sx < srcX + srcW && sx < sourceCanvas.width; sx++) {
                             const i = (sy * sourceCanvas.width + sx) * 4;
-                            // Quantize to reduce unique colors
-                            const r = Math.round(sourceData.data[i] / 8) * 8;
-                            const g = Math.round(sourceData.data[i + 1] / 8) * 8;
-                            const b = Math.round(sourceData.data[i + 2] / 8) * 8;
+                            const r = Math.round(srcData.data[i] / 8) * 8;
+                            const g = Math.round(srcData.data[i+1] / 8) * 8;
+                            const b = Math.round(srcData.data[i+2] / 8) * 8;
                             const key = `${r},${g},${b}`;
                             colorCounts[key] = (colorCounts[key] || 0) + 1;
                         }
@@ -1277,126 +1641,111 @@
 
                     let maxCount = 0, dominant = '0,0,0';
                     for (const [color, count] of Object.entries(colorCounts)) {
-                        if (count > maxCount) {
-                            maxCount = count;
-                            dominant = color;
-                        }
+                        if (count > maxCount) { maxCount = count; dominant = color; }
                     }
 
                     const [r, g, b] = dominant.split(',').map(Number);
-                    const i = (y * targetWidth + x) * 4;
-                    targetData.data[i] = r;
-                    targetData.data[i + 1] = g;
-                    targetData.data[i + 2] = b;
-                    targetData.data[i + 3] = 255;
+                    const i = (y * targetW + x) * 4;
+                    tgtData.data[i] = r;
+                    tgtData.data[i+1] = g;
+                    tgtData.data[i+2] = b;
+                    tgtData.data[i+3] = 255;
                 }
             }
 
-            targetCtx.putImageData(targetData, 0, 0);
-            return targetCanvas;
+            tgtCtx.putImageData(tgtData, 0, 0);
+            return target;
         }
 
-        function medianResample(sourceCanvas, targetWidth, targetHeight) {
-            const sourceCtx = sourceCanvas.getContext('2d');
-            const sourceData = sourceCtx.getImageData(0, 0, sourceCanvas.width, sourceCanvas.height);
+        function medianResample(sourceCanvas, targetW, targetH) {
+            const srcCtx = sourceCanvas.getContext('2d');
+            const srcData = srcCtx.getImageData(0, 0, sourceCanvas.width, sourceCanvas.height);
 
-            const targetCanvas = document.createElement('canvas');
-            targetCanvas.width = targetWidth;
-            targetCanvas.height = targetHeight;
-            const targetCtx = targetCanvas.getContext('2d');
-            const targetData = targetCtx.createImageData(targetWidth, targetHeight);
+            const target = document.createElement('canvas');
+            target.width = targetW;
+            target.height = targetH;
+            const tgtCtx = target.getContext('2d');
+            const tgtData = tgtCtx.createImageData(targetW, targetH);
 
-            const scaleX = sourceCanvas.width / targetWidth;
-            const scaleY = sourceCanvas.height / targetHeight;
+            const scaleX = sourceCanvas.width / targetW;
+            const scaleY = sourceCanvas.height / targetH;
 
-            for (let y = 0; y < targetHeight; y++) {
-                for (let x = 0; x < targetWidth; x++) {
+            for (let y = 0; y < targetH; y++) {
+                for (let x = 0; x < targetW; x++) {
                     const srcX = Math.floor(x * scaleX);
                     const srcY = Math.floor(y * scaleY);
                     const srcW = Math.max(1, Math.ceil(scaleX));
                     const srcH = Math.max(1, Math.ceil(scaleY));
 
                     const reds = [], greens = [], blues = [];
-
                     for (let sy = srcY; sy < srcY + srcH && sy < sourceCanvas.height; sy++) {
                         for (let sx = srcX; sx < srcX + srcW && sx < sourceCanvas.width; sx++) {
                             const i = (sy * sourceCanvas.width + sx) * 4;
-                            reds.push(sourceData.data[i]);
-                            greens.push(sourceData.data[i + 1]);
-                            blues.push(sourceData.data[i + 2]);
+                            reds.push(srcData.data[i]);
+                            greens.push(srcData.data[i+1]);
+                            blues.push(srcData.data[i+2]);
                         }
                     }
 
-                    // Get median of each channel
-                    reds.sort((a, b) => a - b);
-                    greens.sort((a, b) => a - b);
-                    blues.sort((a, b) => a - b);
+                    reds.sort((a,b) => a-b);
+                    greens.sort((a,b) => a-b);
+                    blues.sort((a,b) => a-b);
 
                     const mid = Math.floor(reds.length / 2);
-                    const r = reds[mid];
-                    const g = greens[mid];
-                    const b = blues[mid];
-
-                    const i = (y * targetWidth + x) * 4;
-                    targetData.data[i] = r;
-                    targetData.data[i + 1] = g;
-                    targetData.data[i + 2] = b;
-                    targetData.data[i + 3] = 255;
+                    const i = (y * targetW + x) * 4;
+                    tgtData.data[i] = reds[mid];
+                    tgtData.data[i+1] = greens[mid];
+                    tgtData.data[i+2] = blues[mid];
+                    tgtData.data[i+3] = 255;
                 }
             }
 
-            targetCtx.putImageData(targetData, 0, 0);
-            return targetCanvas;
-        }
-
-        function renderPreview() {
-            if (!state.previewCanvas) return;
-
-            const ctx = elements.previewCanvas.getContext('2d');
-            ctx.imageSmoothingEnabled = false;
-            ctx.clearRect(0, 0, elements.previewCanvas.width, elements.previewCanvas.height);
-            ctx.drawImage(state.previewCanvas, 0, 0);
+            tgtCtx.putImageData(tgtData, 0, 0);
+            return target;
         }
 
         // ==========================================
         // SAVE ASSET
         // ==========================================
         async function saveAsset() {
-            if (!state.previewCanvas || !state.assetName || !state.projectId) return;
+            if (!state.sourceImage || !state.assetName || !state.projectId) return;
 
             elements.saveBtn.disabled = true;
             elements.saveBtn.textContent = 'Saving...';
 
             try {
                 const { cols, rows, pixelW, pixelH } = getFrameDimensions();
-                const imageData = state.previewCanvas.toDataURL('image/png');
+
+                // Create the final resampled image
+                const tempCanvas = document.createElement('canvas');
+                tempCanvas.width = pixelW;
+                tempCanvas.height = pixelH;
+                const tempCtx = tempCanvas.getContext('2d');
+                tempCtx.imageSmoothingEnabled = false;
+
+                const imgW = state.sourceImage.width * state.imageScale;
+                const imgH = state.sourceImage.height * state.imageScale;
+                tempCtx.drawImage(state.sourceImage, state.imageX, state.imageY, imgW, imgH);
+
+                const resampled = applyResampling(tempCanvas, pixelW, pixelH);
+                const imageData = resampled.toDataURL('image/png');
 
                 switch (state.exportType) {
                     case 'background':
                         await crucibleClient.publishToMasterBackgroundSheet(
-                            state.projectId,
-                            state.assetName,
-                            imageData,
-                            pixelW,
-                            pixelH,
-                            cols,
-                            rows
+                            state.projectId, state.assetName, imageData, pixelW, pixelH, cols, rows
                         );
                         showToast(`Background "${state.assetName}" saved!`);
                         break;
 
                     case 'tiles':
-                        await saveTileGroup(cols, rows);
+                        await saveTileGroup(resampled, cols, rows);
                         showToast(`Tile group "${state.assetName}" saved! (${cols * rows} tiles)`);
                         break;
 
                     case 'sprite':
                         await crucibleClient.publishToMasterSpriteSheet(
-                            state.projectId,
-                            state.assetName,
-                            imageData,
-                            pixelW,
-                            pixelH,
+                            state.projectId, state.assetName, imageData, pixelW, pixelH,
                             { type: 'frameweft', name: state.assetName }
                         );
                         showToast(`Sprite "${state.assetName}" saved!`);
@@ -1404,8 +1753,6 @@
                 }
 
                 await loadLibrary();
-
-                // Clear for next
                 state.assetName = '';
                 elements.assetName.value = '';
                 updateSaveButton();
@@ -1420,10 +1767,9 @@
             }
         }
 
-        async function saveTileGroup(cols, rows) {
+        async function saveTileGroup(resampled, cols, rows) {
             const tileNames = [];
 
-            // Slice and save each tile
             for (let row = 0; row < rows; row++) {
                 for (let col = 0; col < cols; col++) {
                     const tileCanvas = document.createElement('canvas');
@@ -1433,27 +1779,23 @@
                     ctx.imageSmoothingEnabled = false;
 
                     ctx.drawImage(
-                        state.previewCanvas,
+                        resampled,
                         col * state.tileSize, row * state.tileSize,
                         state.tileSize, state.tileSize,
-                        0, 0,
-                        state.tileSize, state.tileSize
+                        0, 0, state.tileSize, state.tileSize
                     );
 
                     const tileName = `${state.assetName}_r${row}_c${col}`;
                     tileNames.push(tileName);
 
                     await crucibleClient.publishToMasterTileSheet(
-                        state.projectId,
-                        tileName,
+                        state.projectId, tileName,
                         tileCanvas.toDataURL('image/png'),
-                        state.tileSize,
-                        state.tileSize
+                        state.tileSize, state.tileSize
                     );
                 }
             }
 
-            // Create tile group
             const arrangement = [];
             for (let row = 0; row < rows; row++) {
                 const rowArr = [];
@@ -1464,11 +1806,7 @@
             }
 
             await crucibleClient.createTileGroup(
-                state.projectId,
-                state.assetName,
-                cols,
-                rows,
-                arrangement
+                state.projectId, state.assetName, cols, rows, arrangement
             );
         }
 
@@ -1479,10 +1817,7 @@
             elements.toast.textContent = message;
             elements.toast.classList.toggle('error', isError);
             elements.toast.classList.add('visible');
-
-            setTimeout(() => {
-                elements.toast.classList.remove('visible');
-            }, 3000);
+            setTimeout(() => elements.toast.classList.remove('visible'), 3000);
         }
 
         // ==========================================
