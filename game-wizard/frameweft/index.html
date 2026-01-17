@@ -1,0 +1,1494 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Frameweft | Game Wizard</title>
+    <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+    <style>
+        /* ============================================
+           FRAMEWEFT - CSS
+           ============================================ */
+
+        :root {
+            /* Backgrounds */
+            --bg-deep: #0d0d14;
+            --bg-mid: #1a1a2e;
+            --bg-surface: #252542;
+
+            /* Accents - weft purple */
+            --accent: #a855f7;
+            --accent-glow: #c084fc;
+            --accent-dark: #7c3aed;
+
+            /* Stone/neutral tones */
+            --stone-dark: #3a3a5c;
+            --stone-darker: #2a2a3c;
+            --stone-mid: #6a6a8e;
+            --stone-light: #9a9abe;
+            --stone-bright: #d0d0e8;
+
+            /* Status colors */
+            --success: #4ade80;
+            --error: #f87171;
+            --warning: #fbbf24;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'JetBrains Mono', monospace;
+            background: var(--bg-deep);
+            color: var(--stone-light);
+            min-height: 100vh;
+            overflow: hidden;
+        }
+
+        /* Header */
+        .header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 12px 20px;
+            background: var(--bg-mid);
+            border-bottom: 1px solid var(--stone-dark);
+            height: 53px;
+        }
+
+        .brand {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .home-btn {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 32px;
+            height: 32px;
+            font-size: 18px;
+            text-decoration: none;
+            background: var(--bg-surface);
+            border: 1px solid var(--stone-dark);
+            border-radius: 4px;
+            transition: all 0.2s;
+        }
+
+        .home-btn:hover {
+            background: var(--stone-dark);
+            border-color: var(--accent);
+        }
+
+        .brand-text {
+            font-family: 'Press Start 2P', cursive;
+            font-size: 10px;
+            color: var(--stone-mid);
+        }
+
+        .brand-text span {
+            color: var(--accent);
+            text-shadow: 0 0 10px rgba(168, 85, 247, 0.5);
+        }
+
+        .header-actions {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+
+        .header-select {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 12px;
+            padding: 8px 12px;
+            background: var(--bg-surface);
+            border: 1px solid var(--stone-dark);
+            border-radius: 4px;
+            color: var(--stone-light);
+            cursor: pointer;
+            min-width: 140px;
+        }
+
+        .header-select:focus {
+            outline: none;
+            border-color: var(--accent);
+        }
+
+        .auth-indicator {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            padding: 6px 12px;
+            background: var(--bg-surface);
+            border: 1px solid var(--stone-dark);
+            border-radius: 4px;
+            font-size: 11px;
+            color: var(--stone-mid);
+        }
+
+        .auth-indicator.logged-in {
+            border-color: var(--accent);
+            color: var(--stone-light);
+        }
+
+        .auth-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: var(--stone-dark);
+        }
+
+        .auth-indicator.logged-in .auth-dot {
+            background: var(--success);
+        }
+
+        /* Main Layout */
+        .main {
+            display: grid;
+            grid-template-columns: 1fr 320px;
+            height: calc(100vh - 53px);
+        }
+
+        /* Editor Panel */
+        .editor-panel {
+            display: flex;
+            flex-direction: column;
+            padding: 20px;
+            overflow: hidden;
+        }
+
+        .canvas-area {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 0;
+        }
+
+        .canvas-wrapper {
+            position: relative;
+            background: repeating-conic-gradient(
+                var(--bg-surface) 0% 25%,
+                var(--bg-mid) 0% 50%
+            ) 50% / 16px 16px;
+            border: 2px solid var(--stone-dark);
+            border-radius: 4px;
+            overflow: hidden;
+            cursor: move;
+        }
+
+        .canvas-wrapper.empty {
+            cursor: default;
+        }
+
+        #previewCanvas {
+            display: block;
+            image-rendering: pixelated;
+            image-rendering: crisp-edges;
+        }
+
+        .drop-zone {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 16px;
+            background: var(--bg-mid);
+            border: 2px dashed var(--stone-dark);
+            border-radius: 4px;
+            transition: all 0.2s;
+        }
+
+        .drop-zone.drag-over {
+            border-color: var(--accent);
+            background: rgba(168, 85, 247, 0.1);
+        }
+
+        .drop-zone.hidden {
+            display: none;
+        }
+
+        .drop-icon {
+            font-size: 48px;
+            opacity: 0.5;
+        }
+
+        .drop-text {
+            color: var(--stone-mid);
+            font-size: 14px;
+        }
+
+        .upload-btn {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 12px;
+            padding: 10px 20px;
+            background: var(--accent);
+            border: none;
+            border-radius: 4px;
+            color: white;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.2s;
+        }
+
+        .upload-btn:hover {
+            background: var(--accent-glow);
+        }
+
+        .dimensions-info {
+            margin-top: 12px;
+            font-size: 11px;
+            color: var(--stone-mid);
+            text-align: center;
+        }
+
+        .dimensions-info strong {
+            color: var(--accent);
+        }
+
+        /* Right Panel */
+        .right-panel {
+            background: var(--bg-mid);
+            border-left: 1px solid var(--stone-dark);
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .panel-section {
+            padding: 16px;
+            border-bottom: 1px solid var(--stone-dark);
+        }
+
+        .section-title {
+            font-family: 'Press Start 2P', cursive;
+            font-size: 8px;
+            color: var(--stone-mid);
+            margin-bottom: 12px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        /* Radio Groups */
+        .radio-group {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .radio-option {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 12px;
+            background: var(--bg-surface);
+            border: 1px solid var(--stone-dark);
+            border-radius: 4px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .radio-option:hover {
+            border-color: var(--stone-mid);
+        }
+
+        .radio-option.selected {
+            border-color: var(--accent);
+            background: rgba(168, 85, 247, 0.1);
+        }
+
+        .radio-option input {
+            accent-color: var(--accent);
+        }
+
+        .radio-label {
+            font-size: 12px;
+            color: var(--stone-light);
+        }
+
+        /* Custom Size Inputs */
+        .custom-size-inputs {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 8px;
+            margin-top: 8px;
+            padding-left: 24px;
+        }
+
+        .custom-size-inputs.hidden {
+            display: none;
+        }
+
+        .size-input-group {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+
+        .size-input-group label {
+            font-size: 10px;
+            color: var(--stone-mid);
+        }
+
+        .size-input-group input {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 12px;
+            padding: 6px 8px;
+            background: var(--bg-deep);
+            border: 1px solid var(--stone-dark);
+            border-radius: 4px;
+            color: var(--stone-light);
+            width: 100%;
+        }
+
+        .size-input-group input:focus {
+            outline: none;
+            border-color: var(--accent);
+        }
+
+        .final-dimensions {
+            margin-top: 12px;
+            padding: 8px 12px;
+            background: var(--bg-surface);
+            border-radius: 4px;
+            font-size: 11px;
+            color: var(--stone-mid);
+        }
+
+        .final-dimensions strong {
+            color: var(--accent);
+        }
+
+        /* Select Inputs */
+        .form-select {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 12px;
+            padding: 8px 12px;
+            background: var(--bg-surface);
+            border: 1px solid var(--stone-dark);
+            border-radius: 4px;
+            color: var(--stone-light);
+            cursor: pointer;
+            width: 100%;
+        }
+
+        .form-select:focus {
+            outline: none;
+            border-color: var(--accent);
+        }
+
+        .form-select option {
+            background: var(--bg-mid);
+        }
+
+        /* Form Input */
+        .form-input {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 12px;
+            padding: 8px 12px;
+            background: var(--bg-surface);
+            border: 1px solid var(--stone-dark);
+            border-radius: 4px;
+            color: var(--stone-light);
+            width: 100%;
+        }
+
+        .form-input:focus {
+            outline: none;
+            border-color: var(--accent);
+        }
+
+        .form-input::placeholder {
+            color: var(--stone-dark);
+        }
+
+        /* Buttons */
+        .btn {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 12px;
+            padding: 10px 16px;
+            border: 1px solid var(--stone-dark);
+            border-radius: 4px;
+            background: var(--bg-surface);
+            color: var(--stone-light);
+            cursor: pointer;
+            transition: all 0.2s;
+            width: 100%;
+        }
+
+        .btn:hover {
+            background: var(--stone-dark);
+            border-color: var(--stone-mid);
+        }
+
+        .btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .btn-primary {
+            background: var(--accent);
+            border-color: var(--accent);
+            color: white;
+            font-weight: 600;
+        }
+
+        .btn-primary:hover {
+            background: var(--accent-glow);
+            border-color: var(--accent-glow);
+        }
+
+        .btn-small {
+            padding: 6px 10px;
+            font-size: 10px;
+        }
+
+        /* Library Section */
+        .library-section {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            min-height: 0;
+        }
+
+        .library-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 8px;
+            overflow-y: auto;
+            flex: 1;
+            min-height: 0;
+        }
+
+        .library-item {
+            aspect-ratio: 16/9;
+            background: var(--bg-surface);
+            border: 1px solid var(--stone-dark);
+            border-radius: 4px;
+            overflow: hidden;
+            cursor: pointer;
+            transition: all 0.2s;
+            position: relative;
+        }
+
+        .library-item:hover {
+            border-color: var(--accent);
+        }
+
+        .library-item img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            image-rendering: pixelated;
+        }
+
+        .library-item-name {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            padding: 4px;
+            background: rgba(0, 0, 0, 0.7);
+            font-size: 8px;
+            color: var(--stone-light);
+            text-align: center;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .library-empty {
+            grid-column: 1 / -1;
+            text-align: center;
+            padding: 20px;
+            color: var(--stone-mid);
+            font-size: 11px;
+        }
+
+        /* Toast */
+        .toast {
+            position: fixed;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%) translateY(100px);
+            background: var(--bg-surface);
+            border: 1px solid var(--stone-dark);
+            border-radius: 4px;
+            padding: 12px 24px;
+            font-size: 12px;
+            color: var(--stone-light);
+            opacity: 0;
+            transition: all 0.3s;
+            z-index: 1000;
+        }
+
+        .toast.visible {
+            transform: translateX(-50%) translateY(0);
+            opacity: 1;
+        }
+
+        .toast.error {
+            border-color: var(--error);
+            color: var(--error);
+        }
+
+        /* Hidden file input */
+        #fileInput {
+            display: none;
+        }
+
+        /* Resampling method description */
+        .method-desc {
+            font-size: 10px;
+            color: var(--stone-mid);
+            margin-top: 6px;
+            line-height: 1.4;
+        }
+    </style>
+</head>
+<body>
+    <!-- Header -->
+    <header class="header">
+        <div class="brand">
+            <a href="../" class="home-btn">🏠</a>
+            <div class="brand-text">MANTLEBORN / <span>FRAMEWEFT</span></div>
+        </div>
+        <div class="header-actions">
+            <select class="header-select" id="projectSelect">
+                <option value="">Select Project</option>
+            </select>
+            <div class="auth-indicator" id="authIndicator">
+                <div class="auth-dot"></div>
+                <span>Not logged in</span>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main -->
+    <div class="main">
+        <!-- Editor Panel -->
+        <section class="editor-panel">
+            <div class="canvas-area">
+                <div class="canvas-wrapper empty" id="canvasWrapper" style="width: 512px; height: 288px;">
+                    <canvas id="previewCanvas" width="512" height="288"></canvas>
+                    <div class="drop-zone" id="dropZone">
+                        <div class="drop-icon">🖼️</div>
+                        <div class="drop-text">Drop an image here</div>
+                        <button class="upload-btn" id="uploadBtn">Choose File</button>
+                    </div>
+                </div>
+                <div class="dimensions-info" id="dimensionsInfo">
+                    Output: <strong>512 × 288</strong> pixels (32 × 18 tiles at 16px)
+                </div>
+            </div>
+        </section>
+
+        <!-- Right Panel -->
+        <aside class="right-panel">
+            <!-- Frame Settings -->
+            <div class="panel-section">
+                <div class="section-title">Frame Settings</div>
+                <div class="radio-group">
+                    <label class="radio-option selected" id="frameBackground">
+                        <input type="radio" name="frameType" value="background" checked>
+                        <span class="radio-label">Background (Full Level)</span>
+                    </label>
+                    <label class="radio-option" id="frameCustom">
+                        <input type="radio" name="frameType" value="custom">
+                        <span class="radio-label">Custom Size</span>
+                    </label>
+                </div>
+                <div class="custom-size-inputs hidden" id="customSizeInputs">
+                    <div class="size-input-group">
+                        <label>Columns</label>
+                        <input type="number" id="customCols" value="4" min="1" max="100">
+                    </div>
+                    <div class="size-input-group">
+                        <label>Rows</label>
+                        <input type="number" id="customRows" value="4" min="1" max="100">
+                    </div>
+                </div>
+                <div class="final-dimensions" id="finalDimensions">
+                    <strong>512 × 288</strong> px (32 × 18 tiles)
+                </div>
+            </div>
+
+            <!-- Resampling -->
+            <div class="panel-section">
+                <div class="section-title">Resampling Method</div>
+                <select class="form-select" id="resampleMethod">
+                    <option value="lanczos">Lanczos (High Quality)</option>
+                    <option value="bilinear">Bilinear (Smooth)</option>
+                    <option value="bicubic">Bicubic (Balanced)</option>
+                    <option value="box">Box/Area (Simple Average)</option>
+                    <option value="nearest">Nearest Neighbor (Pixel Art)</option>
+                    <option value="dominant">Dominant Color</option>
+                    <option value="median">Median</option>
+                </select>
+                <div class="method-desc" id="methodDesc">
+                    High quality, good default for photographs and detailed art.
+                </div>
+            </div>
+
+            <!-- Export As -->
+            <div class="panel-section">
+                <div class="section-title">Export As</div>
+                <div class="radio-group">
+                    <label class="radio-option selected" id="exportBackground">
+                        <input type="radio" name="exportType" value="background" checked>
+                        <span class="radio-label">Background</span>
+                    </label>
+                    <label class="radio-option" id="exportTiles">
+                        <input type="radio" name="exportType" value="tiles">
+                        <span class="radio-label">Tile Group</span>
+                    </label>
+                    <label class="radio-option" id="exportSprite">
+                        <input type="radio" name="exportType" value="sprite">
+                        <span class="radio-label">Sprite</span>
+                    </label>
+                </div>
+                <div style="margin-top: 12px;">
+                    <input type="text" class="form-input" id="assetName" placeholder="Asset name...">
+                </div>
+                <div style="margin-top: 12px;">
+                    <button class="btn btn-primary" id="saveBtn" disabled>Save Asset</button>
+                </div>
+            </div>
+
+            <!-- Library -->
+            <div class="panel-section library-section">
+                <div class="section-title">Background Library</div>
+                <div class="library-grid" id="libraryGrid">
+                    <div class="library-empty">No backgrounds yet</div>
+                </div>
+            </div>
+        </aside>
+    </div>
+
+    <!-- Toast -->
+    <div class="toast" id="toast"></div>
+
+    <!-- Hidden file input -->
+    <input type="file" id="fileInput" accept="image/*">
+
+    <!-- Scripts -->
+    <script src="../shared/supabase-client.js"></script>
+    <script src="../shared/project-gate.js"></script>
+    <script src="../shared/master-sheet.js"></script>
+    <script>
+        /* ============================================
+           FRAMEWEFT - JavaScript
+           ============================================ */
+
+        // ==========================================
+        // STATE
+        // ==========================================
+        const state = {
+            projectId: null,
+            user: null,
+            tileSize: 16,
+            levelWidth: 32,
+            levelHeight: 18,
+
+            // Image state
+            sourceImage: null,
+            sourceCanvas: null,
+
+            // Frame settings
+            frameType: 'background',
+            customCols: 4,
+            customRows: 4,
+
+            // Positioning
+            offsetX: 0,
+            offsetY: 0,
+            scale: 1,
+            isDragging: false,
+            dragStartX: 0,
+            dragStartY: 0,
+
+            // Resampling
+            resampleMethod: 'lanczos',
+
+            // Export
+            exportType: 'background',
+            assetName: '',
+
+            // Preview
+            previewCanvas: null,
+
+            // Library
+            backgrounds: {}
+        };
+
+        // ==========================================
+        // ELEMENTS
+        // ==========================================
+        const elements = {
+            projectSelect: document.getElementById('projectSelect'),
+            authIndicator: document.getElementById('authIndicator'),
+            canvasWrapper: document.getElementById('canvasWrapper'),
+            previewCanvas: document.getElementById('previewCanvas'),
+            dropZone: document.getElementById('dropZone'),
+            fileInput: document.getElementById('fileInput'),
+            uploadBtn: document.getElementById('uploadBtn'),
+            dimensionsInfo: document.getElementById('dimensionsInfo'),
+            frameBackground: document.getElementById('frameBackground'),
+            frameCustom: document.getElementById('frameCustom'),
+            customSizeInputs: document.getElementById('customSizeInputs'),
+            customCols: document.getElementById('customCols'),
+            customRows: document.getElementById('customRows'),
+            finalDimensions: document.getElementById('finalDimensions'),
+            resampleMethod: document.getElementById('resampleMethod'),
+            methodDesc: document.getElementById('methodDesc'),
+            exportBackground: document.getElementById('exportBackground'),
+            exportTiles: document.getElementById('exportTiles'),
+            exportSprite: document.getElementById('exportSprite'),
+            assetName: document.getElementById('assetName'),
+            saveBtn: document.getElementById('saveBtn'),
+            libraryGrid: document.getElementById('libraryGrid'),
+            toast: document.getElementById('toast')
+        };
+
+        // ==========================================
+        // RESAMPLING METHOD DESCRIPTIONS
+        // ==========================================
+        const methodDescriptions = {
+            lanczos: 'High quality, good default for photographs and detailed art.',
+            bilinear: 'Smooth averaging, faster than Lanczos.',
+            bicubic: 'Balance between quality and speed.',
+            box: 'Simple mean of each region, good for downscaling.',
+            nearest: 'No interpolation, best for pixel art sources.',
+            dominant: 'Most common color in each region.',
+            median: 'Median RGB values of each region.'
+        };
+
+        // ==========================================
+        // INITIALIZATION
+        // ==========================================
+        async function init() {
+            const hasProject = await checkProjectGate();
+            if (!hasProject) return;
+
+            await crucibleClient.init();
+            state.user = await crucibleClient.getUser();
+            updateAuthIndicator();
+
+            crucibleClient.onAuthStateChange((event, session) => {
+                state.user = session?.user || null;
+                updateAuthIndicator();
+            });
+
+            const projects = await crucibleClient.getMyProjects();
+            populateProjectSelector(projects);
+
+            setupEventListeners();
+        }
+
+        function updateAuthIndicator() {
+            if (state.user) {
+                elements.authIndicator.classList.add('logged-in');
+                elements.authIndicator.innerHTML = `
+                    <div class="auth-dot"></div>
+                    <span>${state.user.email?.split('@')[0]}</span>
+                `;
+            } else {
+                elements.authIndicator.classList.remove('logged-in');
+                elements.authIndicator.innerHTML = `
+                    <div class="auth-dot"></div>
+                    <span>Not logged in</span>
+                `;
+            }
+        }
+
+        function populateProjectSelector(projects) {
+            elements.projectSelect.innerHTML = '<option value="">Select Project</option>';
+            projects.forEach(project => {
+                const option = document.createElement('option');
+                option.value = project.id;
+                option.textContent = project.name;
+                elements.projectSelect.appendChild(option);
+            });
+
+            // Check for saved context
+            const context = crucibleClient.getContext();
+            if (context?.projectId) {
+                elements.projectSelect.value = context.projectId;
+                loadProject(context.projectId);
+            }
+        }
+
+        async function loadProject(projectId) {
+            state.projectId = projectId;
+            crucibleClient.setContext(projectId);
+
+            try {
+                // Get project settings
+                const settings = await crucibleClient.getProjectSettings(projectId);
+                const tileDefaults = settings.pixellab?.tileDefaults || {};
+                state.tileSize = parseInt(tileDefaults.size) || 16;
+
+                // Get level dimensions (use first level or default)
+                const levels = await crucibleClient.getLevels(projectId);
+                if (levels && levels.length > 0) {
+                    state.levelWidth = levels[0].width || 32;
+                    state.levelHeight = levels[0].height || 18;
+                }
+
+                updateDimensions();
+                await loadLibrary();
+            } catch (err) {
+                console.error('Failed to load project:', err);
+                showToast('Failed to load project', true);
+            }
+        }
+
+        async function loadLibrary() {
+            try {
+                const bgSheet = await crucibleClient.getMasterBackgroundSheet(state.projectId);
+                state.backgrounds = bgSheet.atlas?.backgrounds || {};
+                renderLibrary(bgSheet.png);
+            } catch (err) {
+                console.warn('Failed to load background library:', err);
+                state.backgrounds = {};
+                renderLibrary(null);
+            }
+        }
+
+        function renderLibrary(sheetPng) {
+            const names = Object.keys(state.backgrounds);
+
+            if (names.length === 0) {
+                elements.libraryGrid.innerHTML = '<div class="library-empty">No backgrounds yet</div>';
+                return;
+            }
+
+            elements.libraryGrid.innerHTML = '';
+
+            // Load sheet image to extract thumbnails
+            if (sheetPng) {
+                const img = new Image();
+                img.onload = () => {
+                    names.forEach(name => {
+                        const def = state.backgrounds[name];
+                        const item = document.createElement('div');
+                        item.className = 'library-item';
+
+                        // Create thumbnail canvas
+                        const thumbCanvas = document.createElement('canvas');
+                        thumbCanvas.width = 80;
+                        thumbCanvas.height = 45;
+                        const ctx = thumbCanvas.getContext('2d');
+                        ctx.imageSmoothingEnabled = false;
+
+                        // Draw portion from sheet
+                        ctx.drawImage(img,
+                            def.x, def.y, def.w, def.h,
+                            0, 0, 80, 45
+                        );
+
+                        const thumbImg = document.createElement('img');
+                        thumbImg.src = thumbCanvas.toDataURL();
+
+                        const nameLabel = document.createElement('div');
+                        nameLabel.className = 'library-item-name';
+                        nameLabel.textContent = name;
+
+                        item.appendChild(thumbImg);
+                        item.appendChild(nameLabel);
+                        elements.libraryGrid.appendChild(item);
+                    });
+                };
+                img.src = sheetPng;
+            }
+        }
+
+        // ==========================================
+        // EVENT LISTENERS
+        // ==========================================
+        function setupEventListeners() {
+            // Project selection
+            elements.projectSelect.addEventListener('change', (e) => {
+                if (e.target.value) {
+                    loadProject(e.target.value);
+                }
+            });
+
+            // File upload
+            elements.uploadBtn.addEventListener('click', () => {
+                elements.fileInput.click();
+            });
+
+            elements.fileInput.addEventListener('change', handleFileSelect);
+
+            // Drag and drop
+            elements.dropZone.addEventListener('dragover', (e) => {
+                e.preventDefault();
+                elements.dropZone.classList.add('drag-over');
+            });
+
+            elements.dropZone.addEventListener('dragleave', () => {
+                elements.dropZone.classList.remove('drag-over');
+            });
+
+            elements.dropZone.addEventListener('drop', (e) => {
+                e.preventDefault();
+                elements.dropZone.classList.remove('drag-over');
+                const file = e.dataTransfer.files[0];
+                if (file && file.type.startsWith('image/')) {
+                    loadImage(file);
+                }
+            });
+
+            // Frame type selection
+            document.querySelectorAll('input[name="frameType"]').forEach(radio => {
+                radio.addEventListener('change', (e) => {
+                    state.frameType = e.target.value;
+                    updateFrameTypeUI();
+                    updateDimensions();
+                    if (state.sourceImage) resampleImage();
+                });
+            });
+
+            // Custom size inputs
+            elements.customCols.addEventListener('input', (e) => {
+                state.customCols = parseInt(e.target.value) || 1;
+                updateDimensions();
+                if (state.sourceImage) resampleImage();
+            });
+
+            elements.customRows.addEventListener('input', (e) => {
+                state.customRows = parseInt(e.target.value) || 1;
+                updateDimensions();
+                if (state.sourceImage) resampleImage();
+            });
+
+            // Resampling method
+            elements.resampleMethod.addEventListener('change', (e) => {
+                state.resampleMethod = e.target.value;
+                elements.methodDesc.textContent = methodDescriptions[state.resampleMethod];
+                if (state.sourceImage) resampleImage();
+            });
+
+            // Export type selection
+            document.querySelectorAll('input[name="exportType"]').forEach(radio => {
+                radio.addEventListener('change', (e) => {
+                    state.exportType = e.target.value;
+                    updateExportTypeUI();
+                });
+            });
+
+            // Asset name
+            elements.assetName.addEventListener('input', (e) => {
+                state.assetName = e.target.value.trim();
+                updateSaveButton();
+            });
+
+            // Save button
+            elements.saveBtn.addEventListener('click', saveAsset);
+
+            // Canvas drag for repositioning
+            elements.canvasWrapper.addEventListener('mousedown', startDrag);
+            document.addEventListener('mousemove', drag);
+            document.addEventListener('mouseup', endDrag);
+        }
+
+        function handleFileSelect(e) {
+            const file = e.target.files[0];
+            if (file) {
+                loadImage(file);
+            }
+        }
+
+        function loadImage(file) {
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                const img = new Image();
+                img.onload = () => {
+                    state.sourceImage = img;
+
+                    // Create source canvas
+                    state.sourceCanvas = document.createElement('canvas');
+                    state.sourceCanvas.width = img.width;
+                    state.sourceCanvas.height = img.height;
+                    const ctx = state.sourceCanvas.getContext('2d');
+                    ctx.drawImage(img, 0, 0);
+
+                    // Calculate initial fit
+                    calculateFit();
+
+                    // Hide drop zone
+                    elements.dropZone.classList.add('hidden');
+                    elements.canvasWrapper.classList.remove('empty');
+
+                    // Auto-populate asset name
+                    if (!state.assetName) {
+                        const baseName = file.name.replace(/\.[^.]+$/, '');
+                        elements.assetName.value = baseName;
+                        state.assetName = baseName;
+                    }
+
+                    // Resample
+                    resampleImage();
+                    updateSaveButton();
+                };
+                img.src = e.target.result;
+            };
+            reader.readAsDataURL(file);
+        }
+
+        // ==========================================
+        // FRAME & DIMENSION CALCULATIONS
+        // ==========================================
+        function getFrameDimensions() {
+            if (state.frameType === 'background') {
+                return {
+                    cols: state.levelWidth,
+                    rows: state.levelHeight,
+                    pixelW: state.levelWidth * state.tileSize,
+                    pixelH: state.levelHeight * state.tileSize
+                };
+            } else {
+                return {
+                    cols: state.customCols,
+                    rows: state.customRows,
+                    pixelW: state.customCols * state.tileSize,
+                    pixelH: state.customRows * state.tileSize
+                };
+            }
+        }
+
+        function updateDimensions() {
+            const { cols, rows, pixelW, pixelH } = getFrameDimensions();
+
+            elements.finalDimensions.innerHTML = `<strong>${pixelW} × ${pixelH}</strong> px (${cols} × ${rows} tiles)`;
+            elements.dimensionsInfo.innerHTML = `Output: <strong>${pixelW} × ${pixelH}</strong> pixels (${cols} × ${rows} tiles at ${state.tileSize}px)`;
+
+            // Update canvas wrapper size (scaled for display)
+            const maxDisplaySize = 600;
+            const displayScale = Math.min(1, maxDisplaySize / Math.max(pixelW, pixelH));
+            const displayW = Math.round(pixelW * displayScale);
+            const displayH = Math.round(pixelH * displayScale);
+
+            elements.canvasWrapper.style.width = displayW + 'px';
+            elements.canvasWrapper.style.height = displayH + 'px';
+            elements.previewCanvas.width = pixelW;
+            elements.previewCanvas.height = pixelH;
+            elements.previewCanvas.style.width = displayW + 'px';
+            elements.previewCanvas.style.height = displayH + 'px';
+
+            if (state.sourceImage) {
+                calculateFit();
+            }
+        }
+
+        function updateFrameTypeUI() {
+            // Update radio button UI
+            elements.frameBackground.classList.toggle('selected', state.frameType === 'background');
+            elements.frameCustom.classList.toggle('selected', state.frameType === 'custom');
+
+            // Show/hide custom inputs
+            elements.customSizeInputs.classList.toggle('hidden', state.frameType !== 'custom');
+        }
+
+        function updateExportTypeUI() {
+            elements.exportBackground.classList.toggle('selected', state.exportType === 'background');
+            elements.exportTiles.classList.toggle('selected', state.exportType === 'tiles');
+            elements.exportSprite.classList.toggle('selected', state.exportType === 'sprite');
+        }
+
+        function updateSaveButton() {
+            const canSave = state.sourceImage && state.assetName && state.projectId;
+            elements.saveBtn.disabled = !canSave;
+        }
+
+        // ==========================================
+        // IMAGE POSITIONING
+        // ==========================================
+        function calculateFit() {
+            if (!state.sourceImage) return;
+
+            const { pixelW, pixelH } = getFrameDimensions();
+            const imgW = state.sourceImage.width;
+            const imgH = state.sourceImage.height;
+
+            // Calculate scale to cover the frame
+            const scaleX = pixelW / imgW;
+            const scaleY = pixelH / imgH;
+            state.scale = Math.max(scaleX, scaleY);
+
+            // Center the image
+            const scaledW = imgW * state.scale;
+            const scaledH = imgH * state.scale;
+            state.offsetX = (pixelW - scaledW) / 2;
+            state.offsetY = (pixelH - scaledH) / 2;
+        }
+
+        function startDrag(e) {
+            if (!state.sourceImage) return;
+            state.isDragging = true;
+            state.dragStartX = e.clientX - state.offsetX;
+            state.dragStartY = e.clientY - state.offsetY;
+            elements.canvasWrapper.style.cursor = 'grabbing';
+        }
+
+        function drag(e) {
+            if (!state.isDragging) return;
+
+            const { pixelW, pixelH } = getFrameDimensions();
+            const scaledW = state.sourceImage.width * state.scale;
+            const scaledH = state.sourceImage.height * state.scale;
+
+            // Calculate new offset
+            let newX = e.clientX - state.dragStartX;
+            let newY = e.clientY - state.dragStartY;
+
+            // Constrain to keep image covering frame
+            const maxX = 0;
+            const minX = pixelW - scaledW;
+            const maxY = 0;
+            const minY = pixelH - scaledH;
+
+            state.offsetX = Math.max(minX, Math.min(maxX, newX));
+            state.offsetY = Math.max(minY, Math.min(maxY, newY));
+
+            resampleImage();
+        }
+
+        function endDrag() {
+            if (state.isDragging) {
+                state.isDragging = false;
+                elements.canvasWrapper.style.cursor = 'move';
+            }
+        }
+
+        // ==========================================
+        // RESAMPLING
+        // ==========================================
+        function resampleImage() {
+            if (!state.sourceImage) return;
+
+            const { pixelW, pixelH } = getFrameDimensions();
+
+            // Create work canvas with source positioned
+            const workCanvas = document.createElement('canvas');
+            workCanvas.width = pixelW;
+            workCanvas.height = pixelH;
+            const workCtx = workCanvas.getContext('2d');
+
+            // Draw source image with current offset/scale
+            workCtx.drawImage(
+                state.sourceImage,
+                state.offsetX, state.offsetY,
+                state.sourceImage.width * state.scale,
+                state.sourceImage.height * state.scale
+            );
+
+            // Apply resampling
+            let result;
+            switch (state.resampleMethod) {
+                case 'lanczos':
+                case 'bicubic':
+                    result = canvasResample(workCanvas, pixelW, pixelH, 'high');
+                    break;
+                case 'bilinear':
+                    result = canvasResample(workCanvas, pixelW, pixelH, 'medium');
+                    break;
+                case 'box':
+                    result = canvasResample(workCanvas, pixelW, pixelH, 'low');
+                    break;
+                case 'nearest':
+                    result = canvasResample(workCanvas, pixelW, pixelH, 'pixelated');
+                    break;
+                case 'dominant':
+                    result = dominantColorResample(workCanvas, pixelW, pixelH);
+                    break;
+                case 'median':
+                    result = medianResample(workCanvas, pixelW, pixelH);
+                    break;
+                default:
+                    result = workCanvas;
+            }
+
+            state.previewCanvas = result;
+            renderPreview();
+        }
+
+        function canvasResample(sourceCanvas, targetWidth, targetHeight, quality) {
+            const targetCanvas = document.createElement('canvas');
+            targetCanvas.width = targetWidth;
+            targetCanvas.height = targetHeight;
+            const ctx = targetCanvas.getContext('2d');
+
+            if (quality === 'pixelated') {
+                ctx.imageSmoothingEnabled = false;
+            } else {
+                ctx.imageSmoothingEnabled = true;
+                ctx.imageSmoothingQuality = quality;
+            }
+
+            ctx.drawImage(sourceCanvas, 0, 0, targetWidth, targetHeight);
+            return targetCanvas;
+        }
+
+        function dominantColorResample(sourceCanvas, targetWidth, targetHeight) {
+            const sourceCtx = sourceCanvas.getContext('2d');
+            const sourceData = sourceCtx.getImageData(0, 0, sourceCanvas.width, sourceCanvas.height);
+
+            const targetCanvas = document.createElement('canvas');
+            targetCanvas.width = targetWidth;
+            targetCanvas.height = targetHeight;
+            const targetCtx = targetCanvas.getContext('2d');
+            const targetData = targetCtx.createImageData(targetWidth, targetHeight);
+
+            const scaleX = sourceCanvas.width / targetWidth;
+            const scaleY = sourceCanvas.height / targetHeight;
+
+            for (let y = 0; y < targetHeight; y++) {
+                for (let x = 0; x < targetWidth; x++) {
+                    const srcX = Math.floor(x * scaleX);
+                    const srcY = Math.floor(y * scaleY);
+                    const srcW = Math.max(1, Math.ceil(scaleX));
+                    const srcH = Math.max(1, Math.ceil(scaleY));
+
+                    // Find dominant color in region
+                    const colorCounts = {};
+                    for (let sy = srcY; sy < srcY + srcH && sy < sourceCanvas.height; sy++) {
+                        for (let sx = srcX; sx < srcX + srcW && sx < sourceCanvas.width; sx++) {
+                            const i = (sy * sourceCanvas.width + sx) * 4;
+                            // Quantize to reduce unique colors
+                            const r = Math.round(sourceData.data[i] / 8) * 8;
+                            const g = Math.round(sourceData.data[i + 1] / 8) * 8;
+                            const b = Math.round(sourceData.data[i + 2] / 8) * 8;
+                            const key = `${r},${g},${b}`;
+                            colorCounts[key] = (colorCounts[key] || 0) + 1;
+                        }
+                    }
+
+                    let maxCount = 0, dominant = '0,0,0';
+                    for (const [color, count] of Object.entries(colorCounts)) {
+                        if (count > maxCount) {
+                            maxCount = count;
+                            dominant = color;
+                        }
+                    }
+
+                    const [r, g, b] = dominant.split(',').map(Number);
+                    const i = (y * targetWidth + x) * 4;
+                    targetData.data[i] = r;
+                    targetData.data[i + 1] = g;
+                    targetData.data[i + 2] = b;
+                    targetData.data[i + 3] = 255;
+                }
+            }
+
+            targetCtx.putImageData(targetData, 0, 0);
+            return targetCanvas;
+        }
+
+        function medianResample(sourceCanvas, targetWidth, targetHeight) {
+            const sourceCtx = sourceCanvas.getContext('2d');
+            const sourceData = sourceCtx.getImageData(0, 0, sourceCanvas.width, sourceCanvas.height);
+
+            const targetCanvas = document.createElement('canvas');
+            targetCanvas.width = targetWidth;
+            targetCanvas.height = targetHeight;
+            const targetCtx = targetCanvas.getContext('2d');
+            const targetData = targetCtx.createImageData(targetWidth, targetHeight);
+
+            const scaleX = sourceCanvas.width / targetWidth;
+            const scaleY = sourceCanvas.height / targetHeight;
+
+            for (let y = 0; y < targetHeight; y++) {
+                for (let x = 0; x < targetWidth; x++) {
+                    const srcX = Math.floor(x * scaleX);
+                    const srcY = Math.floor(y * scaleY);
+                    const srcW = Math.max(1, Math.ceil(scaleX));
+                    const srcH = Math.max(1, Math.ceil(scaleY));
+
+                    const reds = [], greens = [], blues = [];
+
+                    for (let sy = srcY; sy < srcY + srcH && sy < sourceCanvas.height; sy++) {
+                        for (let sx = srcX; sx < srcX + srcW && sx < sourceCanvas.width; sx++) {
+                            const i = (sy * sourceCanvas.width + sx) * 4;
+                            reds.push(sourceData.data[i]);
+                            greens.push(sourceData.data[i + 1]);
+                            blues.push(sourceData.data[i + 2]);
+                        }
+                    }
+
+                    // Get median of each channel
+                    reds.sort((a, b) => a - b);
+                    greens.sort((a, b) => a - b);
+                    blues.sort((a, b) => a - b);
+
+                    const mid = Math.floor(reds.length / 2);
+                    const r = reds[mid];
+                    const g = greens[mid];
+                    const b = blues[mid];
+
+                    const i = (y * targetWidth + x) * 4;
+                    targetData.data[i] = r;
+                    targetData.data[i + 1] = g;
+                    targetData.data[i + 2] = b;
+                    targetData.data[i + 3] = 255;
+                }
+            }
+
+            targetCtx.putImageData(targetData, 0, 0);
+            return targetCanvas;
+        }
+
+        function renderPreview() {
+            if (!state.previewCanvas) return;
+
+            const ctx = elements.previewCanvas.getContext('2d');
+            ctx.imageSmoothingEnabled = false;
+            ctx.clearRect(0, 0, elements.previewCanvas.width, elements.previewCanvas.height);
+            ctx.drawImage(state.previewCanvas, 0, 0);
+        }
+
+        // ==========================================
+        // SAVE ASSET
+        // ==========================================
+        async function saveAsset() {
+            if (!state.previewCanvas || !state.assetName || !state.projectId) return;
+
+            elements.saveBtn.disabled = true;
+            elements.saveBtn.textContent = 'Saving...';
+
+            try {
+                const { cols, rows, pixelW, pixelH } = getFrameDimensions();
+                const imageData = state.previewCanvas.toDataURL('image/png');
+
+                switch (state.exportType) {
+                    case 'background':
+                        await crucibleClient.publishToMasterBackgroundSheet(
+                            state.projectId,
+                            state.assetName,
+                            imageData,
+                            pixelW,
+                            pixelH,
+                            cols,
+                            rows
+                        );
+                        showToast(`Background "${state.assetName}" saved!`);
+                        break;
+
+                    case 'tiles':
+                        await saveTileGroup(cols, rows);
+                        showToast(`Tile group "${state.assetName}" saved! (${cols * rows} tiles)`);
+                        break;
+
+                    case 'sprite':
+                        await crucibleClient.publishToMasterSpriteSheet(
+                            state.projectId,
+                            state.assetName,
+                            imageData,
+                            pixelW,
+                            pixelH,
+                            { type: 'frameweft', name: state.assetName }
+                        );
+                        showToast(`Sprite "${state.assetName}" saved!`);
+                        break;
+                }
+
+                await loadLibrary();
+
+                // Clear for next
+                state.assetName = '';
+                elements.assetName.value = '';
+                updateSaveButton();
+
+            } catch (err) {
+                console.error('Failed to save asset:', err);
+                showToast(err.message || 'Failed to save asset', true);
+            } finally {
+                elements.saveBtn.disabled = false;
+                elements.saveBtn.textContent = 'Save Asset';
+                updateSaveButton();
+            }
+        }
+
+        async function saveTileGroup(cols, rows) {
+            const tileNames = [];
+
+            // Slice and save each tile
+            for (let row = 0; row < rows; row++) {
+                for (let col = 0; col < cols; col++) {
+                    const tileCanvas = document.createElement('canvas');
+                    tileCanvas.width = state.tileSize;
+                    tileCanvas.height = state.tileSize;
+                    const ctx = tileCanvas.getContext('2d');
+                    ctx.imageSmoothingEnabled = false;
+
+                    ctx.drawImage(
+                        state.previewCanvas,
+                        col * state.tileSize, row * state.tileSize,
+                        state.tileSize, state.tileSize,
+                        0, 0,
+                        state.tileSize, state.tileSize
+                    );
+
+                    const tileName = `${state.assetName}_r${row}_c${col}`;
+                    tileNames.push(tileName);
+
+                    await crucibleClient.publishToMasterTileSheet(
+                        state.projectId,
+                        tileName,
+                        tileCanvas.toDataURL('image/png'),
+                        state.tileSize,
+                        state.tileSize
+                    );
+                }
+            }
+
+            // Create tile group
+            const arrangement = [];
+            for (let row = 0; row < rows; row++) {
+                const rowArr = [];
+                for (let col = 0; col < cols; col++) {
+                    rowArr.push(`${state.assetName}_r${row}_c${col}`);
+                }
+                arrangement.push(rowArr);
+            }
+
+            await crucibleClient.createTileGroup(
+                state.projectId,
+                state.assetName,
+                cols,
+                rows,
+                arrangement
+            );
+        }
+
+        // ==========================================
+        // TOAST
+        // ==========================================
+        function showToast(message, isError = false) {
+            elements.toast.textContent = message;
+            elements.toast.classList.toggle('error', isError);
+            elements.toast.classList.add('visible');
+
+            setTimeout(() => {
+                elements.toast.classList.remove('visible');
+            }, 3000);
+        }
+
+        // ==========================================
+        // START
+        // ==========================================
+        init();
+    </script>
+</body>
+</html>

@@ -2145,6 +2145,139 @@ class CrucibleClient {
     }
 
     // =============================================
+    // MASTER BACKGROUND SHEET (Frameweft)
+    // =============================================
+    // Background assets for Level Forge
+
+    async getMasterBackgroundSheet(projectId) {
+        if (!this.client) throw new Error('Crucible not initialized');
+
+        const { data, error } = await this.client
+            .from('projects')
+            .select('master_background_sheet_png, master_background_sheet_atlas, master_background_sheet_updated_at')
+            .eq('id', projectId)
+            .single();
+
+        if (error) throw error;
+
+        return {
+            png: data.master_background_sheet_png,
+            atlas: data.master_background_sheet_atlas || { size: { w: 0, h: 0 }, backgrounds: {} },
+            updatedAt: data.master_background_sheet_updated_at
+        };
+    }
+
+    async saveMasterBackgroundSheet(projectId, png, atlas) {
+        if (!this.client) throw new Error('Crucible not initialized');
+
+        const { error } = await this.client
+            .from('projects')
+            .update({
+                master_background_sheet_png: png,
+                master_background_sheet_atlas: atlas,
+                master_background_sheet_updated_at: new Date().toISOString()
+            })
+            .eq('id', projectId);
+
+        if (error) throw error;
+    }
+
+    async publishToMasterBackgroundSheet(projectId, name, imageData, width, height, tilesW, tilesH) {
+        if (!this.client) throw new Error('Crucible not initialized');
+
+        const existing = await this.getMasterBackgroundSheet(projectId);
+
+        // Check for duplicate name
+        if (existing.atlas?.backgrounds?.[name]) {
+            throw new Error(`Background "${name}" already exists`);
+        }
+
+        if (typeof MasterSheetManager !== 'undefined') {
+            const manager = new MasterSheetManager();
+
+            const newBackground = {
+                name,
+                imageData,
+                width,
+                height,
+                source: 'frameweft'
+            };
+
+            // Use appendSprite for stable coordinates
+            const result = await manager.appendSprite(existing.atlas, existing.png, newBackground);
+
+            // Update atlas to use 'backgrounds' key instead of 'sprites'
+            const backgroundDef = result.atlas.sprites[name];
+            delete result.atlas.sprites[name];
+
+            if (!result.atlas.backgrounds) {
+                result.atlas.backgrounds = {};
+            }
+            result.atlas.backgrounds[name] = {
+                ...backgroundDef,
+                tilesW,
+                tilesH
+            };
+
+            await this.saveMasterBackgroundSheet(projectId, result.png, result.atlas);
+            return result;
+        } else {
+            throw new Error('MasterSheetManager not available');
+        }
+    }
+
+    async removeFromMasterBackgroundSheet(projectId, backgroundName) {
+        if (!this.client) throw new Error('Crucible not initialized');
+
+        const existing = await this.getMasterBackgroundSheet(projectId);
+
+        if (!existing.atlas?.backgrounds?.[backgroundName]) {
+            throw new Error(`Background "${backgroundName}" not found`);
+        }
+
+        if (typeof MasterSheetManager !== 'undefined') {
+            const manager = new MasterSheetManager();
+
+            // Temporarily move background to sprites for softRemoveSprite to work
+            const bgDef = existing.atlas.backgrounds[backgroundName];
+            existing.atlas.sprites = existing.atlas.sprites || {};
+            existing.atlas.sprites[backgroundName] = bgDef;
+
+            const result = await manager.softRemoveSprite(existing.atlas, existing.png, backgroundName);
+
+            // Clean up - remove from both sprites and backgrounds
+            delete result.atlas.sprites[backgroundName];
+            delete result.atlas.backgrounds[backgroundName];
+
+            await this.saveMasterBackgroundSheet(projectId, result.png, result.atlas);
+            return result;
+        } else {
+            throw new Error('MasterSheetManager not available');
+        }
+    }
+
+    async renameBackground(projectId, oldName, newName) {
+        if (!this.client) throw new Error('Crucible not initialized');
+
+        const existing = await this.getMasterBackgroundSheet(projectId);
+
+        if (!existing.atlas?.backgrounds?.[oldName]) {
+            throw new Error(`Background "${oldName}" not found`);
+        }
+        if (existing.atlas?.backgrounds?.[newName]) {
+            throw new Error(`Background "${newName}" already exists`);
+        }
+
+        // Update atlas with new name
+        const newAtlas = { ...existing.atlas, backgrounds: { ...existing.atlas.backgrounds } };
+        newAtlas.backgrounds[newName] = { ...newAtlas.backgrounds[oldName] };
+        delete newAtlas.backgrounds[oldName];
+
+        await this.saveMasterBackgroundSheet(projectId, existing.png, newAtlas);
+        return { renamed: true, from: oldName, to: newName };
+    }
+
+    // =============================================
     // DATA MIGRATION (Legacy to Separate Sheets)
     // =============================================
     // Migrates data from unified master_sheet to separate master_tile_sheet and master_sprite_sheet
