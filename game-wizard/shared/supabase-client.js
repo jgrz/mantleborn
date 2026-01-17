@@ -1706,7 +1706,9 @@ class CrucibleClient {
         if (typeof MasterSheetManager !== 'undefined') {
             const manager = new MasterSheetManager();
             const newSprite = { name, imageData, width, height, source };
-            const result = await manager.addSprite(
+
+            // Use appendSprite for stable coordinates (no full repack)
+            const result = await manager.appendSprite(
                 existing.atlas,
                 existing.png,
                 newSprite
@@ -1726,7 +1728,9 @@ class CrucibleClient {
 
         if (typeof MasterSheetManager !== 'undefined') {
             const manager = new MasterSheetManager();
-            const result = await manager.removeSprite(
+
+            // Use softRemoveSprite for stable coordinates (no full repack)
+            const result = await manager.softRemoveSprite(
                 existing.atlas,
                 existing.png,
                 tileName
@@ -1849,14 +1853,16 @@ class CrucibleClient {
         if (typeof MasterSheetManager !== 'undefined') {
             const manager = new MasterSheetManager();
             const newSprite = { name, imageData, width, height, source };
-            const result = await manager.addSprite(
+
+            // Use appendSprite for stable coordinates (no full repack)
+            const result = await manager.appendSprite(
                 existing.atlas,
                 existing.png,
                 newSprite
             );
 
-            // Preserve animations from existing atlas
-            if (existing.atlas?.animations) {
+            // appendSprite already preserves animations, but ensure they're there
+            if (existing.atlas?.animations && !result.atlas.animations) {
                 result.atlas.animations = existing.atlas.animations;
             }
 
@@ -1874,14 +1880,16 @@ class CrucibleClient {
 
         if (typeof MasterSheetManager !== 'undefined') {
             const manager = new MasterSheetManager();
-            const result = await manager.removeSprite(
+
+            // Use softRemoveSprite for stable coordinates (no full repack)
+            const result = await manager.softRemoveSprite(
                 existing.atlas,
                 existing.png,
                 spriteName
             );
 
-            // Preserve animations from existing atlas
-            if (existing.atlas?.animations) {
+            // softRemoveSprite already preserves animations, but ensure they're there
+            if (existing.atlas?.animations && !result.atlas.animations) {
                 result.atlas.animations = existing.atlas.animations;
             }
 
@@ -2023,6 +2031,42 @@ class CrucibleClient {
     // =============================================
     // Combines master tile sheet + master sprite sheet for game engine export
 
+    /**
+     * Optimize the master sprite sheet by repacking for minimal size
+     * Use this before export to create a tight, optimized sheet
+     * @returns {Object} {png, atlas, stats: {beforeSize, afterSize, savingsPercent}}
+     */
+    async optimizeMasterSpriteSheet(projectId) {
+        if (!this.client) throw new Error('Crucible not initialized');
+
+        const existing = await this.getMasterSpriteSheet(projectId);
+
+        if (!existing.png || !existing.atlas?.sprites || Object.keys(existing.atlas.sprites).length === 0) {
+            return { png: null, atlas: existing.atlas, stats: { beforeSize: '0x0', afterSize: '0x0', savingsPercent: 0 } };
+        }
+
+        if (typeof MasterSheetManager !== 'undefined') {
+            const manager = new MasterSheetManager();
+            const result = await manager.optimizePack(existing.atlas, existing.png);
+
+            console.log(`Master Sprite Sheet optimization:`);
+            console.log(`  Before: ${result.stats.beforeSize}`);
+            console.log(`  After:  ${result.stats.afterSize}`);
+            console.log(`  Savings: ${result.stats.savingsPercent}%`);
+
+            // Don't save back - this is for export only
+            // The sprawling sheet is kept as the working copy
+            return result;
+        } else {
+            throw new Error('MasterSheetManager not available');
+        }
+    }
+
+    /**
+     * Build consolidated master sheet for game export
+     * Combines master tile sheet + master sprite sheet into one optimized sheet
+     * @returns {Object} {png, atlas, stats}
+     */
     async buildMasterSheetForExport(projectId) {
         if (!this.client) throw new Error('Crucible not initialized');
 
@@ -2031,6 +2075,11 @@ class CrucibleClient {
 
         if (typeof MasterSheetManager !== 'undefined') {
             const manager = new MasterSheetManager();
+
+            // Calculate before sizes
+            const tileBefore = masterTileSheet.atlas?.size || { w: 0, h: 0 };
+            const spriteBefore = masterSpriteSheet.atlas?.size || { w: 0, h: 0 };
+            const totalBeforePixels = (tileBefore.w * tileBefore.h) + (spriteBefore.w * spriteBefore.h);
 
             // Extract all assets from both master sheets
             const tileSprites = masterTileSheet.png
@@ -2044,14 +2093,52 @@ class CrucibleClient {
             const allAssets = [...tileSprites, ...spriteSprites];
 
             if (allAssets.length === 0) {
-                return { png: null, atlas: { size: { w: 0, h: 0 }, sprites: {} } };
+                return {
+                    png: null,
+                    atlas: { size: { w: 0, h: 0 }, sprites: {} },
+                    stats: {
+                        tilesBefore: `${tileBefore.w}x${tileBefore.h}`,
+                        spritesBefore: `${spriteBefore.w}x${spriteBefore.h}`,
+                        combinedAfter: '0x0',
+                        tilesCount: 0,
+                        spritesCount: 0,
+                        savingsPercent: 0
+                    }
+                };
             }
 
             const { png, atlas } = await manager.packSprites(allAssets);
 
+            // Calculate after size and savings
+            const afterPixels = atlas.size.w * atlas.size.h;
+            const savingsPercent = totalBeforePixels > 0
+                ? Math.round((1 - afterPixels / totalBeforePixels) * 100)
+                : 0;
+
+            const stats = {
+                tilesBefore: `${tileBefore.w}x${tileBefore.h}`,
+                spritesBefore: `${spriteBefore.w}x${spriteBefore.h}`,
+                combinedAfter: `${atlas.size.w}x${atlas.size.h}`,
+                tilesCount: tileSprites.length,
+                spritesCount: spriteSprites.length,
+                savingsPercent
+            };
+
+            console.log(`=== MASTER SHEET EXPORT ===`);
+            console.log(`Master Tile Sheet:   ${stats.tilesBefore} (${stats.tilesCount} tiles)`);
+            console.log(`Master Sprite Sheet: ${stats.spritesBefore} (${stats.spritesCount} sprites)`);
+            console.log(`Combined & Optimized: ${stats.combinedAfter}`);
+            console.log(`Space savings: ${stats.savingsPercent}%`);
+            console.log(`===========================`);
+
+            // Preserve animations from sprite sheet
+            if (masterSpriteSheet.atlas?.animations) {
+                atlas.animations = masterSpriteSheet.atlas.animations;
+            }
+
             // Save consolidated master for export
             await this.saveMasterSheet(projectId, png, atlas);
-            return { png, atlas };
+            return { png, atlas, stats };
         } else {
             throw new Error('MasterSheetManager not available');
         }

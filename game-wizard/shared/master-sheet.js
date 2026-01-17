@@ -273,11 +273,8 @@ class MasterSheetManager {
     }
 
     /**
-     * Add a sprite to an existing master sheet
-     * @param {Object} existingAtlas - Current atlas
-     * @param {string} existingPng - Current PNG (base64)
-     * @param {Object} newSprite - {name, imageData, width, height, source}
-     * @returns {Object} {png, atlas}
+     * Add a sprite to an existing master sheet (LEGACY - does full repack)
+     * @deprecated Use appendSprite() instead for stable coordinates
      */
     async addSprite(existingAtlas, existingPng, newSprite) {
         // Load existing sprites from the sheet
@@ -291,11 +288,123 @@ class MasterSheetManager {
     }
 
     /**
-     * Remove a sprite from the master sheet
+     * Append a sprite to an existing master sheet WITHOUT repacking
+     * Finds empty space or expands canvas. Existing sprite coordinates stay stable.
      * @param {Object} existingAtlas - Current atlas
      * @param {string} existingPng - Current PNG (base64)
-     * @param {string} spriteName - Name of sprite to remove
+     * @param {Object} newSprite - {name, imageData, width, height, source}
      * @returns {Object} {png, atlas}
+     */
+    async appendSprite(existingAtlas, existingPng, newSprite) {
+        // Handle empty/new sheet case
+        if (!existingPng || !existingAtlas || !existingAtlas.sprites || Object.keys(existingAtlas.sprites).length === 0) {
+            // First sprite - create new sheet
+            return this.packSprites([newSprite]);
+        }
+
+        // Load existing canvas
+        const existingImg = await this.loadImage(existingPng);
+        let canvasWidth = existingImg.width;
+        let canvasHeight = existingImg.height;
+
+        // Build packer from existing placements to track free space
+        let packer = this.buildPackerFromAtlas(existingAtlas, canvasWidth, canvasHeight);
+
+        // Try to insert new sprite
+        let placement = packer.insert(newSprite.width, newSprite.height);
+
+        // If doesn't fit, expand canvas and try again
+        let expandAttempts = 0;
+        while (!placement && expandAttempts < 4) {
+            // Expand canvas (alternate between width and height)
+            if (expandAttempts % 2 === 0) {
+                canvasWidth = Math.min(canvasWidth * 2, this.maxSize);
+            } else {
+                canvasHeight = Math.min(canvasHeight * 2, this.maxSize);
+            }
+
+            if (canvasWidth > this.maxSize && canvasHeight > this.maxSize) {
+                throw new Error(`Cannot fit sprite - sheet would exceed ${this.maxSize}x${this.maxSize}`);
+            }
+
+            // Rebuild packer with new size
+            packer = this.buildPackerFromAtlas(existingAtlas, canvasWidth, canvasHeight);
+            placement = packer.insert(newSprite.width, newSprite.height);
+            expandAttempts++;
+        }
+
+        if (!placement) {
+            throw new Error('Could not find space for new sprite');
+        }
+
+        // Create new canvas (possibly expanded)
+        const canvas = document.createElement('canvas');
+        canvas.width = canvasWidth;
+        canvas.height = canvasHeight;
+        const ctx = canvas.getContext('2d');
+        ctx.imageSmoothingEnabled = false;
+
+        // Draw existing image
+        ctx.drawImage(existingImg, 0, 0);
+
+        // Draw new sprite at found position
+        if (newSprite.imageData instanceof ImageData) {
+            const tempCanvas = document.createElement('canvas');
+            tempCanvas.width = newSprite.width;
+            tempCanvas.height = newSprite.height;
+            const tempCtx = tempCanvas.getContext('2d');
+            tempCtx.putImageData(newSprite.imageData, 0, 0);
+            ctx.drawImage(tempCanvas, placement.x, placement.y);
+        } else if (newSprite.imageData instanceof HTMLImageElement || newSprite.imageData instanceof HTMLCanvasElement) {
+            ctx.drawImage(newSprite.imageData, placement.x, placement.y, newSprite.width, newSprite.height);
+        }
+
+        // Update atlas (copy existing, add new)
+        const atlas = {
+            size: { w: canvasWidth, h: canvasHeight },
+            sprites: { ...existingAtlas.sprites }
+        };
+
+        atlas.sprites[newSprite.name] = {
+            x: placement.x,
+            y: placement.y,
+            w: newSprite.width,
+            h: newSprite.height,
+            source: newSprite.source
+        };
+
+        // Preserve animations
+        if (existingAtlas.animations) {
+            atlas.animations = existingAtlas.animations;
+        }
+
+        const png = canvas.toDataURL('image/png');
+        return { png, atlas };
+    }
+
+    /**
+     * Build a MaxRectsBinPack with existing sprite placements marked as used
+     */
+    buildPackerFromAtlas(atlas, width, height) {
+        const packer = new MaxRectsBinPack(width, height, this.padding);
+
+        // Mark all existing sprites as used rectangles
+        for (const [name, def] of Object.entries(atlas.sprites)) {
+            const node = {
+                x: def.x,
+                y: def.y,
+                width: def.w + this.padding,
+                height: def.h + this.padding
+            };
+            packer.placeRectangle(node);
+        }
+
+        return packer;
+    }
+
+    /**
+     * Remove a sprite from the master sheet (LEGACY - does full repack)
+     * @deprecated Use softRemoveSprite() instead for stable coordinates
      */
     async removeSprite(existingAtlas, existingPng, spriteName) {
         // Load existing sprites
@@ -306,6 +415,94 @@ class MasterSheetManager {
 
         // Repack
         return this.packSprites(filtered);
+    }
+
+    /**
+     * Remove a sprite from atlas WITHOUT repacking the image
+     * Leaves a "hole" in the PNG but coordinates stay stable for other sprites.
+     * @param {Object} existingAtlas - Current atlas
+     * @param {string} existingPng - Current PNG (base64)
+     * @param {string} spriteName - Name of sprite to remove
+     * @returns {Object} {png, atlas}
+     */
+    async softRemoveSprite(existingAtlas, existingPng, spriteName) {
+        if (!existingAtlas || !existingAtlas.sprites || !existingAtlas.sprites[spriteName]) {
+            return { png: existingPng, atlas: existingAtlas };
+        }
+
+        // Get sprite location to clear
+        const spriteToRemove = existingAtlas.sprites[spriteName];
+
+        // Load and modify canvas to clear the sprite area (optional - makes holes transparent)
+        const existingImg = await this.loadImage(existingPng);
+        const canvas = document.createElement('canvas');
+        canvas.width = existingImg.width;
+        canvas.height = existingImg.height;
+        const ctx = canvas.getContext('2d');
+        ctx.drawImage(existingImg, 0, 0);
+
+        // Clear the removed sprite's area
+        ctx.clearRect(spriteToRemove.x, spriteToRemove.y, spriteToRemove.w, spriteToRemove.h);
+
+        // Remove from atlas
+        const atlas = {
+            size: existingAtlas.size,
+            sprites: { ...existingAtlas.sprites }
+        };
+        delete atlas.sprites[spriteName];
+
+        // Preserve animations
+        if (existingAtlas.animations) {
+            atlas.animations = existingAtlas.animations;
+        }
+
+        const png = canvas.toDataURL('image/png');
+        return { png, atlas };
+    }
+
+    /**
+     * Optimize/repack a sheet for export
+     * Creates a tightly packed version - use for final game export
+     * @param {Object} existingAtlas - Current atlas (sprawling)
+     * @param {string} existingPng - Current PNG (base64)
+     * @returns {Object} {png, atlas, stats: {beforeSize, afterSize, savings}}
+     */
+    async optimizePack(existingAtlas, existingPng) {
+        // Extract all sprites
+        const sprites = await this.extractSpritesFromSheet(existingAtlas, existingPng);
+
+        if (sprites.length === 0) {
+            return {
+                png: null,
+                atlas: { size: { w: 0, h: 0 }, sprites: {} },
+                stats: { beforeSize: 0, afterSize: 0, savingsPercent: 0 }
+            };
+        }
+
+        // Calculate before size
+        const beforeSize = existingAtlas.size.w * existingAtlas.size.h;
+
+        // Full repack for optimal layout
+        const result = await this.packSprites(sprites);
+
+        // Calculate after size
+        const afterSize = result.atlas.size.w * result.atlas.size.h;
+        const savingsPercent = Math.round((1 - afterSize / beforeSize) * 100);
+
+        // Preserve animations from original
+        if (existingAtlas.animations) {
+            result.atlas.animations = existingAtlas.animations;
+        }
+
+        return {
+            png: result.png,
+            atlas: result.atlas,
+            stats: {
+                beforeSize: `${existingAtlas.size.w}x${existingAtlas.size.h}`,
+                afterSize: `${result.atlas.size.w}x${result.atlas.size.h}`,
+                savingsPercent
+            }
+        };
     }
 
     /**
