@@ -1855,6 +1855,11 @@ class CrucibleClient {
                 newSprite
             );
 
+            // Preserve animations from existing atlas
+            if (existing.atlas?.animations) {
+                result.atlas.animations = existing.atlas.animations;
+            }
+
             await this.saveMasterSpriteSheet(projectId, result.png, result.atlas);
             return result;
         } else {
@@ -1874,6 +1879,11 @@ class CrucibleClient {
                 existing.png,
                 spriteName
             );
+
+            // Preserve animations from existing atlas
+            if (existing.atlas?.animations) {
+                result.atlas.animations = existing.atlas.animations;
+            }
 
             await this.saveMasterSpriteSheet(projectId, result.png, result.atlas);
             return result;
