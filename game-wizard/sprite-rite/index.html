@@ -1331,6 +1331,124 @@
         .generation-queue-panel.visible {
             display: block;
         }
+
+        /* Speed Mode Settings */
+        .settings-btn {
+            background: transparent;
+            border: none;
+            color: var(--stone-mid);
+            cursor: pointer;
+            font-size: 14px;
+            padding: 4px;
+            transition: color 0.15s;
+        }
+
+        .settings-btn:hover {
+            color: var(--accent-ember);
+        }
+
+        .speed-mode-indicator {
+            display: none;
+            font-size: 7px;
+            color: var(--accent-ember);
+            background: rgba(224, 112, 32, 0.2);
+            padding: 2px 6px;
+            border-radius: 3px;
+            margin-left: 8px;
+            animation: pulse 1.5s infinite;
+        }
+
+        .speed-mode-indicator.active {
+            display: inline-block;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.6; }
+        }
+
+        /* Speed Mode Settings Modal */
+        .speed-settings-modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.7);
+            z-index: 2000;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .speed-settings-modal.active {
+            display: flex;
+        }
+
+        .speed-settings-content {
+            background: var(--bg-mid);
+            border: 1px solid var(--stone-dark);
+            border-radius: 8px;
+            padding: 20px;
+            width: 300px;
+        }
+
+        .speed-settings-title {
+            font-family: 'Press Start 2P', cursive;
+            font-size: 10px;
+            color: var(--stone-bright);
+            margin-bottom: 16px;
+        }
+
+        .speed-settings-row {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 12px;
+        }
+
+        .speed-settings-key {
+            width: 60px;
+            font-size: 11px;
+            color: var(--stone-mid);
+        }
+
+        .speed-settings-key kbd {
+            background: var(--bg-surface);
+            border: 1px solid var(--stone-dark);
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-family: inherit;
+        }
+
+        .speed-settings-input {
+            flex: 1;
+            padding: 6px 10px;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 12px;
+            background: var(--bg-deep);
+            border: 1px solid var(--stone-dark);
+            border-radius: 4px;
+            color: var(--stone-bright);
+        }
+
+        .speed-settings-input:focus {
+            outline: none;
+            border-color: var(--accent-ember);
+        }
+
+        .speed-settings-actions {
+            display: flex;
+            gap: 8px;
+            margin-top: 16px;
+            justify-content: flex-end;
+        }
+
+        /* Speed mode toast styling */
+        .toast.speed-warning {
+            background: var(--accent-magma);
+            border-color: #ff6060;
+        }
     </style>
 </head>
 <body>
@@ -1445,7 +1563,8 @@
             <!-- Create Sprite Panel -->
             <div class="sidebar-section create-sprite-panel" id="createPanel">
                 <div class="sidebar-header">
-                    Create Sprite
+                    <span>Create Sprite <span class="speed-mode-indicator" id="speedModeIndicator">SPEED</span></span>
+                    <button class="settings-btn" id="speedSettingsBtn" title="Speed Mode Settings">&#9881;</button>
                 </div>
                 <div class="sidebar-content">
                     <div class="form-group">
@@ -1523,6 +1642,31 @@
             <div class="dialog-actions">
                 <button class="btn btn-danger" id="dialogConfirm">Remove</button>
                 <button class="btn" id="dialogCancel">Cancel</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Speed Mode Settings Modal -->
+    <div class="speed-settings-modal" id="speedSettingsModal">
+        <div class="speed-settings-content">
+            <div class="speed-settings-title">Speed Mode Suffixes</div>
+            <div class="speed-settings-row">
+                <div class="speed-settings-key"><kbd>&#8594;</kbd> Right</div>
+                <input type="text" class="speed-settings-input" id="suffixSide" value="_Side">
+            </div>
+            <div class="speed-settings-row">
+                <div class="speed-settings-key"><kbd>&#8593;</kbd> Up</div>
+                <input type="text" class="speed-settings-input" id="suffixAway" value="_Away">
+            </div>
+            <div class="speed-settings-row">
+                <div class="speed-settings-key"><kbd>&#8595;</kbd> Down</div>
+                <input type="text" class="speed-settings-input" id="suffixFront" value="_Front">
+            </div>
+            <div style="font-size: 10px; color: var(--stone-mid); margin-top: 8px;">
+                <kbd>&#8592;</kbd> Left exits speed mode (all sprites face right!)
+            </div>
+            <div class="speed-settings-actions">
+                <button class="btn" id="speedSettingsClose">Close</button>
             </div>
         </div>
     </div>
@@ -1799,7 +1943,18 @@
 
             // AI Generation
             skeletonEditor: null,   // SkeletonEditor instance
-            generationQueue: null   // GenerationQueue instance
+            generationQueue: null,  // GenerationQueue instance
+
+            // Speed Mode (keyboard workflow)
+            speedMode: false,
+            speedModeBaseName: '',     // Base name from sheet or last save
+            speedModeCurrentSuffix: '', // Current direction suffix
+            lastSavedSpriteName: '',   // Last saved sprite name (without suffix/number)
+            speedModeSuffixes: {
+                side: '_Side',
+                away: '_Away',
+                front: '_Front'
+            }
         };
 
         // ==========================================
@@ -1866,6 +2021,15 @@
             spriteDirectionNotice: document.getElementById('spriteDirectionNotice'),
             dontShowAgain: document.getElementById('dontShowAgain'),
             dismissNotice: document.getElementById('dismissNotice'),
+
+            // Speed Mode
+            speedModeIndicator: document.getElementById('speedModeIndicator'),
+            speedSettingsBtn: document.getElementById('speedSettingsBtn'),
+            speedSettingsModal: document.getElementById('speedSettingsModal'),
+            speedSettingsClose: document.getElementById('speedSettingsClose'),
+            suffixSide: document.getElementById('suffixSide'),
+            suffixAway: document.getElementById('suffixAway'),
+            suffixFront: document.getElementById('suffixFront'),
 
             // AI Generation
             generateDropdownBtn: document.getElementById('generateDropdownBtn'),
@@ -1947,6 +2111,144 @@
             if (!state.selection) return 'sprite_01';
             const { x, y, w, h } = state.selection;
             return `sprite_${x}_${y}_${w}x${h}`;
+        }
+
+        // ==========================================
+        // Speed Mode Functions
+        // ==========================================
+        function activateSpeedMode() {
+            state.speedMode = true;
+            elements.speedModeIndicator.classList.add('active');
+
+            // Determine base name: last saved sprite name OR sprite sheet filename
+            if (state.lastSavedSpriteName) {
+                state.speedModeBaseName = state.lastSavedSpriteName;
+            } else if (state.imageName) {
+                // Remove file extension
+                state.speedModeBaseName = state.imageName.replace(/\.[^.]+$/, '');
+            } else {
+                state.speedModeBaseName = 'sprite';
+            }
+
+            state.speedModeCurrentSuffix = '';
+            updateSpeedModeName();
+        }
+
+        function deactivateSpeedMode(showWarning = false, warningMessage = '') {
+            state.speedMode = false;
+            state.speedModeCurrentSuffix = '';
+            elements.speedModeIndicator.classList.remove('active');
+
+            if (showWarning && warningMessage) {
+                showToast(warningMessage, 'error');
+            }
+        }
+
+        function updateSpeedModeName() {
+            if (!state.speedMode) return;
+
+            const baseName = state.speedModeBaseName;
+            const suffix = state.speedModeCurrentSuffix;
+            const fullName = baseName + suffix;
+
+            // Check if this name exists and increment if needed
+            const finalName = getUniqueSpriteName(fullName);
+            elements.spriteName.value = finalName;
+        }
+
+        function getUniqueSpriteName(baseName) {
+            // Get all existing sprite names
+            const existingNames = new Set();
+
+            // From current sheet sprites
+            state.sprites.forEach(s => existingNames.add(s.name));
+
+            // From master sheet sprites
+            state.masterSheetSprites.forEach(s => existingNames.add(s.name));
+
+            if (!existingNames.has(baseName)) {
+                return baseName;
+            }
+
+            // Find next available number
+            let counter = 2;
+            while (existingNames.has(`${baseName}_${counter}`)) {
+                counter++;
+            }
+            return `${baseName}_${counter}`;
+        }
+
+        function handleSpeedModeArrowKey(direction) {
+            if (!state.speedMode) return false;
+
+            switch (direction) {
+                case 'ArrowRight':
+                    state.speedModeCurrentSuffix = state.speedModeSuffixes.side;
+                    updateSpeedModeName();
+                    return true;
+
+                case 'ArrowUp':
+                    state.speedModeCurrentSuffix = state.speedModeSuffixes.away;
+                    updateSpeedModeName();
+                    return true;
+
+                case 'ArrowDown':
+                    state.speedModeCurrentSuffix = state.speedModeSuffixes.front;
+                    updateSpeedModeName();
+                    return true;
+
+                case 'ArrowLeft':
+                    deactivateSpeedMode(true, 'All sprites face right! Speed mode exited.');
+                    return true;
+            }
+
+            return false;
+        }
+
+        function extractBaseName(spriteName) {
+            // Remove any trailing _N numbers and direction suffixes to get base name
+            // e.g., "walk_Side_2" -> "walk", "run_Away" -> "run"
+            let name = spriteName;
+
+            // Remove trailing _N number
+            name = name.replace(/_\d+$/, '');
+
+            // Remove direction suffixes (case insensitive)
+            const suffixes = [
+                state.speedModeSuffixes.side,
+                state.speedModeSuffixes.away,
+                state.speedModeSuffixes.front
+            ].filter(s => s); // Filter out empty strings
+
+            for (const suffix of suffixes) {
+                if (name.toLowerCase().endsWith(suffix.toLowerCase())) {
+                    name = name.slice(0, -suffix.length);
+                    break;
+                }
+            }
+
+            return name;
+        }
+
+        function openSpeedSettings() {
+            // Load current values into inputs
+            elements.suffixSide.value = state.speedModeSuffixes.side;
+            elements.suffixAway.value = state.speedModeSuffixes.away;
+            elements.suffixFront.value = state.speedModeSuffixes.front;
+            elements.speedSettingsModal.classList.add('active');
+        }
+
+        function closeSpeedSettings() {
+            // Save values from inputs
+            state.speedModeSuffixes.side = elements.suffixSide.value;
+            state.speedModeSuffixes.away = elements.suffixAway.value;
+            state.speedModeSuffixes.front = elements.suffixFront.value;
+            elements.speedSettingsModal.classList.remove('active');
+
+            // Update name if in speed mode
+            if (state.speedMode) {
+                updateSpeedModeName();
+            }
         }
 
         // ==========================================
@@ -2777,6 +3079,12 @@
                     updatePreviews();
                     renderSelection();
                     showCreatePanel();
+
+                    // Speed mode: auto-populate name field
+                    if (state.speedMode) {
+                        updateSpeedModeName();
+                    }
+
                     // Auto-focus sprite name for immediate typing
                     setTimeout(() => elements.spriteName.focus(), 50);
                 } else {
@@ -3089,6 +3397,9 @@
                 updateSpriteList();
                 updateMasterSheetPreview();
                 render();
+
+                // Track last saved sprite name for speed mode (extract base name)
+                state.lastSavedSpriteName = extractBaseName(name);
 
                 showToast(`Sprite "${name}" saved to master sheet!`);
             } catch (error) {
@@ -4111,24 +4422,41 @@
         // Keyboard shortcuts
         window.addEventListener('keydown', (e) => {
             // Check if a modal is open - skip hotkeys except Escape
-            const modalOpen = document.querySelector('.dialog-overlay.show, .ai-modal-overlay.open');
+            const modalOpen = document.querySelector('.dialog-overlay.show, .ai-modal-overlay.open, .speed-settings-modal.active');
             const inTextInput = document.activeElement.tagName === 'INPUT' ||
                                document.activeElement.tagName === 'TEXTAREA' ||
                                document.activeElement.isContentEditable;
 
-            // Escape to cancel selection or close modal
+            // Escape to cancel selection, close modal, or exit speed mode
             if (e.key === 'Escape') {
+                if (elements.speedSettingsModal.classList.contains('active')) {
+                    closeSpeedSettings();
+                    return;
+                }
                 if (modalOpen) {
                     // Let modal handle its own close
                     return;
+                }
+                if (state.speedMode) {
+                    deactivateSpeedMode();
                 }
                 if (state.selection) {
                     cancelSprite();
                 }
             }
 
-            // Skip all other hotkeys if modal is open or user is typing
-            if (modalOpen || inTextInput) return;
+            // Skip all other hotkeys if modal is open
+            if (modalOpen) return;
+
+            // Speed mode arrow keys (work even when in text input if speed mode is active)
+            if (state.speedMode && ['ArrowRight', 'ArrowUp', 'ArrowDown', 'ArrowLeft'].includes(e.key)) {
+                e.preventDefault();
+                handleSpeedModeArrowKey(e.key);
+                return;
+            }
+
+            // Skip other hotkeys if user is typing
+            if (inTextInput) return;
 
             // Enter to save sprite
             if (e.key === 'Enter' && state.selection && elements.createPanel.classList.contains('active')) {
@@ -4138,12 +4466,37 @@
             if (e.key === 'Delete' && state.selectedSpriteIndex >= 0) {
                 confirmDeleteSprite(state.selectedSpriteIndex);
             }
-            // A for Auto-Detect mode
+            // A for Auto-Detect mode (also activates speed mode)
             if ((e.key === 'a' || e.key === 'A') && !e.ctrlKey && !e.metaKey) {
                 e.preventDefault();
                 if (state.image) {
+                    const enteringAutoDetect = state.toolMode !== 'autoDetect';
                     setToolMode(state.toolMode === 'autoDetect' ? null : 'autoDetect');
+                    if (enteringAutoDetect) {
+                        activateSpeedMode();
+                    } else {
+                        deactivateSpeedMode();
+                    }
                 }
+            }
+        });
+
+        // Exit speed mode when user manually types in sprite name field
+        elements.spriteName.addEventListener('input', () => {
+            if (state.speedMode) {
+                // User is manually typing, exit speed mode
+                deactivateSpeedMode();
+            }
+        });
+
+        // Speed settings button
+        elements.speedSettingsBtn.addEventListener('click', openSpeedSettings);
+        elements.speedSettingsClose.addEventListener('click', closeSpeedSettings);
+
+        // Close speed settings when clicking outside
+        elements.speedSettingsModal.addEventListener('click', (e) => {
+            if (e.target === elements.speedSettingsModal) {
+                closeSpeedSettings();
             }
         });
 
