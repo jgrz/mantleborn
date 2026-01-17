@@ -1501,42 +1501,10 @@
                     </div>
                 </div>
 
-                <!-- Shared Style Options -->
-                <div class="form-row">
-                    <div class="form-group">
-                        <label class="form-label">Outline</label>
-                        <select class="form-input" id="aiOutline">
-                            <option value="none">None</option>
-                            <option value="single color black outline" selected>Black Outline</option>
-                            <option value="single color colored outline">Colored Outline</option>
-                        </select>
-                    </div>
-                    <div class="form-group">
-                        <label class="form-label">Shading</label>
-                        <select class="form-input" id="aiShading">
-                            <option value="flat shading">Flat</option>
-                            <option value="basic shading" selected>Basic</option>
-                            <option value="detailed shading">Detailed</option>
-                        </select>
-                    </div>
-                </div>
-                <div class="form-row">
-                    <div class="form-group">
-                        <label class="form-label">Detail Level</label>
-                        <select class="form-input" id="aiDetail">
-                            <option value="low detail">Low</option>
-                            <option value="medium detail" selected>Medium</option>
-                            <option value="high detail">High</option>
-                        </select>
-                    </div>
-                    <div class="form-group">
-                        <label class="form-label">Tile Size</label>
-                        <select class="form-input" id="aiSize">
-                            <option value="16" selected>16px</option>
-                            <option value="24">24px</option>
-                            <option value="32">32px</option>
-                        </select>
-                    </div>
+                <!-- Project Style (inherited from Crucible) -->
+                <div id="projectStyleInfo" style="display: flex; align-items: center; gap: 8px; padding: 10px 12px; background: var(--stone-darker); border-radius: 4px; border: 1px solid var(--stone-dark); margin-bottom: 8px;">
+                    <span style="color: var(--stone-mid); font-size: 11px;">Project Style:</span>
+                    <span id="projectStyleText" style="color: var(--stone-light); font-size: 11px; font-weight: 500;">Loading...</span>
                 </div>
                 <p style="font-size: 11px; color: var(--stone-mid); margin-top: 8px;">
                     Generation takes 2-5 minutes. Track progress in the queue panel.
@@ -3826,52 +3794,63 @@
         // AI GENERATION
         // ==========================================
         async function openAiModal() {
-            // Pre-fill with project settings if available
+            // Load and store project settings
+            const styleInfoEl = document.getElementById('projectStyleText');
+
+            // Default values
+            state.projectStyle = {
+                outline: 'single color black outline',
+                shading: 'basic shading',
+                detail: 'medium detail',
+                size: 16
+            };
+
             if (state.projectId) {
                 try {
                     const settings = await crucibleClient.getProjectSettings(state.projectId);
                     const style = settings.pixellab?.tileStyle || {};
                     const tileDefaults = settings.pixellab?.tileDefaults || {};
 
-                    // Pre-fill style settings
-                    if (style.outline) {
-                        document.getElementById('aiOutline').value = style.outline;
-                    }
-                    if (style.shading) {
-                        document.getElementById('aiShading').value = style.shading;
-                    }
-                    if (style.detail) {
-                        document.getElementById('aiDetail').value = style.detail;
-                    }
+                    // Store style settings (these are now inherited, not editable)
+                    if (style.outline) state.projectStyle.outline = style.outline;
+                    if (style.shading) state.projectStyle.shading = style.shading;
+                    if (style.detail) state.projectStyle.detail = style.detail;
+                    if (tileDefaults.size) state.projectStyle.size = parseInt(tileDefaults.size);
+
+                    // Pre-fill view/perspective (still editable)
                     if (style.view) {
-                        // Map project view to perspective dropdown
                         const perspectiveEl = document.getElementById('aiPerspective');
                         const tilesetViewEl = document.getElementById('aiTilesetView');
                         if (style.view.includes('top_down')) {
-                            perspectiveEl.value = style.view === 'high_top_down' ? 'high_top_down' : 'low_top_down';
-                            if (tilesetViewEl) tilesetViewEl.value = style.view;
+                            perspectiveEl.value = style.view === 'high_top_down' ? 'high top-down' : 'low top-down';
+                            if (tilesetViewEl) tilesetViewEl.value = style.view.replace('_', ' ');
                         } else if (style.view === 'side') {
                             perspectiveEl.value = 'side';
                         } else if (style.view.includes('isometric')) {
-                            perspectiveEl.value = style.view;
+                            perspectiveEl.value = 'isometric';
                         }
                     }
 
-                    // Pre-fill tile size
-                    if (tileDefaults.size) {
-                        document.getElementById('aiSize').value = tileDefaults.size;
-                    }
-
-                    // Pre-fill transition size for tilesets
+                    // Pre-fill transition size for tilesets (still editable)
                     const transitionEl = document.getElementById('aiTransitionSize');
                     if (transitionEl && tileDefaults.transitionSize) {
-                        const transitionMap = { 'sharp': 0, 'medium': 0.25, 'wide': 0.5 };
+                        const transitionMap = { 'sharp': 0.1, 'medium': 0.25, 'wide': 0.5 };
                         transitionEl.value = transitionMap[tileDefaults.transitionSize] || 0.25;
                     }
                 } catch (err) {
                     console.warn('Could not load project settings:', err);
                 }
             }
+
+            // Display project style info
+            const outlineLabel = state.projectStyle.outline === 'none' ? 'No Outline' :
+                                 state.projectStyle.outline.includes('black') ? 'Black Outline' : 'Colored Outline';
+            const shadingLabel = state.projectStyle.shading.includes('flat') ? 'Flat' :
+                                 state.projectStyle.shading.includes('detailed') ? 'Detailed' : 'Basic';
+            const detailLabel = state.projectStyle.detail.includes('low') ? 'Low Detail' :
+                                state.projectStyle.detail.includes('high') ? 'High Detail' : 'Medium Detail';
+
+            styleInfoEl.textContent = `${state.projectStyle.size}px • ${shadingLabel} • ${detailLabel} • ${outlineLabel}`;
 
             elements.aiModal.classList.add('active');
         }
@@ -3882,10 +3861,12 @@
 
         async function generateTileWithPixelLab() {
             const genType = document.querySelector('input[name="genType"]:checked').value;
-            const outline = document.getElementById('aiOutline').value;
-            const shading = document.getElementById('aiShading').value;
-            const detail = document.getElementById('aiDetail').value;
-            const size = parseInt(document.getElementById('aiSize').value);
+
+            // Use inherited project style settings
+            const outline = state.projectStyle.outline;
+            const shading = state.projectStyle.shading;
+            const detail = state.projectStyle.detail;
+            const size = state.projectStyle.size;
 
             const style = {
                 outline: outline === 'none' ? undefined : outline,
