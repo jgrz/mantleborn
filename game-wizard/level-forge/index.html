@@ -4355,11 +4355,10 @@
             const sheetNames = Object.keys(state.spriteSheets);
             const hasMasterTileSheet = state.masterTileSheetAtlas &&
                 Object.keys(state.masterTileSheetAtlas.sprites).length > 0;
-            const hasMasterSpriteSheet = state.masterSpriteSheetAtlas &&
-                Object.keys(state.masterSpriteSheetAtlas.sprites).length > 0;
+            // Note: Level Forge only shows tiles, not sprites
             const hasLegacyMasterSheet = state.masterSheetAtlas &&
                 Object.keys(state.masterSheetAtlas.sprites).length > 0 &&
-                !hasMasterTileSheet && !hasMasterSpriteSheet;
+                !hasMasterTileSheet;
 
             let options = '<option value="">-- Select Sheet --</option>';
 
@@ -4369,13 +4368,7 @@
                 options += `<option value="__master_tiles__">Master Tiles (${tileCount})</option>`;
             }
 
-            // Add master sprite sheet option if available
-            if (hasMasterSpriteSheet) {
-                const spriteCount = Object.keys(state.masterSpriteSheetAtlas.sprites).length;
-                options += `<option value="__master_sprites__">Sprites (${spriteCount})</option>`;
-            }
-
-            // Fallback: legacy master sheet
+            // Fallback: legacy master sheet (tiles only)
             if (hasLegacyMasterSheet) {
                 const count = Object.keys(state.masterSheetAtlas.sprites).length;
                 options += `<option value="__master__">Master Sheet (${count})</option>`;
@@ -4384,7 +4377,7 @@
             // Add other sheets
             options += sheetNames.map(name => `<option value="${name}">${name}</option>`).join('');
 
-            if (!hasMasterTileSheet && !hasMasterSpriteSheet && !hasLegacyMasterSheet && sheetNames.length === 0) {
+            if (!hasMasterTileSheet && !hasLegacyMasterSheet && sheetNames.length === 0) {
                 options = '<option value="">No sheets available - publish tiles in Tilesmith</option>';
             }
 
