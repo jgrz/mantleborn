@@ -48,6 +48,9 @@ class CrucibleClient {
         this.client = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
         this.initialized = true;
 
+        // Restore session from localStorage (required in Supabase v2)
+        await this.client.auth.getSession();
+
         // Load context from URL params or localStorage
         this.loadContext();
 
