@@ -142,6 +142,34 @@
             border-color: var(--accent-ember);
         }
 
+        .auth-indicator {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            padding: 6px 12px;
+            background: var(--bg-surface);
+            border: 1px solid var(--stone-dark);
+            border-radius: 4px;
+            font-size: 11px;
+            color: var(--stone-mid);
+        }
+
+        .auth-indicator.logged-in {
+            border-color: var(--tile-open);
+            color: var(--stone-light);
+        }
+
+        .auth-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: var(--stone-dark);
+        }
+
+        .auth-indicator.logged-in .auth-dot {
+            background: var(--tile-open-bright);
+        }
+
         /* Buttons */
         .btn {
             font-family: 'JetBrains Mono', monospace;
@@ -1573,6 +1601,10 @@
             <button class="btn btn-crucible" id="sendToCrucibleBtn" title="Send to Crucible" disabled>&#129516; Send to Crucible</button>
             <button class="btn btn-play" id="playDemoBtn">&#9658; Play Demo</button>
             <button class="btn" id="newLevelBtn">New Level</button>
+            <div class="auth-indicator" id="authIndicator">
+                <span class="auth-dot"></span>
+                <span class="auth-text">Guest</span>
+            </div>
         </div>
     </header>
 
@@ -2056,7 +2088,10 @@
             returnCount: 0,
 
             // AI Generation
-            generationQueue: null
+            generationQueue: null,
+
+            // Auth
+            user: null
         };
 
         const TILE_STATES = ['undefined', 'open', 'obstruction', 'spawn', 'exit', 'return'];
@@ -2068,6 +2103,7 @@
             // Header
             projectSelect: document.getElementById('projectSelect'),
             sendToCrucibleBtn: document.getElementById('sendToCrucibleBtn'),
+            authIndicator: document.getElementById('authIndicator'),
 
             // Grid editor
             grid: document.getElementById('grid'),
@@ -2167,6 +2203,20 @@
             elements.toast.textContent = message;
             elements.toast.classList.add('show');
             setTimeout(() => elements.toast.classList.remove('show'), 2500);
+        }
+
+        function updateAuthIndicator() {
+            const indicator = elements.authIndicator;
+            const textEl = indicator.querySelector('.auth-text');
+
+            if (state.user) {
+                const name = state.user.user_metadata?.display_name || state.user.email?.split('@')[0] || 'User';
+                indicator.classList.add('logged-in');
+                textEl.textContent = name;
+            } else {
+                indicator.classList.remove('logged-in');
+                textEl.textContent = 'Guest';
+            }
         }
 
         // ==========================================
@@ -5168,6 +5218,17 @@
             // Check if user has projects (displays gate if not)
             const hasProject = await checkProjectGate();
             if (!hasProject) return;
+
+            // Initialize auth
+            await crucibleClient.init();
+            state.user = await crucibleClient.getUser();
+            updateAuthIndicator();
+
+            // Listen for auth changes
+            crucibleClient.onAuthStateChange((event, session) => {
+                state.user = session?.user || null;
+                updateAuthIndicator();
+            });
 
             initGrid();
             initVisualTiles();

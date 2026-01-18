@@ -1241,16 +1241,17 @@
 
         function updateAuthIndicator() {
             if (state.user) {
+                const name = state.user.user_metadata?.display_name || state.user.email?.split('@')[0] || 'User';
                 elements.authIndicator.classList.add('logged-in');
                 elements.authIndicator.innerHTML = `
                     <div class="auth-dot"></div>
-                    <span>${state.user.email?.split('@')[0]}</span>
+                    <span>${name}</span>
                 `;
             } else {
                 elements.authIndicator.classList.remove('logged-in');
                 elements.authIndicator.innerHTML = `
                     <div class="auth-dot"></div>
-                    <span>Not logged in</span>
+                    <span>Guest</span>
                 `;
             }
         }

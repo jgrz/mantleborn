@@ -850,7 +850,7 @@
         function updateAuthUI(user) {
             if (user) {
                 // Get display name from metadata or email
-                const displayName = user.user_metadata?.display_name || user.email?.split('@')[0] || 'Wizard';
+                const displayName = user.user_metadata?.display_name || user.email?.split('@')[0] || 'User';
                 const initial = displayName.charAt(0).toUpperCase();
 
                 authBar.innerHTML = `
