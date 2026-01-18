@@ -561,38 +561,145 @@
             font-size: 11px;
         }
 
-        /* Preview Panel */
-        .preview-panel {
-            padding: 12px;
-            background: var(--bg-surface);
+        /* Modal */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.7);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+        }
+
+        .modal-overlay.hidden {
+            display: none;
+        }
+
+        .modal {
+            background: var(--bg-mid);
+            border: 1px solid var(--stone-dark);
+            border-radius: 8px;
+            min-width: 400px;
+            max-width: 500px;
+            max-height: 80vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .modal-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 12px 16px;
+            border-bottom: 1px solid var(--stone-dark);
+        }
+
+        .modal-title {
+            font-family: 'Press Start 2P', cursive;
+            font-size: 10px;
+            color: var(--accent);
+        }
+
+        .modal-close {
+            background: none;
+            border: none;
+            color: var(--stone-mid);
+            font-size: 20px;
+            cursor: pointer;
+            padding: 0 4px;
+        }
+
+        .modal-close:hover {
+            color: var(--stone-light);
+        }
+
+        .modal-body {
+            padding: 16px;
+            overflow-y: auto;
+            flex: 1;
+        }
+
+        .modal-footer {
+            display: flex;
+            gap: 8px;
+            justify-content: flex-end;
+            padding: 12px 16px;
             border-top: 1px solid var(--stone-dark);
         }
 
-        .preview-title {
-            font-size: 10px;
+        .modal-footer .btn {
+            width: auto;
+        }
+
+        /* Tile Naming Modal Specific */
+        .tile-naming-group-row {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 16px;
+        }
+
+        .tile-naming-group-row label {
+            font-size: 12px;
+            color: var(--stone-light);
+            white-space: nowrap;
+        }
+
+        .tile-naming-count {
+            font-size: 11px;
             color: var(--stone-mid);
             margin-bottom: 8px;
         }
 
-        .preview-canvas-wrapper {
+        .tile-naming-list {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+
+        .tile-naming-item {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 8px;
+            background: var(--bg-surface);
+            border-radius: 4px;
+        }
+
+        .tile-naming-preview {
+            width: 32px;
+            height: 32px;
             background: repeating-conic-gradient(
                 var(--bg-mid) 0% 25%,
                 var(--bg-deep) 0% 50%
             ) 50% / 8px 8px;
             border: 1px solid var(--stone-dark);
-            border-radius: 4px;
+            border-radius: 2px;
             display: flex;
             align-items: center;
             justify-content: center;
-            padding: 8px;
-            min-height: 100px;
         }
 
-        #previewCanvas {
+        .tile-naming-preview canvas {
             image-rendering: pixelated;
-            image-rendering: crisp-edges;
             max-width: 100%;
-            max-height: 120px;
+            max-height: 100%;
+        }
+
+        .tile-naming-index {
+            font-size: 10px;
+            color: var(--stone-mid);
+            min-width: 24px;
+        }
+
+        .tile-naming-item input {
+            flex: 1;
         }
 
         /* Toast */
@@ -783,14 +890,6 @@
                 </div>
             </div>
 
-            <!-- Preview -->
-            <div class="preview-panel">
-                <div class="preview-title" id="previewTitle">Preview (Original)</div>
-                <div class="preview-canvas-wrapper">
-                    <canvas id="previewCanvas" width="128" height="72"></canvas>
-                </div>
-            </div>
-
             <!-- Library -->
             <div class="panel-section library-section">
                 <div class="section-title">Background Library</div>
@@ -803,6 +902,30 @@
 
     <!-- Toast -->
     <div class="toast" id="toast"></div>
+
+    <!-- Multi-Tile Naming Modal -->
+    <div class="modal-overlay hidden" id="tileNamingModal">
+        <div class="modal tile-naming-modal">
+            <div class="modal-header">
+                <span class="modal-title">Save Tiles</span>
+                <button class="modal-close" id="closeTileNamingBtn">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="tile-naming-group-row">
+                    <label>Group Name:</label>
+                    <input type="text" class="form-input" id="tileGroupName" placeholder="grass_tiles">
+                </div>
+                <div class="tile-naming-count" id="tileNamingCount">Tiles (0):</div>
+                <div class="tile-naming-list" id="tileNamingList">
+                    <!-- Tile items will be generated here -->
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn" id="cancelTileNamingBtn">Cancel</button>
+                <button class="btn btn-primary" id="saveTilesBtn">Save All</button>
+            </div>
+        </div>
+    </div>
 
     <!-- Hidden file input -->
     <input type="file" id="fileInput" accept="image/*">
@@ -848,6 +971,8 @@
             // Interaction
             isDragging: false,
             isResizing: false,
+            isPanning: false,
+            spacebarHeld: false,
             resizeHandle: null,
             dragStartX: 0,
             dragStartY: 0,
@@ -855,6 +980,8 @@
             dragStartImageY: 0,
             dragStartImageScaleX: 1,
             dragStartImageScaleY: 1,
+            dragStartPanX: 0,
+            dragStartPanY: 0,
 
             // Resampling
             resampleMethod: 'lanczos',
@@ -866,7 +993,19 @@
             assetName: '',
 
             // Library
-            backgrounds: {}
+            backgrounds: {},
+
+            // Zoom button hold
+            zoomHoldInterval: null,
+            zoomHoldCount: 0,
+
+            // Lens/Grid
+            showGrid: true,
+            lensCanvas: null,
+            lensNeedsUpdate: true,
+
+            // Tile naming modal
+            pendingTileData: null  // { resampled, cols, rows, tileNames: [] }
         };
 
         // Resize handle size
@@ -881,7 +1020,6 @@
             canvasArea: document.getElementById('canvasArea'),
             workspace: document.getElementById('workspace'),
             workspaceCanvas: document.getElementById('workspaceCanvas'),
-            previewCanvas: document.getElementById('previewCanvas'),
             dropZone: document.getElementById('dropZone'),
             fileInput: document.getElementById('fileInput'),
             uploadBtn: document.getElementById('uploadBtn'),
@@ -902,14 +1040,21 @@
             methodDesc: document.getElementById('methodDesc'),
             applyResampleBtn: document.getElementById('applyResampleBtn'),
             undoResampleBtn: document.getElementById('undoResampleBtn'),
-            previewTitle: document.getElementById('previewTitle'),
             exportBackground: document.getElementById('exportBackground'),
             exportTiles: document.getElementById('exportTiles'),
             exportSprite: document.getElementById('exportSprite'),
             assetName: document.getElementById('assetName'),
             saveBtn: document.getElementById('saveBtn'),
             libraryGrid: document.getElementById('libraryGrid'),
-            toast: document.getElementById('toast')
+            toast: document.getElementById('toast'),
+            // Tile naming modal
+            tileNamingModal: document.getElementById('tileNamingModal'),
+            tileGroupName: document.getElementById('tileGroupName'),
+            tileNamingCount: document.getElementById('tileNamingCount'),
+            tileNamingList: document.getElementById('tileNamingList'),
+            closeTileNamingBtn: document.getElementById('closeTileNamingBtn'),
+            cancelTileNamingBtn: document.getElementById('cancelTileNamingBtn'),
+            saveTilesBtn: document.getElementById('saveTilesBtn')
         };
 
         // ==========================================
@@ -1096,8 +1241,10 @@
                     state.frameType = e.target.value;
                     updateFrameTypeUI();
                     updateDimensions();
+                    if (state.sourceImage) {
+                        updateLens();
+                    }
                     renderWorkspace();
-                    updatePreview();
                 });
             });
 
@@ -1105,21 +1252,29 @@
             elements.customCols.addEventListener('input', (e) => {
                 state.customCols = parseInt(e.target.value) || 1;
                 updateDimensions();
+                if (state.sourceImage) {
+                    updateLens();
+                }
                 renderWorkspace();
-                updatePreview();
             });
             elements.customRows.addEventListener('input', (e) => {
                 state.customRows = parseInt(e.target.value) || 1;
                 updateDimensions();
+                if (state.sourceImage) {
+                    updateLens();
+                }
                 renderWorkspace();
-                updatePreview();
             });
 
-            // Resampling
+            // Resampling - update lens immediately when method changes
             elements.resampleMethod.addEventListener('change', (e) => {
                 state.resampleMethod = e.target.value;
                 elements.methodDesc.textContent = methodDescriptions[state.resampleMethod];
-                // Don't auto-apply - just update the Apply button state
+                // Update lens with new resampling method
+                if (state.sourceImage) {
+                    updateLens();
+                    renderWorkspace();
+                }
                 updateResampleButtons();
             });
 
@@ -1144,9 +1299,9 @@
             // Save
             elements.saveBtn.addEventListener('click', saveAsset);
 
-            // Zoom controls
-            elements.zoomInBtn.addEventListener('click', () => setZoom(state.zoom * 1.25));
-            elements.zoomOutBtn.addEventListener('click', () => setZoom(state.zoom / 1.25));
+            // Zoom controls with hold-to-accelerate
+            setupZoomButton(elements.zoomInBtn, 1);
+            setupZoomButton(elements.zoomOutBtn, -1);
             elements.fitImageBtn.addEventListener('click', fitToImage);
             elements.fitFrameBtn.addEventListener('click', fitToFrame);
             elements.resetImageBtn.addEventListener('click', resetImage);
@@ -1161,6 +1316,31 @@
             window.addEventListener('resize', () => {
                 resizeWorkspace();
                 renderWorkspace();
+            });
+
+            // Keyboard - spacebar for panning
+            document.addEventListener('keydown', (e) => {
+                if (e.code === 'Space' && !e.repeat) {
+                    e.preventDefault();
+                    state.spacebarHeld = true;
+                    updateCursor();
+                }
+            });
+
+            document.addEventListener('keyup', (e) => {
+                if (e.code === 'Space') {
+                    state.spacebarHeld = false;
+                    state.isPanning = false;
+                    updateCursor();
+                }
+            });
+
+            // Tile naming modal
+            elements.closeTileNamingBtn.addEventListener('click', closeTileNamingModal);
+            elements.cancelTileNamingBtn.addEventListener('click', closeTileNamingModal);
+            elements.saveTilesBtn.addEventListener('click', confirmSaveTiles);
+            elements.tileNamingModal.addEventListener('click', (e) => {
+                if (e.target === elements.tileNamingModal) closeTileNamingModal();
             });
         }
 
@@ -1201,7 +1381,11 @@
                     fitToImage();
                     updateSaveButton();
                     updateResampleButtons();
-                    updatePreview();
+
+                    // Initialize lens for the new image
+                    state.lensNeedsUpdate = true;
+                    updateLens();
+                    renderWorkspace();
                 };
                 img.src = e.target.result;
             };
@@ -1262,11 +1446,11 @@
             // Enable Undo if resampling has been applied
             elements.undoResampleBtn.disabled = !state.resamplingApplied;
 
-            // Update preview title
+            // Update method description to show applied status
             if (state.resamplingApplied) {
-                elements.previewTitle.textContent = `Preview (${state.appliedResampleMethod})`;
+                elements.methodDesc.textContent = methodDescriptions[state.resampleMethod] + ` (Applied: ${state.appliedResampleMethod})`;
             } else {
-                elements.previewTitle.textContent = 'Preview (Original)';
+                elements.methodDesc.textContent = methodDescriptions[state.resampleMethod];
             }
         }
 
@@ -1276,7 +1460,6 @@
             state.resamplingApplied = true;
             state.appliedResampleMethod = state.resampleMethod;
             updateResampleButtons();
-            updatePreview();
             updateSaveButton();
             showToast(`Applied ${state.resampleMethod} resampling`);
         }
@@ -1285,7 +1468,6 @@
             state.resamplingApplied = false;
             state.appliedResampleMethod = null;
             updateResampleButtons();
-            updatePreview();
             updateSaveButton();
             showToast('Resampling undone');
         }
@@ -1318,29 +1500,58 @@
             ctx.translate(cx + state.panX, cy + state.panY);
             ctx.scale(state.zoom, state.zoom);
 
-            // Draw image if loaded
+            // Draw original image if loaded (visible outside frame for reference)
             if (state.sourceImage) {
                 ctx.save();
                 ctx.imageSmoothingEnabled = false;
                 const imgW = state.sourceImage.width * state.imageScaleX;
                 const imgH = state.sourceImage.height * state.imageScaleY;
+
+                // Create a clipping path for OUTSIDE the frame (show faded image outside)
+                ctx.save();
+                ctx.beginPath();
+                ctx.rect(-5000, -5000, 10000, 10000);
+                ctx.rect(0, 0, pixelW, pixelH);
+                ctx.clip('evenodd');
+                ctx.globalAlpha = 0.3;
                 ctx.drawImage(state.sourceImage, state.imageX, state.imageY, imgW, imgH);
+                ctx.restore();
 
                 // Draw resize handles
                 drawResizeHandles(ctx, state.imageX, state.imageY, imgW, imgH);
                 ctx.restore();
             }
 
-            // Draw frame overlay (tile grid)
+            // Draw lens content inside frame (the resampled preview)
+            if (state.lensCanvas) {
+                ctx.save();
+                ctx.imageSmoothingEnabled = false;
+                ctx.drawImage(state.lensCanvas, 0, 0, pixelW, pixelH);
+                ctx.restore();
+            } else if (state.sourceImage) {
+                // Fallback: draw original image in frame if no lens yet
+                ctx.save();
+                ctx.beginPath();
+                ctx.rect(0, 0, pixelW, pixelH);
+                ctx.clip();
+                ctx.imageSmoothingEnabled = false;
+                const imgW = state.sourceImage.width * state.imageScaleX;
+                const imgH = state.sourceImage.height * state.imageScaleY;
+                ctx.drawImage(state.sourceImage, state.imageX, state.imageY, imgW, imgH);
+                ctx.restore();
+            }
+
+            // Draw grid inside frame (on top of lens content)
+            if (state.showGrid) {
+                drawFrameGrid(ctx, pixelW, pixelH);
+            }
+
+            // Draw frame border
             ctx.strokeStyle = '#a855f7';
             ctx.lineWidth = 2 / state.zoom;
             ctx.setLineDash([5 / state.zoom, 5 / state.zoom]);
             ctx.strokeRect(0, 0, pixelW, pixelH);
             ctx.setLineDash([]);
-
-            // Draw frame fill (semi-transparent outside)
-            ctx.fillStyle = 'rgba(168, 85, 247, 0.1)';
-            ctx.fillRect(0, 0, pixelW, pixelH);
 
             // Frame corner markers
             ctx.fillStyle = '#a855f7';
@@ -1391,11 +1602,110 @@
             });
         }
 
+        function drawFrameGrid(ctx, pixelW, pixelH) {
+            const { cols, rows } = getFrameDimensions();
+
+            // Determine grid density based on zoom level
+            // If frame is small enough at current zoom, show pixel grid
+            // Otherwise show tile grid
+            const frameScreenW = pixelW * state.zoom;
+            const frameScreenH = pixelH * state.zoom;
+
+            // Show pixel grid if frame is ≤ 64 pixels in either dimension
+            // AND the cells would be large enough to see (> 4px on screen)
+            const cellScreenSize = state.tileSize * state.zoom;
+            const showPixelGrid = (pixelW <= 64 || pixelH <= 64) && (state.zoom >= 4);
+
+            ctx.save();
+
+            if (showPixelGrid) {
+                // Pixel grid - every pixel
+                ctx.strokeStyle = 'rgba(255, 255, 255, 0.15)';
+                ctx.lineWidth = 0.5 / state.zoom;
+
+                // Vertical lines
+                for (let x = 1; x < pixelW; x++) {
+                    ctx.beginPath();
+                    ctx.moveTo(x, 0);
+                    ctx.lineTo(x, pixelH);
+                    ctx.stroke();
+                }
+
+                // Horizontal lines
+                for (let y = 1; y < pixelH; y++) {
+                    ctx.beginPath();
+                    ctx.moveTo(0, y);
+                    ctx.lineTo(pixelW, y);
+                    ctx.stroke();
+                }
+            } else {
+                // Tile grid - every tileSize pixels
+                ctx.strokeStyle = 'rgba(168, 85, 247, 0.3)';
+                ctx.lineWidth = 1 / state.zoom;
+
+                // Vertical lines
+                for (let col = 1; col < cols; col++) {
+                    const x = col * state.tileSize;
+                    ctx.beginPath();
+                    ctx.moveTo(x, 0);
+                    ctx.lineTo(x, pixelH);
+                    ctx.stroke();
+                }
+
+                // Horizontal lines
+                for (let row = 1; row < rows; row++) {
+                    const y = row * state.tileSize;
+                    ctx.beginPath();
+                    ctx.moveTo(0, y);
+                    ctx.lineTo(pixelW, y);
+                    ctx.stroke();
+                }
+            }
+
+            ctx.restore();
+        }
+
         // ==========================================
         // ZOOM & PAN
         // ==========================================
+        function setupZoomButton(btn, direction) {
+            // direction: 1 = zoom in, -1 = zoom out
+            const doZoom = () => {
+                // 10% increments, acceleration based on hold count
+                const baseStep = 0.1;
+                const acceleratedStep = state.zoomHoldCount > 5 ? 0.2 : baseStep;
+
+                if (direction > 0) {
+                    setZoom(state.zoom + acceleratedStep);
+                } else {
+                    setZoom(state.zoom - acceleratedStep);
+                }
+                state.zoomHoldCount++;
+            };
+
+            btn.addEventListener('mousedown', () => {
+                state.zoomHoldCount = 0;
+                doZoom();
+                // Start repeating after initial delay
+                state.zoomHoldInterval = setInterval(doZoom, 100);
+            });
+
+            btn.addEventListener('mouseup', stopZoomHold);
+            btn.addEventListener('mouseleave', stopZoomHold);
+        }
+
+        function stopZoomHold() {
+            if (state.zoomHoldInterval) {
+                clearInterval(state.zoomHoldInterval);
+                state.zoomHoldInterval = null;
+            }
+            state.zoomHoldCount = 0;
+        }
+
         function setZoom(z) {
+            // Clamp zoom to reasonable range (10% to 1000%)
             state.zoom = Math.max(0.1, Math.min(10, z));
+            // Display as rounded percentage
             elements.zoomDisplay.textContent = Math.round(state.zoom * 100) + '%';
             renderWorkspace();
         }
@@ -1442,7 +1752,8 @@
             state.imageScaleX = 1;
             state.imageScaleY = 1;
             fitToImage();
-            updatePreview();
+            updateLens();
+            renderWorkspace();
         }
 
         // ==========================================
@@ -1507,7 +1818,11 @@
 
         function updateCursor() {
             const canvas = elements.workspaceCanvas;
-            if (state.isResizing && state.resizeHandle) {
+            if (state.isPanning) {
+                canvas.style.cursor = 'grabbing';
+            } else if (state.spacebarHeld) {
+                canvas.style.cursor = 'grab';
+            } else if (state.isResizing && state.resizeHandle) {
                 canvas.style.cursor = getCursorForHandle(state.resizeHandle);
             } else if (state.isDragging) {
                 canvas.style.cursor = 'grabbing';
@@ -1521,6 +1836,17 @@
             const sx = e.clientX - rect.left;
             const sy = e.clientY - rect.top;
             const { x: wx, y: wy } = screenToWorld(sx, sy);
+
+            // Spacebar held = pan mode
+            if (state.spacebarHeld) {
+                state.isPanning = true;
+                state.dragStartX = sx;
+                state.dragStartY = sy;
+                state.dragStartPanX = state.panX;
+                state.dragStartPanY = state.panY;
+                updateCursor();
+                return;
+            }
 
             // Check resize handles first
             const handle = getResizeHandle(wx, wy);
@@ -1551,6 +1877,16 @@
             const rect = elements.workspaceCanvas.getBoundingClientRect();
             const sx = e.clientX - rect.left;
             const sy = e.clientY - rect.top;
+
+            // Handle panning
+            if (state.isPanning) {
+                const dx = sx - state.dragStartX;
+                const dy = sy - state.dragStartY;
+                state.panX = state.dragStartPanX + dx;
+                state.panY = state.dragStartPanY + dy;
+                renderWorkspace();
+                return;
+            }
 
             if (state.isResizing) {
                 const dx = (sx - state.dragStartX) / state.zoom;
@@ -1679,10 +2015,19 @@
         }
 
         function onMouseUp() {
+            const wasInteracting = state.isDragging || state.isResizing;
             state.isDragging = false;
             state.isResizing = false;
+            state.isPanning = false;
             state.resizeHandle = null;
             updateCursor();
+
+            // Update lens after image manipulation (for performance)
+            if (wasInteracting && state.sourceImage) {
+                state.lensNeedsUpdate = true;
+                updateLens();
+                renderWorkspace();
+            }
         }
 
         function onWheel(e) {
@@ -1692,10 +2037,13 @@
         }
 
         // ==========================================
-        // RESAMPLING & PREVIEW
+        // LENS & RESAMPLING
         // ==========================================
-        function updatePreview() {
-            if (!state.sourceImage) return;
+        function updateLens() {
+            if (!state.sourceImage) {
+                state.lensCanvas = null;
+                return;
+            }
 
             const { pixelW, pixelH } = getFrameDimensions();
 
@@ -1711,23 +2059,15 @@
             const imgH = state.sourceImage.height * state.imageScaleY;
             tempCtx.drawImage(state.sourceImage, state.imageX, state.imageY, imgW, imgH);
 
-            // Only apply resampling if it's been explicitly applied
-            let resultCanvas = tempCanvas;
-            if (state.resamplingApplied) {
-                resultCanvas = resampleCanvas(tempCanvas, pixelW, pixelH, state.appliedResampleMethod);
-            }
+            // Apply resampling with current method (always show resampled in lens)
+            state.lensCanvas = resampleCanvas(tempCanvas, pixelW, pixelH, state.resampleMethod);
+            state.lensNeedsUpdate = false;
+        }
 
-            // Draw to preview canvas
-            const previewCtx = elements.previewCanvas.getContext('2d');
-            const maxPreviewSize = 120;
-            const scale = Math.min(maxPreviewSize / pixelW, maxPreviewSize / pixelH, 1);
-            const pw = Math.round(pixelW * scale);
-            const ph = Math.round(pixelH * scale);
-
-            elements.previewCanvas.width = pw;
-            elements.previewCanvas.height = ph;
-            previewCtx.imageSmoothingEnabled = false;
-            previewCtx.drawImage(resultCanvas, 0, 0, pw, ph);
+        // Legacy function for compatibility - redirects to updateLens
+        function updatePreview() {
+            updateLens();
+            renderWorkspace();
         }
 
         function resampleCanvas(sourceCanvas, targetW, targetH, method) {
@@ -1899,16 +2239,24 @@
                         break;
 
                     case 'tiles':
-                        await saveTileGroup(resampled, cols, rows);
-                        showToast(`Tile group "${state.assetName}" saved! (${cols * rows} tiles)`);
+                        // For multiple tiles, open naming modal; for single tile, save directly
+                        if (cols * rows > 1) {
+                            // Open naming modal and return early
+                            openTileNamingModal(resampled, cols, rows);
+                            elements.saveBtn.disabled = false;
+                            elements.saveBtn.textContent = 'Save Asset';
+                            return;
+                        } else {
+                            // Single tile - save directly
+                            await saveTileGroup(resampled, cols, rows);
+                            showToast(`Tile "${state.assetName}" saved!`);
+                        }
                         break;
 
                     case 'sprite':
-                        await crucibleClient.publishToMasterSpriteSheet(
-                            state.projectId, state.assetName, imageData, pixelW, pixelH,
-                            { type: 'frameweft', name: state.assetName }
-                        );
-                        showToast(`Sprite "${state.assetName}" saved!`);
+                        // Save as sprite sheet for Sprite-Rite to extract sprites from
+                        await saveSpriteSheet(resampled, pixelW, pixelH);
+                        showToast(`Sprite sheet "${state.assetName}" saved! Open Sprite-Rite to extract sprites.`);
                         break;
                 }
 
@@ -1925,6 +2273,26 @@
                 elements.saveBtn.textContent = 'Save Asset';
                 updateSaveButton();
             }
+        }
+
+        async function saveSpriteSheet(resampled, pixelW, pixelH) {
+            // Convert canvas to blob
+            const blob = await new Promise(resolve => {
+                resampled.toBlob(resolve, 'image/png');
+            });
+
+            // Create a File object from the blob
+            const file = new File([blob], `${state.assetName}.png`, { type: 'image/png' });
+
+            // Upload as a sprite sheet entry
+            await crucibleClient.uploadSpritesheet(state.projectId, file, {
+                name: state.assetName,
+                category: 'frameweft',
+                frameWidth: pixelW,
+                frameHeight: pixelH,
+                columns: 1,
+                rows: 1
+            });
         }
 
         async function saveTileGroup(resampled, cols, rows) {
@@ -1966,7 +2334,152 @@
             }
 
             await crucibleClient.createTileGroup(
-                state.projectId, state.assetName, cols, rows, arrangement
+                state.projectId, groupName || state.assetName, cols, rows, arrangement
+            );
+        }
+
+        // ==========================================
+        // TILE NAMING MODAL
+        // ==========================================
+        function openTileNamingModal(resampled, cols, rows) {
+            const totalTiles = cols * rows;
+
+            // Generate default tile names
+            const tileNames = [];
+            const baseName = state.assetName || 'tile';
+            for (let i = 0; i < totalTiles; i++) {
+                tileNames.push(`${baseName}_${i + 1}`);
+            }
+
+            // Store pending data
+            state.pendingTileData = { resampled, cols, rows, tileNames };
+
+            // Set group name
+            elements.tileGroupName.value = state.assetName || '';
+
+            // Update count
+            elements.tileNamingCount.textContent = `Tiles (${totalTiles}):`;
+
+            // Generate tile list
+            elements.tileNamingList.innerHTML = '';
+            for (let row = 0; row < rows; row++) {
+                for (let col = 0; col < cols; col++) {
+                    const idx = row * cols + col;
+                    const item = document.createElement('div');
+                    item.className = 'tile-naming-item';
+
+                    // Create tile preview
+                    const previewDiv = document.createElement('div');
+                    previewDiv.className = 'tile-naming-preview';
+                    const previewCanvas = document.createElement('canvas');
+                    previewCanvas.width = state.tileSize;
+                    previewCanvas.height = state.tileSize;
+                    const previewCtx = previewCanvas.getContext('2d');
+                    previewCtx.imageSmoothingEnabled = false;
+                    previewCtx.drawImage(
+                        resampled,
+                        col * state.tileSize, row * state.tileSize,
+                        state.tileSize, state.tileSize,
+                        0, 0, state.tileSize, state.tileSize
+                    );
+                    previewDiv.appendChild(previewCanvas);
+
+                    // Index label
+                    const indexSpan = document.createElement('span');
+                    indexSpan.className = 'tile-naming-index';
+                    indexSpan.textContent = `#${idx + 1}`;
+
+                    // Name input
+                    const nameInput = document.createElement('input');
+                    nameInput.type = 'text';
+                    nameInput.className = 'form-input';
+                    nameInput.value = tileNames[idx];
+                    nameInput.dataset.index = idx;
+                    nameInput.addEventListener('input', (e) => {
+                        state.pendingTileData.tileNames[parseInt(e.target.dataset.index)] = e.target.value;
+                    });
+
+                    item.appendChild(previewDiv);
+                    item.appendChild(indexSpan);
+                    item.appendChild(nameInput);
+                    elements.tileNamingList.appendChild(item);
+                }
+            }
+
+            // Show modal
+            elements.tileNamingModal.classList.remove('hidden');
+        }
+
+        function closeTileNamingModal() {
+            elements.tileNamingModal.classList.add('hidden');
+            state.pendingTileData = null;
+        }
+
+        async function confirmSaveTiles() {
+            if (!state.pendingTileData) return;
+
+            const { resampled, cols, rows, tileNames } = state.pendingTileData;
+            const groupName = elements.tileGroupName.value.trim() || state.assetName;
+
+            if (!groupName) {
+                showToast('Please enter a group name', true);
+                return;
+            }
+
+            elements.saveTilesBtn.disabled = true;
+            elements.saveTilesBtn.textContent = 'Saving...';
+
+            try {
+                await saveTileGroupWithNames(resampled, cols, rows, tileNames, groupName);
+                showToast(`Tile group "${groupName}" saved! (${cols * rows} tiles)`);
+                closeTileNamingModal();
+                await loadLibrary();
+                state.assetName = '';
+                elements.assetName.value = '';
+                updateSaveButton();
+            } catch (err) {
+                console.error('Failed to save tiles:', err);
+                showToast(err.message || 'Failed to save tiles', true);
+            } finally {
+                elements.saveTilesBtn.disabled = false;
+                elements.saveTilesBtn.textContent = 'Save All';
+            }
+        }
+
+        async function saveTileGroupWithNames(resampled, cols, rows, tileNames, groupName) {
+            const arrangement = [];
+
+            for (let row = 0; row < rows; row++) {
+                const rowArr = [];
+                for (let col = 0; col < cols; col++) {
+                    const idx = row * cols + col;
+                    const tileName = tileNames[idx];
+
+                    const tileCanvas = document.createElement('canvas');
+                    tileCanvas.width = state.tileSize;
+                    tileCanvas.height = state.tileSize;
+                    const ctx = tileCanvas.getContext('2d');
+                    ctx.imageSmoothingEnabled = false;
+                    ctx.drawImage(
+                        resampled,
+                        col * state.tileSize, row * state.tileSize,
+                        state.tileSize, state.tileSize,
+                        0, 0, state.tileSize, state.tileSize
+                    );
+
+                    await crucibleClient.publishToMasterTileSheet(
+                        state.projectId, tileName,
+                        tileCanvas.toDataURL('image/png'),
+                        state.tileSize, state.tileSize
+                    );
+
+                    rowArr.push(tileName);
+                }
+                arrangement.push(rowArr);
+            }
+
+            await crucibleClient.createTileGroup(
+                state.projectId, groupName, cols, rows, arrangement
             );
         }
 

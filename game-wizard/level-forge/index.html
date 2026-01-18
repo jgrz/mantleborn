@@ -1195,7 +1195,7 @@
         }
 
         .sprite-palette {
-            width: 200px;
+            width: 240px;
             display: flex;
             flex-direction: column;
             background: var(--bg-mid);
@@ -1221,28 +1221,30 @@
         }
 
         .palette-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(40px, 1fr));
-            gap: 4px;
-            padding: 8px;
+            display: flex;
+            flex-direction: column;
             overflow-y: auto;
             flex: 1;
+            min-height: 0;
         }
 
         .palette-sprite {
             aspect-ratio: 1;
+            min-width: 40px;
+            min-height: 40px;
             background: repeating-conic-gradient(
                 var(--bg-surface) 0% 25%,
                 var(--bg-mid) 0% 50%
             ) 50% / 8px 8px;
             border: 2px solid var(--stone-dark);
-            border-radius: 2px;
+            border-radius: 4px;
             cursor: pointer;
             display: flex;
             align-items: center;
             justify-content: center;
             transition: all 0.15s;
             overflow: hidden;
+            padding: 4px;
         }
 
         .palette-sprite:hover {
@@ -1256,8 +1258,9 @@
 
         .palette-sprite img {
             image-rendering: pixelated;
-            max-width: 100%;
-            max-height: 100%;
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
         }
 
         .no-sprites-message {
@@ -1274,16 +1277,16 @@
             color: var(--stone-mid);
             text-transform: uppercase;
             letter-spacing: 0.5px;
-            padding: 8px 8px 4px;
+            padding: 8px 8px 6px;
+            background: var(--bg-surface);
             border-bottom: 1px solid var(--stone-dark);
-            margin-bottom: 4px;
         }
 
         .palette-groups, .palette-tiles {
             display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(48px, 1fr));
-            gap: 4px;
-            padding: 4px;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 6px;
+            padding: 8px;
         }
 
         /* Group tiles in palette */
@@ -1666,7 +1669,7 @@
                             </div>
                             <div class="sprite-palette">
                                 <div class="palette-header">
-                                    <span>Sprite Palette</span>
+                                    <span>Tile Palette</span>
                                     <div class="palette-header-actions">
                                         <button class="btn btn-tiny btn-ai" id="generateTilesetBtn" title="Generate tileset with AI">&#10024;</button>
                                     </div>
@@ -1677,7 +1680,7 @@
                                     </select>
                                 </div>
                                 <div class="palette-grid" id="paletteGrid">
-                                    <div class="no-sprites-message">Select a sprite sheet to load sprites</div>
+                                    <div class="no-sprites-message">Select a tile sheet to load tiles</div>
                                 </div>
                             </div>
                         </div>
@@ -1718,6 +1721,9 @@
                     </div>
                 </div>
                 <button class="btn btn-small" id="resizeGridBtn" style="width: 100%;">Resize Grid</button>
+                <div class="tile-size-info" id="tileSizeInfo" style="margin-top: 8px; font-size: 10px; color: var(--stone-mid); text-align: center;">
+                    Tile Size: <span id="tileSizeDisplay">16</span>px (from project)
+                </div>
             </div>
 
             <!-- Level Info (Grid Tab) -->
@@ -1877,12 +1883,12 @@
 
             <!-- Tile Painter Settings -->
             <div class="section tab-settings" id="tileSettings">
-                <div class="section-header">Selected Sprite</div>
+                <div class="section-header">Selected Tile</div>
                 <div class="selected-sprite-preview" id="selectedSpritePreview">
-                    <span class="no-sprites-message">No sprite selected</span>
+                    <span class="no-sprites-message">No tile selected</span>
                 </div>
                 <div class="form-group">
-                    <label class="form-label">Sprite Name</label>
+                    <label class="form-label">Tile Name</label>
                     <input type="text" class="form-input" id="selectedSpriteName" readonly value="None">
                 </div>
                 <div class="keyboard-hints">
@@ -1988,6 +1994,7 @@
             // Grid settings
             gridWidth: 32,
             gridHeight: 18,
+            tileSize: 16,  // Loaded from project settings
             levelType: 'platformer',  // 'platformer' | 'topdown'
             tiles: [],  // 2D array of tile states: 'undefined' | 'open' | 'obstruction' | 'spawn'
 
@@ -2135,6 +2142,7 @@
             selectedSpritePreview: document.getElementById('selectedSpritePreview'),
             selectedSpriteName: document.getElementById('selectedSpriteName'),
             clearTilesBtn: document.getElementById('clearTilesBtn'),
+            tileSizeDisplay: document.getElementById('tileSizeDisplay'),
 
             // Tab settings panels
             gridSettings: document.getElementById('gridSettings'),
@@ -2566,6 +2574,12 @@
         // ==========================================
         // Stats
         // ==========================================
+        function updateTileSizeDisplay() {
+            if (elements.tileSizeDisplay) {
+                elements.tileSizeDisplay.textContent = state.tileSize;
+            }
+        }
+
         function updateStats() {
             let undefinedCount = 0;
             let openCount = 0;
@@ -2792,7 +2806,7 @@
                 type: levelType,
                 width: state.gridWidth,
                 height: state.gridHeight,
-                tileSize: 24,
+                tileSize: state.tileSize,
                 physics: physics,
                 spawn: spawnPoint,
                 spawns: spawns,
@@ -3012,9 +3026,9 @@
             demo.ctx = elements.demoCanvas.getContext('2d');
             demo.ctx.imageSmoothingEnabled = false;
 
-            // Set canvas size
-            const canvasWidth = state.gridWidth * 24;
-            const canvasHeight = state.gridHeight * 24;
+            // Set canvas size based on project tile size
+            const canvasWidth = state.gridWidth * state.tileSize;
+            const canvasHeight = state.gridHeight * state.tileSize;
             elements.demoCanvas.width = canvasWidth;
             elements.demoCanvas.height = canvasHeight;
             elements.demoCanvas.style.width = (canvasWidth * DEMO_SCALE) + 'px';
@@ -3056,7 +3070,7 @@
         }
 
         function resetPlayerPosition() {
-            const tileSize = 24;
+            const tileSize = state.tileSize;
 
             // First, look for spawn point
             let spawnX = -1, spawnY = -1;
@@ -3137,7 +3151,7 @@
 
         function updatePlayer(dt) {
             const p = demo.player;
-            const tileSize = 24;
+            const tileSize = state.tileSize;
 
             if (state.levelType === 'platformer') {
                 // Horizontal movement
@@ -3251,7 +3265,7 @@
         }
 
         function checkCollisionTopDown(x, y, w, h) {
-            const tileSize = 24;
+            const tileSize = state.tileSize;
             const left = Math.floor(x / tileSize);
             const right = Math.floor((x + w - 1) / tileSize);
             const top = Math.floor(y / tileSize);
@@ -3271,7 +3285,7 @@
 
         function renderDemo() {
             const ctx = demo.ctx;
-            const tileSize = 24;
+            const tileSize = state.tileSize;
 
             // Clear
             ctx.fillStyle = '#0d0d14';
@@ -4379,7 +4393,7 @@
 
         async function loadSpriteSheet(sheetName) {
             if (!sheetName) {
-                elements.paletteGrid.innerHTML = '<div class="no-sprites-message">Select a sprite sheet to load sprites</div>';
+                elements.paletteGrid.innerHTML = '<div class="no-sprites-message">Select a tile sheet to load tiles</div>';
                 return;
             }
 
@@ -4530,7 +4544,7 @@
             const spriteNames = Object.keys(sprites);
 
             if (spriteNames.length === 0 && (!showGroups || state.tileGroups.length === 0)) {
-                elements.paletteGrid.innerHTML = '<div class="no-sprites-message">No items in this sheet</div>';
+                elements.paletteGrid.innerHTML = '<div class="no-sprites-message">No tiles in this sheet</div>';
                 return;
             }
 
@@ -4614,24 +4628,28 @@
                 });
             }
 
-            // Draw sprite thumbnails
+            // Draw tile/sprite thumbnails
+            // For tiles, explicitly use the tile sheet image from state (same as group preview)
+            const thumbnailImage = showGroups
+                ? (state.masterTileSheetImage || state.masterSheetImage || sheetImage)
+                : sheetImage;
+
             elements.paletteGrid.querySelectorAll('.palette-sprite').forEach((el) => {
                 const spriteName = el.dataset.sprite;
                 const spriteDef = sprites[spriteName];
-                if (!spriteDef) return;
+                if (!spriteDef || !thumbnailImage) return;
 
+                // Render at original size for crisp pixelated scaling
                 const canvas = document.createElement('canvas');
-                const size = 36;
-                const scale = Math.min(size / spriteDef.w, size / spriteDef.h, 2);
-                canvas.width = Math.floor(spriteDef.w * scale);
-                canvas.height = Math.floor(spriteDef.h * scale);
+                canvas.width = spriteDef.w;
+                canvas.height = spriteDef.h;
 
                 const ctx = canvas.getContext('2d');
                 ctx.imageSmoothingEnabled = false;
                 ctx.drawImage(
-                    sheetImage,
+                    thumbnailImage,
                     spriteDef.x, spriteDef.y, spriteDef.w, spriteDef.h,
-                    0, 0, canvas.width, canvas.height
+                    0, 0, spriteDef.w, spriteDef.h
                 );
 
                 const img = document.createElement('img');
@@ -4728,14 +4746,21 @@
 
         function renderSelectedSpritePreview() {
             if (!state.selectedSprite) {
-                elements.selectedSpritePreview.innerHTML = '<span class="no-sprites-message">No sprite selected</span>';
+                elements.selectedSpritePreview.innerHTML = '<span class="no-sprites-message">No tile selected</span>';
                 return;
             }
 
             const sprite = state.selectedSprite;
-            const sheetImage = sprite.sheetName === '__master__'
-                ? state.masterSheetImage
-                : state.spriteImages[sprite.sheetName];
+            let sheetImage;
+            if (sprite.sheetName === '__master__') {
+                sheetImage = state.masterSheetImage;
+            } else if (sprite.sheetName === '__master_tiles__') {
+                sheetImage = state.masterTileSheetImage;
+            } else if (sprite.sheetName === '__master_sprites__') {
+                sheetImage = state.masterSpriteSheetImage;
+            } else {
+                sheetImage = state.spriteImages[sprite.sheetName];
+            }
             if (!sheetImage) return;
 
             const canvas = document.createElement('canvas');
@@ -4783,11 +4808,12 @@
 
         // Paint a group stamp (multiple tiles at once)
         function paintGroupStamp(startX, startY) {
-            if (!state.selectedGroup || !state.masterSheetAtlas) return;
+            const tileAtlas = state.masterTileSheetAtlas || state.masterSheetAtlas;
+            if (!state.selectedGroup || !tileAtlas) return;
 
             const group = state.selectedGroup;
             const arrangement = group.arrangement || [];
-            const sprites = state.masterSheetAtlas.sprites;
+            const sprites = tileAtlas.sprites;
 
             // Place each tile in the group arrangement
             for (let row = 0; row < group.rows; row++) {
@@ -4806,7 +4832,7 @@
                     if (targetY < 0 || targetY >= state.gridHeight) continue;
 
                     state.visualTiles[targetY][targetX] = {
-                        spriteSheet: '__master__',
+                        spriteSheet: '__master_tiles__',
                         spriteName: tileName,
                         x: spriteDef.x,
                         y: spriteDef.y,
@@ -4875,7 +4901,7 @@
         function renderTileCanvas() {
             const canvas = elements.tileCanvas;
             const ctx = canvas.getContext('2d');
-            const tileSize = 24;
+            const tileSize = state.tileSize;
 
             canvas.width = state.gridWidth * tileSize;
             canvas.height = state.gridHeight * tileSize;
@@ -4910,9 +4936,17 @@
                     const tile = state.visualTiles[y]?.[x];
                     if (!tile) continue;
 
-                    const sheetImage = tile.spriteSheet === '__master__'
-                        ? state.masterSheetImage
-                        : state.spriteImages[tile.spriteSheet];
+                    // Get the correct sheet image based on sheet type
+                    let sheetImage;
+                    if (tile.spriteSheet === '__master__') {
+                        sheetImage = state.masterSheetImage;
+                    } else if (tile.spriteSheet === '__master_tiles__') {
+                        sheetImage = state.masterTileSheetImage;
+                    } else if (tile.spriteSheet === '__master_sprites__') {
+                        sheetImage = state.masterSpriteSheetImage;
+                    } else {
+                        sheetImage = state.spriteImages[tile.spriteSheet];
+                    }
                     if (!sheetImage) continue;
 
                     ctx.drawImage(
@@ -4946,8 +4980,8 @@
             const rect = canvas.getBoundingClientRect();
             const scaleX = canvas.width / rect.width;
             const scaleY = canvas.height / rect.height;
-            const x = Math.floor((e.clientX - rect.left) * scaleX / 24);
-            const y = Math.floor((e.clientY - rect.top) * scaleY / 24);
+            const x = Math.floor((e.clientX - rect.left) * scaleX / state.tileSize);
+            const y = Math.floor((e.clientY - rect.top) * scaleY / state.tileSize);
             return { x, y };
         }
 
@@ -5037,13 +5071,27 @@
                 state.masterSheetAtlas = null;
                 state.masterSheetImage = null;
                 state.currentProjectId = null;
+                state.tileSize = 16;  // Reset to default
                 populateSpriteSheetSelect();
+                updateTileSizeDisplay();
                 return;
             }
 
             selectedProject = allProjects.find(p => p.id === projectId);
             localStorage.setItem('levelforge_project', projectId);
             elements.sendToCrucibleBtn.disabled = false;
+
+            // Load project settings to get tile size
+            try {
+                const crucible = await getCrucible();
+                const settings = await crucible.getProjectSettings(projectId);
+                const tileDefaults = settings.pixellab?.tileDefaults || {};
+                state.tileSize = parseInt(tileDefaults.size) || 16;
+                updateTileSizeDisplay();
+            } catch (err) {
+                console.warn('Could not load project settings:', err);
+                state.tileSize = 16;
+            }
 
             // Load master sheet for this project
             await loadMasterSheet(projectId);
