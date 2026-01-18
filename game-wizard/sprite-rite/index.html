@@ -1545,8 +1545,11 @@
                 </div>
 
                 <div class="toolbar-group">
-                    <button class="tool-btn" id="removeBgBtn" title="Click to pick background color, then remove">
+                    <button class="tool-btn" id="removeBgBtn" title="Auto-detect and remove background color from corners">
                         <span>Remove BG</span>
+                    </button>
+                    <button class="tool-btn" id="removeColorBtn" title="Click to pick a color from the image to remove">
+                        <span>Remove Color</span>
                     </button>
                     <button class="tool-btn" id="flipHorizontalBtn" title="Flip the entire spritesheet horizontally (mirror)">
                         <span>Flip H</span>
@@ -1959,7 +1962,7 @@
             hasUnsavedChanges: false,
 
             // Tool modes
-            toolMode: null, // 'removeBg', 'autoDetect', or null
+            toolMode: null, // 'autoDetect', 'removeColor', or null
             imageData: null, // Cached pixel data for analysis
             islandMap: null, // Cached island labels for auto-detect
 
@@ -2012,6 +2015,7 @@
             zoomButtons: document.querySelectorAll('.zoom-btn'),
             gridToggle: document.getElementById('gridToggle'),
             removeBgBtn: document.getElementById('removeBgBtn'),
+            removeColorBtn: document.getElementById('removeColorBtn'),
             flipHorizontalBtn: document.getElementById('flipHorizontalBtn'),
             autoDetectBtn: document.getElementById('autoDetectBtn'),
             selectionInfo: document.getElementById('selectionInfo'),
@@ -2896,6 +2900,80 @@
             newImg.src = tempCanvas.toDataURL('image/png');
         }
 
+        function removeColorAtPoint(imgX, imgY) {
+            const imageData = getPixelData();
+            if (!imageData) return;
+
+            // Get the color at the clicked point
+            const targetColor = getPixelColor(imageData, Math.floor(imgX), Math.floor(imgY));
+
+            // Don't remove if already transparent
+            if (targetColor.a === 0) {
+                showToast('Clicked pixel is already transparent.', 'error');
+                return;
+            }
+
+            // Count pixels to remove
+            let removeCount = 0;
+            const newData = new Uint8ClampedArray(imageData.data);
+
+            for (let y = 0; y < state.imageHeight; y++) {
+                for (let x = 0; x < state.imageWidth; x++) {
+                    const idx = (y * state.imageWidth + x) * 4;
+                    const pixelColor = {
+                        r: newData[idx],
+                        g: newData[idx + 1],
+                        b: newData[idx + 2],
+                        a: newData[idx + 3]
+                    };
+
+                    if (colorsMatch(pixelColor, targetColor, 10)) {
+                        newData[idx + 3] = 0; // Make transparent
+                        removeCount++;
+                    }
+                }
+            }
+
+            if (removeCount === 0) {
+                showToast('No matching pixels found.', 'error');
+                return;
+            }
+
+            // Update the image
+            const newImageData = new ImageData(newData, state.imageWidth, state.imageHeight);
+            const tempCanvas = document.createElement('canvas');
+            tempCanvas.width = state.imageWidth;
+            tempCanvas.height = state.imageHeight;
+            const tempCtx = tempCanvas.getContext('2d');
+            tempCtx.putImageData(newImageData, 0, 0);
+
+            // Create new image from canvas
+            const colorHex = `#${targetColor.r.toString(16).padStart(2,'0')}${targetColor.g.toString(16).padStart(2,'0')}${targetColor.b.toString(16).padStart(2,'0')}`;
+            const newImg = new Image();
+            newImg.onload = async () => {
+                state.image = newImg;
+                state.imageData = null; // Clear cache
+                state.islandMap = null; // Clear island cache
+                render();
+
+                // Save modified image to cloud if logged in
+                if (state.spritesheetId && state.user) {
+                    try {
+                        showToast('Saving modified image...');
+                        const blob = await new Promise(resolve => tempCanvas.toBlob(resolve, 'image/png'));
+                        await crucibleClient.updateSpritesheetImage(state.spritesheetId, blob);
+                        showToast(`Removed ${removeCount} pixels (${colorHex}) and saved.`);
+                    } catch (error) {
+                        console.error('Failed to save image:', error);
+                        showToast(`Removed ${removeCount} pixels (save failed)`, 'error');
+                    }
+                } else {
+                    showToast(`Removed ${removeCount} pixels (${colorHex}).`);
+                }
+            };
+            newImg.src = tempCanvas.toDataURL('image/png');
+        }
+
         function flipHorizontal() {
             if (!state.image || !state.selection) {
                 showToast('Select a sprite area first', 'error');
@@ -3080,11 +3158,15 @@
 
             // Update button states
             elements.autoDetectBtn.classList.toggle('active', state.toolMode === 'autoDetect');
+            elements.removeColorBtn.classList.toggle('active', state.toolMode === 'removeColor');
 
             // Update cursor and info
             if (state.toolMode === 'autoDetect') {
                 elements.selectionCanvas.style.cursor = 'pointer';
                 elements.selectionInfo.innerHTML = 'Click on a sprite to auto-select';
+            } else if (state.toolMode === 'removeColor') {
+                elements.selectionCanvas.style.cursor = 'crosshair';
+                elements.selectionInfo.innerHTML = 'Click on a color to remove it';
             } else {
                 elements.selectionCanvas.style.cursor = 'crosshair';
                 updateSelectionInfo();
@@ -3116,6 +3198,13 @@
                 setToolMode(null); // Exit mode after use
                 return true;
             }
+
+            if (state.toolMode === 'removeColor') {
+                removeColorAtPoint(imgX, imgY);
+                setToolMode(null); // Exit mode after use
+                return true;
+            }
+
             return false;
         }
 
@@ -4041,6 +4130,11 @@
         elements.removeBgBtn.addEventListener('click', () => {
             if (!state.image) return;
             removeBackground();
+        });
+
+        elements.removeColorBtn.addEventListener('click', () => {
+            if (!state.image) return;
+            setToolMode('removeColor');
         });
 
         elements.flipHorizontalBtn.addEventListener('click', () => {
