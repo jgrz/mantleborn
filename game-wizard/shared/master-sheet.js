@@ -254,6 +254,10 @@ class MasterSheetManager {
                 ctx.drawImage(tempCanvas, p.x, p.y);
             } else if (p.imageData instanceof HTMLImageElement || p.imageData instanceof HTMLCanvasElement) {
                 ctx.drawImage(p.imageData, p.x, p.y, p.width, p.height);
+            } else if (typeof p.imageData === 'string') {
+                // Handle base64 string - load as image and draw
+                const img = await this.loadImage(p.imageData);
+                ctx.drawImage(img, p.x, p.y, p.width, p.height);
             }
 
             // Add to atlas
@@ -357,6 +361,10 @@ class MasterSheetManager {
             ctx.drawImage(tempCanvas, placement.x, placement.y);
         } else if (newSprite.imageData instanceof HTMLImageElement || newSprite.imageData instanceof HTMLCanvasElement) {
             ctx.drawImage(newSprite.imageData, placement.x, placement.y, newSprite.width, newSprite.height);
+        } else if (typeof newSprite.imageData === 'string') {
+            // Handle base64 string
+            const img = await this.loadImage(newSprite.imageData);
+            ctx.drawImage(img, placement.x, placement.y, newSprite.width, newSprite.height);
         }
 
         // Update atlas (copy existing, add new)
