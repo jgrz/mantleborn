@@ -2436,7 +2436,7 @@
         function commitFloatingSelection() {
             if (!state.floatingSelection) return;
 
-            // Only save undo if this was a copy (cut already saved)
+            // Only save undo if this was a copy (cut already saved on first paste)
             if (!state.floatingSelection.isCut) {
                 saveUndoState();
             }
@@ -2468,23 +2468,31 @@
                 }
             }
 
-            state.floatingSelection = null;
+            // After first paste of a cut, treat subsequent pastes as copies
+            // (so each paste gets its own undo state)
+            if (state.floatingSelection.isCut) {
+                state.floatingSelection.isCut = false;
+            }
+
+            // Keep floating selection for repeated pastes - Escape to dismiss
             render();
             markDirty();
-            showToast('Selection pasted');
+            showToast('Pasted - drag to paste again, Escape to dismiss');
         }
 
         function cancelFloatingSelection() {
             if (!state.floatingSelection) return;
 
-            // If it was a cut, restore the original pixels via undo
+            // If it was a cut and hasn't been pasted yet, restore the original pixels via undo
             if (state.floatingSelection.isCut) {
                 undo();
+                showToast('Cut cancelled - pixels restored');
+            } else {
+                showToast('Selection dismissed');
             }
 
             state.floatingSelection = null;
             render();
-            showToast('Selection cancelled');
         }
 
         function drawLine(x0, y0, x1, y1, color) {
