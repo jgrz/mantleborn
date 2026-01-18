@@ -46,10 +46,21 @@ class CrucibleClient {
 
         // Create client
         this.client = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-        this.initialized = true;
 
-        // Restore session from localStorage (required in Supabase v2)
-        await this.client.auth.getSession();
+        // Wait for auth state to be restored from localStorage
+        // This is the recommended approach in Supabase v2
+        await new Promise((resolve) => {
+            const { data: { subscription } } = this.client.auth.onAuthStateChange((event, session) => {
+                // INITIAL_SESSION event fires when auth state is restored
+                if (event === 'INITIAL_SESSION') {
+                    resolve();
+                }
+            });
+            // Timeout fallback in case INITIAL_SESSION doesn't fire
+            setTimeout(resolve, 1000);
+        });
+
+        this.initialized = true;
 
         // Load context from URL params or localStorage
         this.loadContext();
