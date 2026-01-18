@@ -1,0 +1,576 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Game Wizard | Mantleborn</title>
+    <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+    <style>
+        /* ============================================
+           GAME WIZARD SHELL - CSS
+           ============================================ */
+
+        :root {
+            /* Backgrounds */
+            --bg-deep: #0d0d14;
+            --bg-mid: #1a1a2e;
+            --bg-surface: #252542;
+
+            /* Accents */
+            --accent-ember: #e07020;
+            --accent-glow: #ff9040;
+
+            /* Stone tones */
+            --stone-dark: #3a3a5c;
+            --stone-mid: #6a6a8e;
+            --stone-light: #9a9abe;
+            --stone-bright: #d0d0e8;
+
+            /* Status */
+            --success: #3a7a40;
+            --error: #c04040;
+
+            /* Layout */
+            --header-height: 50px;
+            --nav-height: 40px;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'JetBrains Mono', monospace;
+            background: var(--bg-deep);
+            color: var(--stone-light);
+            min-height: 100vh;
+            overflow: hidden;
+        }
+
+        /* ============================================
+           SHELL HEADER
+           ============================================ */
+
+        .shell-header {
+            height: var(--header-height);
+            background: linear-gradient(180deg, var(--bg-mid) 0%, var(--bg-deep) 100%);
+            border-bottom: 1px solid var(--stone-dark);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 20px;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            z-index: 100;
+        }
+
+        .shell-brand {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .brand-icon {
+            font-size: 24px;
+        }
+
+        .brand-text {
+            font-family: 'Press Start 2P', cursive;
+            font-size: 12px;
+            color: var(--accent-ember);
+            text-shadow: 0 0 10px rgba(224, 112, 32, 0.5);
+        }
+
+        .shell-controls {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+        }
+
+        .shell-project select {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 12px;
+            padding: 8px 12px;
+            background: var(--bg-surface);
+            border: 1px solid var(--stone-dark);
+            border-radius: 4px;
+            color: var(--stone-light);
+            cursor: pointer;
+            min-width: 180px;
+        }
+
+        .shell-project select:focus {
+            outline: none;
+            border-color: var(--accent-ember);
+        }
+
+        .auth-indicator {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            padding: 6px 12px;
+            background: var(--bg-surface);
+            border: 1px solid var(--stone-dark);
+            border-radius: 4px;
+            font-size: 11px;
+            color: var(--stone-mid);
+        }
+
+        .auth-indicator.logged-in {
+            border-color: var(--success);
+            color: var(--stone-light);
+        }
+
+        .auth-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: var(--stone-dark);
+        }
+
+        .auth-indicator.logged-in .auth-dot {
+            background: var(--success);
+        }
+
+        /* ============================================
+           NAVIGATION TABS
+           ============================================ */
+
+        .shell-nav {
+            height: var(--nav-height);
+            background: var(--bg-mid);
+            border-bottom: 1px solid var(--stone-dark);
+            display: flex;
+            align-items: center;
+            padding: 0 20px;
+            gap: 4px;
+            position: fixed;
+            top: var(--header-height);
+            left: 0;
+            right: 0;
+            z-index: 99;
+            overflow-x: auto;
+        }
+
+        .nav-tab {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 11px;
+            padding: 8px 16px;
+            background: transparent;
+            border: 1px solid transparent;
+            border-radius: 4px 4px 0 0;
+            color: var(--stone-mid);
+            cursor: pointer;
+            transition: all 0.2s;
+            white-space: nowrap;
+        }
+
+        .nav-tab:hover {
+            color: var(--stone-light);
+            background: var(--bg-surface);
+        }
+
+        .nav-tab.active {
+            color: var(--accent-ember);
+            background: var(--bg-deep);
+            border-color: var(--stone-dark);
+            border-bottom-color: var(--bg-deep);
+            margin-bottom: -1px;
+        }
+
+        /* ============================================
+           CONTENT AREA
+           ============================================ */
+
+        .shell-content {
+            position: fixed;
+            top: calc(var(--header-height) + var(--nav-height));
+            left: 0;
+            right: 0;
+            bottom: 0;
+            overflow: auto;
+            background: var(--bg-deep);
+        }
+
+        /* ============================================
+           TOAST NOTIFICATIONS
+           ============================================ */
+
+        .shell-toast {
+            position: fixed;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%) translateY(100px);
+            background: var(--bg-surface);
+            border: 1px solid var(--stone-dark);
+            border-radius: 6px;
+            padding: 12px 24px;
+            font-size: 12px;
+            color: var(--stone-light);
+            z-index: 1000;
+            transition: transform 0.3s ease;
+            pointer-events: none;
+        }
+
+        .shell-toast.show {
+            transform: translateX(-50%) translateY(0);
+        }
+
+        .shell-toast.success {
+            border-color: var(--success);
+        }
+
+        .shell-toast.error {
+            border-color: var(--error);
+        }
+
+        /* ============================================
+           LOADING STATE
+           ============================================ */
+
+        .shell-loading {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            height: 100%;
+            color: var(--stone-mid);
+            font-size: 14px;
+        }
+
+        .shell-loading::after {
+            content: '';
+            width: 20px;
+            height: 20px;
+            border: 2px solid var(--stone-dark);
+            border-top-color: var(--accent-ember);
+            border-radius: 50%;
+            margin-left: 12px;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body>
+    <!-- Shell Header -->
+    <header class="shell-header">
+        <div class="shell-brand">
+            <span class="brand-icon">&#128302;</span>
+            <span class="brand-text">GAME WIZARD</span>
+        </div>
+        <div class="shell-controls">
+            <div class="shell-project">
+                <select id="shellProjectSelect">
+                    <option value="">-- Select Project --</option>
+                </select>
+            </div>
+            <div class="auth-indicator" id="shellAuthIndicator">
+                <span class="auth-dot"></span>
+                <span class="auth-text">...</span>
+            </div>
+        </div>
+    </header>
+
+    <!-- Navigation Tabs -->
+    <nav class="shell-nav" id="shellNav">
+        <button class="nav-tab" data-cartridge="home">Home</button>
+        <button class="nav-tab" data-cartridge="crucible">Crucible</button>
+        <button class="nav-tab" data-cartridge="tilesmith">Tilesmith</button>
+        <button class="nav-tab" data-cartridge="sprite-rite">Sprite-Rite</button>
+        <button class="nav-tab" data-cartridge="level-forge">Level Forge</button>
+        <button class="nav-tab" data-cartridge="animancer">Animancer</button>
+        <button class="nav-tab" data-cartridge="frameweft">Frameweft</button>
+        <button class="nav-tab" data-cartridge="incarnum">Incarnum</button>
+    </nav>
+
+    <!-- Content Area -->
+    <main class="shell-content" id="shellContent">
+        <div class="shell-loading">Loading</div>
+    </main>
+
+    <!-- Toast -->
+    <div class="shell-toast" id="shellToast"></div>
+
+    <!-- Scripts -->
+    <script src="../shared/supabase-client.js"></script>
+    <script>
+        /* ============================================
+           GAME WIZARD SHELL - JavaScript
+           ============================================ */
+
+        const shell = {
+            // State
+            state: {
+                user: null,
+                projectId: null,
+                projectName: null,
+                projects: [],
+                activeCartridge: null,
+                cartridgeInstance: null,
+                loadedStyles: new Set()
+            },
+
+            // Elements
+            elements: {
+                projectSelect: document.getElementById('shellProjectSelect'),
+                authIndicator: document.getElementById('shellAuthIndicator'),
+                nav: document.getElementById('shellNav'),
+                content: document.getElementById('shellContent'),
+                toast: document.getElementById('shellToast')
+            },
+
+            // ==========================================
+            // INITIALIZATION
+            // ==========================================
+
+            async init() {
+                // Initialize Supabase client
+                await crucibleClient.init();
+
+                // Get current user
+                this.state.user = await crucibleClient.getUser();
+                this.updateAuthIndicator();
+
+                // Listen for auth changes
+                crucibleClient.onAuthStateChange((event, session) => {
+                    this.state.user = session?.user || null;
+                    this.updateAuthIndicator();
+                    if (this.state.user) {
+                        this.loadProjects();
+                    } else {
+                        this.state.projects = [];
+                        this.state.projectId = null;
+                        this.state.projectName = null;
+                        this.updateProjectSelect();
+                    }
+                });
+
+                // Load projects if logged in
+                if (this.state.user) {
+                    await this.loadProjects();
+                }
+
+                // Setup event listeners
+                this.setupListeners();
+
+                // Load initial cartridge from URL hash or default to home
+                const hash = window.location.hash.slice(1) || 'home';
+                await this.loadCartridge(hash);
+            },
+
+            // ==========================================
+            // AUTH
+            // ==========================================
+
+            updateAuthIndicator() {
+                const indicator = this.elements.authIndicator;
+                const textEl = indicator.querySelector('.auth-text');
+
+                if (this.state.user) {
+                    const name = this.state.user.user_metadata?.display_name ||
+                                 this.state.user.email?.split('@')[0] || 'User';
+                    indicator.classList.add('logged-in');
+                    textEl.textContent = name;
+                } else {
+                    indicator.classList.remove('logged-in');
+                    textEl.textContent = 'Guest';
+                }
+            },
+
+            // ==========================================
+            // PROJECTS
+            // ==========================================
+
+            async loadProjects() {
+                if (!this.state.user) return;
+
+                try {
+                    this.state.projects = await crucibleClient.getMyProjects();
+                    this.updateProjectSelect();
+
+                    // Restore last selected project from context
+                    const context = crucibleClient.getContext();
+                    if (context.projectId) {
+                        this.state.projectId = context.projectId;
+                        this.state.projectName = context.projectName;
+                        this.elements.projectSelect.value = context.projectId;
+                    }
+                } catch (error) {
+                    console.error('Failed to load projects:', error);
+                }
+            },
+
+            updateProjectSelect() {
+                const select = this.elements.projectSelect;
+                select.innerHTML = '<option value="">-- Select Project --</option>';
+
+                this.state.projects.forEach(project => {
+                    const option = document.createElement('option');
+                    option.value = project.id;
+                    option.textContent = project.name;
+                    select.appendChild(option);
+                });
+
+                if (this.state.projectId) {
+                    select.value = this.state.projectId;
+                }
+            },
+
+            selectProject(projectId) {
+                const project = this.state.projects.find(p => p.id === projectId);
+                this.state.projectId = projectId || null;
+                this.state.projectName = project?.name || null;
+
+                // Update context
+                if (projectId) {
+                    crucibleClient.setContext(projectId, null, null);
+                } else {
+                    crucibleClient.clearContext();
+                }
+
+                // Notify cartridge
+                if (this.state.cartridgeInstance?.setProject) {
+                    this.state.cartridgeInstance.setProject(this.state.projectId, this.state.projectName);
+                }
+            },
+
+            // ==========================================
+            // CARTRIDGE LOADING
+            // ==========================================
+
+            async loadCartridge(name) {
+                // Update URL hash
+                if (window.location.hash.slice(1) !== name) {
+                    window.location.hash = name;
+                }
+
+                // Show loading state
+                this.elements.content.innerHTML = '<div class="shell-loading">Loading</div>';
+
+                // Destroy current cartridge
+                if (this.state.cartridgeInstance?.destroy) {
+                    try {
+                        this.state.cartridgeInstance.destroy();
+                    } catch (e) {
+                        console.warn('Cartridge destroy error:', e);
+                    }
+                }
+                this.state.cartridgeInstance = null;
+
+                try {
+                    // Load cartridge module
+                    const cartridge = await import(`../cartridges/${name}.js`);
+
+                    // Inject styles if not already loaded
+                    if (cartridge.styles && !this.state.loadedStyles.has(name)) {
+                        this.injectStyles(name, cartridge.styles);
+                        this.state.loadedStyles.add(name);
+                    }
+
+                    // Inject template
+                    this.elements.content.innerHTML = cartridge.template;
+
+                    // Initialize cartridge
+                    this.state.cartridgeInstance = await cartridge.init({
+                        user: this.state.user,
+                        projectId: this.state.projectId,
+                        projectName: this.state.projectName,
+                        container: this.elements.content
+                    });
+
+                    this.state.activeCartridge = name;
+                    this.updateNavTabs();
+
+                } catch (error) {
+                    console.error(`Failed to load cartridge "${name}":`, error);
+                    this.elements.content.innerHTML = `
+                        <div style="padding: 40px; text-align: center; color: var(--stone-mid);">
+                            <p style="font-size: 14px; margin-bottom: 12px;">Failed to load ${name}</p>
+                            <p style="font-size: 12px; color: var(--error);">${error.message}</p>
+                        </div>
+                    `;
+                }
+            },
+
+            injectStyles(name, css) {
+                const style = document.createElement('style');
+                style.id = `cartridge-styles-${name}`;
+                style.textContent = css;
+                document.head.appendChild(style);
+            },
+
+            updateNavTabs() {
+                const tabs = this.elements.nav.querySelectorAll('.nav-tab');
+                tabs.forEach(tab => {
+                    const cartridge = tab.dataset.cartridge;
+                    tab.classList.toggle('active', cartridge === this.state.activeCartridge);
+                });
+            },
+
+            // ==========================================
+            // EVENT LISTENERS
+            // ==========================================
+
+            setupListeners() {
+                // Project selection
+                this.elements.projectSelect.addEventListener('change', (e) => {
+                    this.selectProject(e.target.value);
+                });
+
+                // Navigation tabs
+                this.elements.nav.addEventListener('click', (e) => {
+                    const tab = e.target.closest('.nav-tab');
+                    if (tab) {
+                        const cartridge = tab.dataset.cartridge;
+                        if (cartridge !== this.state.activeCartridge) {
+                            this.loadCartridge(cartridge);
+                        }
+                    }
+                });
+
+                // Hash change (browser back/forward)
+                window.addEventListener('hashchange', () => {
+                    const hash = window.location.hash.slice(1) || 'home';
+                    if (hash !== this.state.activeCartridge) {
+                        this.loadCartridge(hash);
+                    }
+                });
+
+                // Custom events from cartridges
+                window.addEventListener('shell:toast', (e) => {
+                    this.showToast(e.detail.message, e.detail.type);
+                });
+
+                window.addEventListener('shell:setProject', (e) => {
+                    this.elements.projectSelect.value = e.detail.projectId;
+                    this.selectProject(e.detail.projectId);
+                });
+            },
+
+            // ==========================================
+            // TOAST
+            // ==========================================
+
+            showToast(message, type = '') {
+                const toast = this.elements.toast;
+                toast.textContent = message;
+                toast.className = 'shell-toast show' + (type ? ` ${type}` : '');
+
+                clearTimeout(this._toastTimeout);
+                this._toastTimeout = setTimeout(() => {
+                    toast.classList.remove('show');
+                }, 3000);
+            }
+        };
+
+        // Initialize shell on DOM ready
+        document.addEventListener('DOMContentLoaded', () => shell.init());
+    </script>
+</body>
+</html>
