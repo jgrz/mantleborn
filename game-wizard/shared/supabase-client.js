@@ -115,6 +115,13 @@ class CrucibleClient {
     async getUser() {
         if (!this.client) return null;
 
+        // First try to get user from session (more reliable for restored sessions)
+        const { data: { session } } = await this.client.auth.getSession();
+        if (session?.user) {
+            return session.user;
+        }
+
+        // Fallback to getUser() for fresh sessions
         const { data: { user }, error } = await this.client.auth.getUser();
         if (error) return null;
         return user;
