@@ -1275,6 +1275,7 @@
                         <button class="tool-btn" data-tool="picker" title="Color Picker (I) - Hold Option/Alt to preview">&#128371;</button>
                         <button class="tool-btn" data-tool="line" title="Line (L)">&#9585;</button>
                         <button class="tool-btn" data-tool="rect" title="Rectangle (R)">&#9634;</button>
+                        <button class="tool-btn" data-tool="select" title="Select (M) - Cut/Copy/Paste">&#11034;</button>
                     </div>
                     <div class="toolbar-group">
                         <button class="tool-btn" data-tool="clear" title="Clear Current Tile">&#128465;</button>
@@ -1624,6 +1625,13 @@
             lastY: -1,
             startX: -1,
             startY: -1,
+
+            // Selection state
+            selection: null,  // { x, y, w, h } - marquee bounds
+            floatingSelection: null,  // { data, width, height, x, y, sourceX, sourceY, isCut }
+            isDraggingFloating: false,
+            floatingDragOffsetX: 0,
+            floatingDragOffsetY: 0,
 
             // Undo
             undoStack: [],
@@ -2089,7 +2097,51 @@
             ctx.imageSmoothingEnabled = false;
             ctx.drawImage(tempCanvas, 0, 0, totalWidth * state.zoom, totalHeight * state.zoom);
 
+            // Draw floating selection (semi-transparent overlay)
+            if (state.floatingSelection) {
+                renderFloatingSelection();
+            }
+
             renderGrid();
+        }
+
+        function renderFloatingSelection() {
+            const fs = state.floatingSelection;
+            if (!fs) return;
+
+            // Create temp canvas for floating selection pixels
+            const tempCanvas = document.createElement('canvas');
+            tempCanvas.width = fs.width;
+            tempCanvas.height = fs.height;
+            const tempCtx = tempCanvas.getContext('2d');
+            const imgData = tempCtx.createImageData(fs.width, fs.height);
+            imgData.data.set(fs.data);
+            tempCtx.putImageData(imgData, 0, 0);
+
+            // Draw with slight transparency to show it's floating
+            ctx.save();
+            ctx.globalAlpha = 0.85;
+            ctx.imageSmoothingEnabled = false;
+            ctx.drawImage(
+                tempCanvas,
+                fs.x * state.zoom,
+                fs.y * state.zoom,
+                fs.width * state.zoom,
+                fs.height * state.zoom
+            );
+            ctx.restore();
+
+            // Draw cyan border around floating selection
+            ctx.strokeStyle = '#00ffff';
+            ctx.lineWidth = 2;
+            ctx.setLineDash([4, 4]);
+            ctx.strokeRect(
+                fs.x * state.zoom,
+                fs.y * state.zoom,
+                fs.width * state.zoom,
+                fs.height * state.zoom
+            );
+            ctx.setLineDash([]);
         }
 
         function renderGrid() {
@@ -2154,6 +2206,23 @@
                 gridCtx.strokeStyle = 'rgba(64, 208, 128, 0.9)'; // Green for selected
                 gridCtx.lineWidth = 3;
                 gridCtx.strokeRect(tileX + 1.5, tileY + 1.5, tileW - 3, tileH - 3);
+            }
+
+            // Draw selection marquee (dashed white rectangle)
+            if (state.selection) {
+                const norm = normalizedSelection();
+                if (norm && norm.w > 0 && norm.h > 0) {
+                    gridCtx.strokeStyle = '#ffffff';
+                    gridCtx.lineWidth = 1;
+                    gridCtx.setLineDash([4, 4]);
+                    gridCtx.strokeRect(
+                        norm.x * state.zoom + 0.5,
+                        norm.y * state.zoom + 0.5,
+                        norm.w * state.zoom,
+                        norm.h * state.zoom
+                    );
+                    gridCtx.setLineDash([]);
+                }
             }
         }
 
@@ -2252,6 +2321,170 @@
             const redoBtn = document.getElementById('redoBtn');
             if (undoBtn) undoBtn.disabled = state.undoStack.length === 0;
             if (redoBtn) redoBtn.disabled = state.redoStack.length === 0;
+        }
+
+        // ==========================================
+        // SELECTION FUNCTIONS
+        // ==========================================
+        function isInsideRect(px, py, rx, ry, rw, rh) {
+            return px >= rx && px < rx + rw && py >= ry && py < ry + rh;
+        }
+
+        function normalizedSelection() {
+            if (!state.selection) return null;
+
+            let { x, y, w, h } = state.selection;
+            // Handle negative width/height from dragging up/left
+            if (w < 0) { x += w; w = -w; }
+            if (h < 0) { y += h; h = -h; }
+
+            // Clamp to canvas bounds
+            const totalW = getTotalWidth();
+            const totalH = getTotalHeight();
+            x = Math.max(0, Math.min(x, totalW - 1));
+            y = Math.max(0, Math.min(y, totalH - 1));
+            w = Math.min(w, totalW - x);
+            h = Math.min(h, totalH - y);
+
+            return { x, y, w, h };
+        }
+
+        function copySelection() {
+            if (!state.selection) return;
+
+            const norm = normalizedSelection();
+            if (!norm || norm.w <= 0 || norm.h <= 0) return;
+
+            const { x, y, w, h } = norm;
+
+            // Capture pixels from selection
+            const data = new Uint8ClampedArray(w * h * 4);
+            for (let row = 0; row < h; row++) {
+                for (let col = 0; col < w; col++) {
+                    const srcIdx = getPixelIndex(x + col, y + row);
+                    const dstIdx = (row * w + col) * 4;
+                    data[dstIdx] = state.pixels.data[srcIdx];
+                    data[dstIdx + 1] = state.pixels.data[srcIdx + 1];
+                    data[dstIdx + 2] = state.pixels.data[srcIdx + 2];
+                    data[dstIdx + 3] = state.pixels.data[srcIdx + 3];
+                }
+            }
+
+            state.floatingSelection = {
+                data,
+                width: w,
+                height: h,
+                x,
+                y,
+                sourceX: x,
+                sourceY: y,
+                isCut: false
+            };
+
+            state.selection = null;  // Clear marquee
+            render();
+            showToast('Selection copied - drag to position, click outside or Enter to paste');
+        }
+
+        function cutSelection() {
+            if (!state.selection) return;
+
+            saveUndoState();  // Save before clearing
+
+            const norm = normalizedSelection();
+            if (!norm || norm.w <= 0 || norm.h <= 0) return;
+
+            const { x, y, w, h } = norm;
+
+            // Capture pixels from selection
+            const data = new Uint8ClampedArray(w * h * 4);
+            for (let row = 0; row < h; row++) {
+                for (let col = 0; col < w; col++) {
+                    const srcIdx = getPixelIndex(x + col, y + row);
+                    const dstIdx = (row * w + col) * 4;
+                    data[dstIdx] = state.pixels.data[srcIdx];
+                    data[dstIdx + 1] = state.pixels.data[srcIdx + 1];
+                    data[dstIdx + 2] = state.pixels.data[srcIdx + 2];
+                    data[dstIdx + 3] = state.pixels.data[srcIdx + 3];
+                }
+            }
+
+            state.floatingSelection = {
+                data,
+                width: w,
+                height: h,
+                x,
+                y,
+                sourceX: x,
+                sourceY: y,
+                isCut: true
+            };
+
+            // Clear source pixels
+            for (let row = 0; row < h; row++) {
+                for (let col = 0; col < w; col++) {
+                    setPixel(x + col, y + row, '#000000', 0);
+                }
+            }
+
+            state.selection = null;  // Clear marquee
+            render();
+            markDirty();
+            showToast('Selection cut - drag to position, click outside or Enter to paste');
+        }
+
+        function commitFloatingSelection() {
+            if (!state.floatingSelection) return;
+
+            // Only save undo if this was a copy (cut already saved)
+            if (!state.floatingSelection.isCut) {
+                saveUndoState();
+            }
+
+            const fs = state.floatingSelection;
+            const totalWidth = getTotalWidth();
+            const totalHeight = getTotalHeight();
+
+            // Paste pixels (skip fully transparent source pixels)
+            for (let row = 0; row < fs.height; row++) {
+                for (let col = 0; col < fs.width; col++) {
+                    const dstX = fs.x + col;
+                    const dstY = fs.y + row;
+
+                    // Bounds check
+                    if (dstX < 0 || dstX >= totalWidth || dstY < 0 || dstY >= totalHeight) continue;
+
+                    const srcIdx = (row * fs.width + col) * 4;
+                    const srcAlpha = fs.data[srcIdx + 3];
+
+                    // Skip fully transparent pixels
+                    if (srcAlpha === 0) continue;
+
+                    const dstIdx = getPixelIndex(dstX, dstY);
+                    state.pixels.data[dstIdx] = fs.data[srcIdx];
+                    state.pixels.data[dstIdx + 1] = fs.data[srcIdx + 1];
+                    state.pixels.data[dstIdx + 2] = fs.data[srcIdx + 2];
+                    state.pixels.data[dstIdx + 3] = fs.data[srcIdx + 3];
+                }
+            }
+
+            state.floatingSelection = null;
+            render();
+            markDirty();
+            showToast('Selection pasted');
+        }
+
+        function cancelFloatingSelection() {
+            if (!state.floatingSelection) return;
+
+            // If it was a cut, restore the original pixels via undo
+            if (state.floatingSelection.isCut) {
+                undo();
+            }
+
+            state.floatingSelection = null;
+            render();
+            showToast('Selection cancelled');
         }
 
         function drawLine(x0, y0, x1, y1, color) {
@@ -4440,12 +4673,55 @@
                     return;
                 }
 
-                if (e.key === 'z' && (e.ctrlKey || e.metaKey)) {
-                    e.preventDefault();
-                    if (e.shiftKey) redo();
-                    else undo();
+                // Selection shortcuts (Ctrl/Cmd modifiers)
+                if (e.ctrlKey || e.metaKey) {
+                    if (e.key === 'z') {
+                        e.preventDefault();
+                        if (e.shiftKey) redo();
+                        else undo();
+                        return;
+                    }
+                    if (e.key === 'c') {
+                        e.preventDefault();
+                        copySelection();
+                        return;
+                    }
+                    if (e.key === 'x') {
+                        e.preventDefault();
+                        cutSelection();
+                        return;
+                    }
+                    if (e.key === 'v') {
+                        e.preventDefault();
+                        // Commit existing floating selection if any
+                        if (state.floatingSelection) {
+                            commitFloatingSelection();
+                        }
+                        return;
+                    }
                 }
 
+                // Escape - cancel selection or floating selection
+                if (e.key === 'Escape') {
+                    if (state.floatingSelection) {
+                        cancelFloatingSelection();
+                    } else if (state.selection) {
+                        state.selection = null;
+                        render();
+                    }
+                    return;
+                }
+
+                // Enter - commit floating selection
+                if (e.key === 'Enter') {
+                    if (state.floatingSelection) {
+                        e.preventDefault();
+                        commitFloatingSelection();
+                    }
+                    return;
+                }
+
+                // Tool shortcuts
                 if (e.key === 'p') selectTool('pencil');
                 if (e.key === 'e') selectTool('eraser');
                 if (e.key === 'f') selectTool('fill');
@@ -4457,7 +4733,8 @@
                 }
                 if (e.key === 'l') selectTool('line');
                 if (e.key === 'r') selectTool(e.shiftKey ? 'rectfill' : 'rect');
-                if (e.key === 'c') {
+                if (e.key === 'm') selectTool('select');  // Marquee selection tool
+                if (e.key === 'c' && !e.ctrlKey && !e.metaKey) {
                     elements.quickPaletteBar.classList.toggle('open');
                     elements.paletteToggleBtn.classList.toggle('active');
                 }
@@ -4498,11 +4775,34 @@
 
         function handleMouseDown(e) {
             const { x, y } = getPixelPos(e);
+
+            // Handle floating selection first (takes priority over tools)
+            if (state.floatingSelection) {
+                const fs = state.floatingSelection;
+                if (isInsideRect(x, y, fs.x, fs.y, fs.width, fs.height)) {
+                    // Start dragging the floating selection
+                    state.isDraggingFloating = true;
+                    state.floatingDragOffsetX = x - fs.x;
+                    state.floatingDragOffsetY = y - fs.y;
+                } else {
+                    // Click outside - commit the floating selection
+                    commitFloatingSelection();
+                }
+                return;
+            }
+
             state.isDrawing = true;
             state.startX = x;
             state.startY = y;
             state.lastX = x;
             state.lastY = y;
+
+            // Select tool - start new selection
+            if (state.tool === 'select') {
+                state.selection = { x, y, w: 0, h: 0 };
+                render();
+                return;
+            }
 
             if (state.tool === 'picker') {
                 const pixel = getPixel(x, y);
@@ -4533,6 +4833,22 @@
 
         function handleMouseMove(e) {
             const { x, y } = getPixelPos(e);
+
+            // Handle dragging floating selection
+            if (state.isDraggingFloating && state.floatingSelection) {
+                state.floatingSelection.x = x - state.floatingDragOffsetX;
+                state.floatingSelection.y = y - state.floatingDragOffsetY;
+                render();
+                return;
+            }
+
+            // Handle select tool - update selection bounds
+            if (state.tool === 'select' && state.isDrawing && state.selection) {
+                state.selection.w = x - state.selection.x;
+                state.selection.h = y - state.selection.y;
+                render();
+                return;
+            }
 
             // Show color tooltip ONLY when picker tool is active (permanent or temporary)
             if (state.tool === 'picker') {
@@ -4581,6 +4897,28 @@
         }
 
         function handleMouseUp(e) {
+            // Handle end of floating selection drag
+            if (state.isDraggingFloating) {
+                state.isDraggingFloating = false;
+                return;
+            }
+
+            // Handle select tool - finalize selection
+            if (state.tool === 'select' && state.isDrawing) {
+                state.isDrawing = false;
+                // Normalize selection (handle negative w/h)
+                if (state.selection) {
+                    const norm = normalizedSelection();
+                    if (norm && norm.w > 0 && norm.h > 0) {
+                        state.selection = norm;
+                    } else {
+                        state.selection = null;
+                    }
+                }
+                render();
+                return;
+            }
+
             if (!state.isDrawing) return;
 
             const { x, y } = getPixelPos(e);
