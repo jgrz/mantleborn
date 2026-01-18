@@ -1132,8 +1132,7 @@
 
             try {
                 const settings = await crucibleClient.getProjectSettings(projectId);
-                const tileDefaults = settings.pixellab?.tileDefaults || {};
-                state.tileSize = parseInt(tileDefaults.size) || 16;
+                state.tileSize = settings.tileDefaults?.size || 16;
 
                 const levels = await crucibleClient.getLevels(projectId);
                 if (levels && levels.length > 0) {

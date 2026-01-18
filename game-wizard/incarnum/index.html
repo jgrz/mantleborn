@@ -2603,12 +2603,12 @@
             elements.generateFooter.style.display = 'flex';
             elements.generationProgress.classList.remove('active');
 
-            // Load project settings for PixelLab form defaults
+            // Load project settings for art style defaults
             if (state.projectId && typeof crucibleClient !== 'undefined') {
                 try {
                     const settings = await crucibleClient.getProjectSettings(state.projectId);
-                    const style = settings.pixellab?.characterStyle || {};
-                    const charDefaults = settings.pixellab?.characterDefaults || {};
+                    const style = settings.artStyle || {};
+                    const charDefaults = settings.characterDefaults || {};
 
                     // Map outline values (project uses short form, modal uses long form)
                     if (style.outline) {

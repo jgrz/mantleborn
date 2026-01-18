@@ -384,37 +384,33 @@ class CrucibleClient {
         if (error) throw error;
 
         // Return settings with sensible defaults
-        // Support both new (characterStyle/tileStyle) and old (defaultStyle) formats
+        // Support new flat structure and legacy pixellab-nested structure
         const settings = data?.settings || {};
-        const pl = settings.pixellab || {};
 
-        // For backwards compatibility, fall back to defaultStyle if new format not present
-        const charStyle = pl.characterStyle || pl.defaultStyle || {};
-        const tileStyle = pl.tileStyle || pl.defaultStyle || {};
+        // Check for new flat structure first, fall back to legacy pixellab nesting
+        const legacy = settings.pixellab || {};
+        const artStyle = settings.artStyle || legacy.defaultStyle || {};
+        const tileDefaults = settings.tileDefaults || legacy.tileDefaults || {};
+        const characterDefaults = settings.characterDefaults || legacy.characterDefaults || {};
 
         return {
             gameView: settings.gameView || 'top-down',
-            pixellab: {
-                characterStyle: {
-                    outline: charStyle.outline || 'single_color_black',
-                    shading: charStyle.shading || 'basic',
-                    detail: charStyle.detail || 'medium',
-                    view: charStyle.view || 'low_top_down'
-                },
-                tileStyle: {
-                    outline: tileStyle.outline || 'no_outline',
-                    shading: tileStyle.shading || 'basic',
-                    detail: tileStyle.detail || 'medium',
-                    view: tileStyle.view || 'low_top_down'
-                },
-                tileDefaults: {
-                    size: pl.tileDefaults?.size || 16,
-                    transitionSize: pl.tileDefaults?.transitionSize || 'medium'
-                },
-                characterDefaults: {
-                    size: pl.characterDefaults?.size || 32,
-                    directions: pl.characterDefaults?.directions || 4
-                }
+            // Art style settings (for AI generation)
+            artStyle: {
+                outline: artStyle.outline || 'single_color_black',
+                shading: artStyle.shading || 'basic',
+                detail: artStyle.detail || 'medium',
+                view: artStyle.view || 'low_top_down'
+            },
+            // Tile defaults (size, transitions)
+            tileDefaults: {
+                size: tileDefaults.size || 16,
+                transitionSize: tileDefaults.transitionSize || 'medium'
+            },
+            // Character defaults (size, directions)
+            characterDefaults: {
+                size: characterDefaults.size || 32,
+                directions: characterDefaults.directions || 4
             }
         };
     }

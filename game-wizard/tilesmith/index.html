@@ -2768,8 +2768,7 @@
             // Load tile size from project settings
             try {
                 const settings = await crucibleClient.getProjectSettings(projectId);
-                const tileDefaults = settings.pixellab?.tileDefaults || {};
-                const projectTileSize = parseInt(tileDefaults.size) || 16;
+                const projectTileSize = settings.tileDefaults?.size || 16;
 
                 // Apply tile size from project
                 state.width = projectTileSize;
@@ -3832,8 +3831,8 @@
             if (state.projectId) {
                 try {
                     const settings = await crucibleClient.getProjectSettings(state.projectId);
-                    const style = settings.pixellab?.tileStyle || {};
-                    const tileDefaults = settings.pixellab?.tileDefaults || {};
+                    const style = settings.artStyle || {};
+                    const tileDefaults = settings.tileDefaults || {};
 
                     // Store style settings (these are now inherited, not editable)
                     if (style.outline) state.projectStyle.outline = style.outline;

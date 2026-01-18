@@ -2592,17 +2592,18 @@
             if (!state.currentProject) return;
 
             const settings = state.currentProject.settings || {};
-            const pixellab = settings.pixellab || {};
-            const style = pixellab.defaultStyle || {};
-            const tiles = pixellab.tileDefaults || {};
-            const chars = pixellab.characterDefaults || {};
+            // Support new flat structure and legacy pixellab nesting
+            const legacy = settings.pixellab || {};
+            const style = settings.artStyle || legacy.defaultStyle || {};
+            const tiles = settings.tileDefaults || legacy.tileDefaults || {};
+            const chars = settings.characterDefaults || legacy.characterDefaults || {};
 
             // General
             elements.settingsProjectName.value = state.currentProject.name || '';
             elements.settingsProjectDesc.value = state.currentProject.description || '';
             elements.settingsGameView.value = settings.gameView || 'top-down';
 
-            // AI Generation
+            // AI Generation (Art Style)
             elements.settingsOutline.value = style.outline || 'single_color_black';
             elements.settingsShading.value = style.shading || 'basic';
             elements.settingsDetail.value = style.detail || 'medium';
@@ -2660,24 +2661,22 @@
             try {
                 const crucible = await getCrucible();
 
-                // Build settings object
+                // Build settings object (flat structure, no pixellab wrapper)
                 const settings = {
                     gameView: elements.settingsGameView.value,
-                    pixellab: {
-                        defaultStyle: {
-                            outline: elements.settingsOutline.value,
-                            shading: elements.settingsShading.value,
-                            detail: elements.settingsDetail.value,
-                            view: elements.settingsView.value
-                        },
-                        tileDefaults: {
-                            size: parseInt(elements.settingsTileSize.value),
-                            transitionSize: elements.settingsTransition.value
-                        },
-                        characterDefaults: {
-                            size: parseInt(elements.settingsCharSize.value),
-                            directions: parseInt(elements.settingsDirections.value)
-                        }
+                    artStyle: {
+                        outline: elements.settingsOutline.value,
+                        shading: elements.settingsShading.value,
+                        detail: elements.settingsDetail.value,
+                        view: elements.settingsView.value
+                    },
+                    tileDefaults: {
+                        size: parseInt(elements.settingsTileSize.value),
+                        transitionSize: elements.settingsTransition.value
+                    },
+                    characterDefaults: {
+                        size: parseInt(elements.settingsCharSize.value),
+                        directions: parseInt(elements.settingsDirections.value)
                     }
                 };
 
