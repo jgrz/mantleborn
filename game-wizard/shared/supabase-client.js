@@ -48,17 +48,30 @@ class CrucibleClient {
         this.client = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
         // Wait for auth state to be restored from localStorage
-        // This is the recommended approach in Supabase v2
-        await new Promise((resolve) => {
-            const { data: { subscription } } = this.client.auth.onAuthStateChange((event, session) => {
-                // INITIAL_SESSION event fires when auth state is restored
-                if (event === 'INITIAL_SESSION') {
+        // Using getSession() first as it's synchronous with localStorage
+        console.log('[Crucible] Checking initial session...');
+        const { data: { session: initialSession } } = await this.client.auth.getSession();
+        console.log('[Crucible] Initial session check:', initialSession ? `User: ${initialSession.user?.email}` : 'No session');
+
+        // If no session found immediately, wait briefly for INITIAL_SESSION event
+        // This handles cases where the session needs async restoration
+        if (!initialSession) {
+            console.log('[Crucible] No immediate session, waiting for auth state...');
+            await new Promise((resolve) => {
+                const { data: { subscription } } = this.client.auth.onAuthStateChange((event, session) => {
+                    console.log('[Crucible] Auth state change:', event, session?.user?.email);
+                    if (event === 'INITIAL_SESSION') {
+                        subscription.unsubscribe();
+                        resolve();
+                    }
+                });
+                // Short timeout - if no session by now, there isn't one
+                setTimeout(() => {
+                    subscription.unsubscribe();
                     resolve();
-                }
+                }, 500);
             });
-            // Timeout fallback in case INITIAL_SESSION doesn't fire
-            setTimeout(resolve, 1000);
-        });
+        }
 
         this.initialized = true;
 
