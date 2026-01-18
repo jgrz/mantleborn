@@ -976,6 +976,18 @@
             border-color: var(--accent-green);
         }
 
+        .form-input[readonly] {
+            background: var(--bg-mid);
+            color: var(--stone-mid);
+            cursor: not-allowed;
+            border-style: dashed;
+        }
+
+        .ai-toolbar-btn {
+            padding: 6px 12px;
+            font-size: 11px;
+        }
+
         .form-row {
             display: flex;
             gap: 8px;
@@ -1243,6 +1255,14 @@
                         Tile Borders
                     </label>
                 </div>
+
+                <div class="toolbar-divider"></div>
+
+                <div class="toolbar-group" style="margin-left: auto;">
+                    <button class="btn btn-primary btn-small ai-toolbar-btn" id="aiGenerateBtn">
+                        &#10024; Generate Tile
+                    </button>
+                </div>
             </div>
 
             <div class="canvas-area">
@@ -1382,16 +1402,13 @@
                 </div>
             </div>
 
-            <!-- AI Assistant -->
+            <!-- AI Assistant Preview -->
             <div class="panel-section ai-section">
                 <div class="section-header">AI Generator</div>
-                <button class="btn btn-primary ai-generate-btn" id="aiGenerateBtn">
-                    &#10024; Generate Tile
-                </button>
                 <div class="ai-spec-preview empty" id="aiSpecPreview">
                     <div>
                         <div style="font-size: 24px; margin-bottom: 8px;">&#129302;</div>
-                        Click "Generate Tile" to create AI-generated pixel art
+                        Use the toolbar button to generate AI pixel art
                     </div>
                 </div>
             </div>
@@ -2755,6 +2772,30 @@
                 updateSheetCounts();
                 renderTileLibrary();
                 return;
+            }
+
+            // Load project settings to get tile size
+            try {
+                const settings = await crucibleClient.getProjectSettings(projectId);
+                const tileDefaults = settings.pixellab?.tileDefaults || {};
+                const projectTileSize = parseInt(tileDefaults.size) || 16;
+
+                // Apply tile size from project
+                state.width = projectTileSize;
+                state.height = projectTileSize;
+                elements.tileWidth.value = projectTileSize;
+                elements.tileHeight.value = projectTileSize;
+
+                // Make inputs read-only since size is inherited from project
+                elements.tileWidth.readOnly = true;
+                elements.tileHeight.readOnly = true;
+                elements.tileWidth.title = 'Tile size inherited from project settings';
+                elements.tileHeight.title = 'Tile size inherited from project settings';
+
+                // Update canvas
+                resizeCanvas();
+            } catch (err) {
+                console.warn('Could not load project settings for tile size:', err);
             }
 
             try {
@@ -4134,7 +4175,7 @@
         }
 
         async function publishToMaster() {
-            if (!state.currentProjectId) {
+            if (!state.projectId) {
                 showToast('Please select a project first', true);
                 return;
             }
@@ -4180,7 +4221,7 @@
 
                             await publishMethod.call(
                                 crucibleClient,
-                                state.currentProjectId,
+                                state.projectId,
                                 subName,
                                 tileImageData,
                                 state.width,
@@ -4197,7 +4238,7 @@
                     // Single tile
                     await publishMethod.call(
                         crucibleClient,
-                        state.currentProjectId,
+                        state.projectId,
                         tileName,
                         state.pixels,
                         state.width,

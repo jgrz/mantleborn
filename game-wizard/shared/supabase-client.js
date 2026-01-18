@@ -1468,18 +1468,37 @@ class CrucibleClient {
     async getDraftTileSheet(projectId) {
         if (!this.client) throw new Error('Crucible not initialized');
 
-        // Try new column names first, fall back to old names
+        // Try new column names first
+        try {
+            const { data, error } = await this.client
+                .from('projects')
+                .select('draft_tile_sheet_png, draft_tile_sheet_atlas, draft_tile_sheet_updated_at')
+                .eq('id', projectId)
+                .single();
+
+            if (!error && data) {
+                return {
+                    png: data.draft_tile_sheet_png,
+                    atlas: data.draft_tile_sheet_atlas || { size: { w: 0, h: 0 }, sprites: {} },
+                    updatedAt: data.draft_tile_sheet_updated_at
+                };
+            }
+        } catch (e) {
+            // New columns don't exist, try old names
+        }
+
+        // Fall back to old column names
         const { data, error } = await this.client
             .from('projects')
-            .select('draft_tile_sheet_png, draft_tile_sheet_atlas, draft_tile_sheet_updated_at, draft_sheet_png, draft_sheet_atlas, draft_sheet_updated_at')
+            .select('draft_sheet_png, draft_sheet_atlas, draft_sheet_updated_at')
             .eq('id', projectId)
             .single();
 
         if (error) throw error;
         return {
-            png: data.draft_tile_sheet_png || data.draft_sheet_png,
-            atlas: data.draft_tile_sheet_atlas || data.draft_sheet_atlas || { size: { w: 0, h: 0 }, sprites: {} },
-            updatedAt: data.draft_tile_sheet_updated_at || data.draft_sheet_updated_at
+            png: data.draft_sheet_png,
+            atlas: data.draft_sheet_atlas || { size: { w: 0, h: 0 }, sprites: {} },
+            updatedAt: data.draft_sheet_updated_at
         };
     }
 
@@ -1491,7 +1510,7 @@ class CrucibleClient {
     async saveDraftTileSheet(projectId, png, atlas) {
         if (!this.client) throw new Error('Crucible not initialized');
 
-        // Try new column names, fall back to old if needed
+        // Try new column names first
         const { error } = await this.client
             .from('projects')
             .update({
@@ -1501,8 +1520,8 @@ class CrucibleClient {
             })
             .eq('id', projectId);
 
-        // If new columns don't exist, try old names
-        if (error && error.message?.includes('draft_tile_sheet')) {
+        // If error (likely column doesn't exist), try old names
+        if (error) {
             const { error: fallbackError } = await this.client
                 .from('projects')
                 .update({
@@ -1512,8 +1531,6 @@ class CrucibleClient {
                 })
                 .eq('id', projectId);
             if (fallbackError) throw fallbackError;
-        } else if (error) {
-            throw error;
         }
     }
 
