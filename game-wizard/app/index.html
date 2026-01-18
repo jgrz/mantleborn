@@ -298,7 +298,7 @@
     <div class="shell-toast" id="shellToast"></div>
 
     <!-- Scripts -->
-    <script src="../shared/supabase-client.js"></script>
+    <script src="/game-wizard/shared/supabase-client.js"></script>
     <script>
         /* ============================================
            GAME WIZARD SHELL - JavaScript
@@ -465,7 +465,7 @@
 
                 try {
                     // Load cartridge module
-                    const cartridge = await import(`../cartridges/${name}.js`);
+                    const cartridge = await import(`/game-wizard/cartridges/${name}.js`);
 
                     // Inject styles if not already loaded
                     if (cartridge.styles && !this.state.loadedStyles.has(name)) {
