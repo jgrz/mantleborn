@@ -3624,6 +3624,21 @@
                 return;
             }
 
+            // Check for duplicate names (unless we're editing that exact tile)
+            const isEditingSameTile = state.currentTileName === name;
+            const existsOnDraft = state.draftSheet?.atlas?.sprites?.[name];
+            const existsOnMaster = state.masterSheet?.atlas?.sprites?.[name];
+
+            if (existsOnDraft && !(isEditingSameTile && state.currentTileSource === 'draft')) {
+                showToast(`Tile "${name}" already exists on draft sheet`, true);
+                return;
+            }
+
+            if (existsOnMaster && !(isEditingSameTile && state.currentTileSource === 'master')) {
+                showToast(`Tile "${name}" already exists on master sheet`, true);
+                return;
+            }
+
             // Convert pixels to data URL (full tileset)
             const totalWidth = getTotalWidth();
             const totalHeight = getTotalHeight();
@@ -4137,6 +4152,32 @@
             if (!tileName) {
                 showToast('Please enter a tile name', true);
                 return;
+            }
+
+            // Check for duplicate names on master sheet
+            // For multi-tile, check all generated names; for single tile, check the base name
+            const isMultiTile = state.gridCols > 1 || state.gridRows > 1;
+            const namesToCheck = [];
+
+            if (isMultiTile) {
+                for (let row = 0; row < state.gridRows; row++) {
+                    for (let col = 0; col < state.gridCols; col++) {
+                        namesToCheck.push(`${tileName}_${row}_${col}`);
+                    }
+                }
+            } else {
+                namesToCheck.push(tileName);
+            }
+
+            // Check each name against master sheet (skip if we're editing that exact tile)
+            for (const name of namesToCheck) {
+                const existsOnMaster = state.masterSheet?.atlas?.sprites?.[name];
+                const isEditingSameTile = state.currentTileName === name && state.currentTileSource === 'master';
+
+                if (existsOnMaster && !isEditingSameTile) {
+                    showToast(`Tile "${name}" already exists on master sheet`, true);
+                    return;
+                }
             }
 
             // Check if crucibleClient has master tile sheet methods
