@@ -1408,6 +1408,9 @@
                     <button class="btn btn-primary" id="publishMasterBtn" title="Save directly to master tile sheet">
                         Save to Master
                     </button>
+                    <button class="btn btn-primary" id="saveGroupBtn" style="display: none;" title="Save all tiles as a group to master">
+                        Save as Group
+                    </button>
                 </div>
                 <div class="master-sheet-status" id="masterSheetStatus" style="margin-top: 8px; font-size: 10px; color: var(--stone-mid);"></div>
             </div>
@@ -1691,6 +1694,7 @@
             saveTileBtn: document.getElementById('saveTileBtn'),
             downloadPngBtn: document.getElementById('downloadPngBtn'),
             publishMasterBtn: document.getElementById('publishMasterBtn'),
+            saveGroupBtn: document.getElementById('saveGroupBtn'),
             masterSheetStatus: document.getElementById('masterSheetStatus'),
             toast: document.getElementById('toast'),
             generationQueuePanel: document.getElementById('generationQueuePanel')
@@ -1715,6 +1719,7 @@
 
             renderTileSelector();
             initializeCanvas();
+            updateSaveButtons();
             renderPalette();
             selectColor(state.currentColor); // Initialize color info display
             setupEventListeners();
@@ -1985,7 +1990,14 @@
 
             renderTileSelector();
             updateCanvasSize();
+            updateSaveButtons();
             markDirty();
+        }
+
+        // Show/hide save buttons based on grid size
+        function updateSaveButtons() {
+            const isMultiTile = state.gridCols > 1 || state.gridRows > 1;
+            elements.saveGroupBtn.style.display = isMultiTile ? 'block' : 'none';
         }
 
         function updateAuthIndicator() {
@@ -3161,6 +3173,7 @@
 
             renderTileSelector();
             updateCanvasSize();
+            updateSaveButtons();
             renderTileGroups();
             renderTileLibrary();
             state.undoStack = [];
@@ -3427,6 +3440,7 @@
 
             renderTileSelector();
             updateCanvasSize();
+            updateSaveButtons();
             renderTileLibrary();
             state.undoStack = [];
             state.redoStack = [];
@@ -3493,6 +3507,7 @@
 
             renderTileSelector();
             initializeCanvas();
+            updateSaveButtons();
             renderTileLibrary();
             renderTileGroups();
             state.undoStack = [];
@@ -4410,6 +4425,7 @@
             elements.saveTileBtn.addEventListener('click', saveTile);
             elements.downloadPngBtn.addEventListener('click', downloadPng);
             elements.publishMasterBtn.addEventListener('click', publishToMaster);
+            elements.saveGroupBtn.addEventListener('click', createNewGroup);
 
             // Keyboard shortcuts
             window.addEventListener('keydown', (e) => {
