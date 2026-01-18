@@ -2381,8 +2381,7 @@
                 return;
             }
 
-            // Update cursor based on hover
-            const { x: wx, y: wy } = screenToWorld(sx, sy);
+            // Update cursor based on hover (wx, wy already declared at top of function)
             const handle = getResizeHandle(wx, wy);
             if (handle) {
                 elements.workspaceCanvas.style.cursor = getCursorForHandle(handle);
