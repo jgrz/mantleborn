@@ -1213,19 +1213,25 @@
         // INITIALIZATION
         // ==========================================
         async function init() {
+            console.log('[Frameweft] init starting...');
             const hasProject = await checkProjectGate();
+            console.log('[Frameweft] checkProjectGate returned:', hasProject);
             if (!hasProject) return;
 
             await crucibleClient.init();
+            console.log('[Frameweft] crucibleClient.init() done');
             state.user = await crucibleClient.getUser();
+            console.log('[Frameweft] getUser returned:', state.user);
             updateAuthIndicator();
 
             crucibleClient.onAuthStateChange((event, session) => {
+                console.log('[Frameweft] onAuthStateChange:', event, session?.user?.email);
                 state.user = session?.user || null;
                 updateAuthIndicator();
             });
 
             const projects = await crucibleClient.getMyProjects();
+            console.log('[Frameweft] getMyProjects returned:', projects?.length, 'projects');
             populateProjectSelector(projects);
 
             setupEventListeners();
