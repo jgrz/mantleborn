@@ -2449,17 +2449,10 @@
                 // Load sprites already saved to master sprite sheet from this spritesheet
                 if (state.projectId) {
                     try {
-                        const getSpritesMethod = crucibleClient.getMasterSpriteSheetSpritesFromSource
-                            || crucibleClient.getMasterSheetSpritesFromSource;
-                        if (getSpritesMethod) {
-                            state.masterSheetSprites = await getSpritesMethod.call(
-                                crucibleClient,
-                                state.projectId,
-                                spritesheetId
-                            );
-                        } else {
-                            state.masterSheetSprites = [];
-                        }
+                        state.masterSheetSprites = await crucibleClient.getMasterSpriteSheetSpritesFromSource(
+                            state.projectId,
+                            spritesheetId
+                        );
                     } catch (e) {
                         console.warn('Could not load master sprite sheet sprites:', e);
                         state.masterSheetSprites = [];
@@ -3794,9 +3787,7 @@
 
             try {
                 // Use master sprite sheet (or fall back to old master sheet)
-                const getMasterMethod = crucibleClient.getMasterSpriteSheet
-                    || crucibleClient.getMasterSheet;
-                const masterSheet = await getMasterMethod.call(crucibleClient, state.projectId);
+                const masterSheet = await crucibleClient.getMasterSpriteSheet(state.projectId);
                 if (masterSheet.atlas && masterSheet.atlas.sprites) {
                     const count = Object.keys(masterSheet.atlas.sprites).length;
                     elements.masterSheetCount.textContent = count;

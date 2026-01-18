@@ -1464,15 +1464,6 @@
                     }
                 }
 
-                // Fallback to old unified master sheet if sprite sheet empty or unavailable
-                if ((!masterSheet || !masterSheet.png || Object.keys(masterSheet.atlas?.sprites || {}).length === 0) && crucibleClient.getMasterSheet) {
-                    try {
-                        masterSheet = await crucibleClient.getMasterSheet(projectId);
-                    } catch (e) {
-                        console.warn('Could not load legacy master sheet:', e.message);
-                    }
-                }
-
                 if (masterSheet && masterSheet.atlas) {
                     // Load animations from master sprite sheet atlas (even if no sprites yet)
                     state.animations = masterSheet.atlas.animations || {};

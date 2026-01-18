@@ -2789,41 +2789,18 @@
                 let masterResult = { png: null, atlas: { size: { w: 0, h: 0 }, sprites: {} } };
                 let groups = [];
 
-                // Try to load draft tile sheet (may fail if migration not run)
+                // Load draft tile sheet
                 try {
-                    if (crucibleClient.getDraftTileSheet) {
-                        draftResult = await crucibleClient.getDraftTileSheet(projectId);
-                    } else if (crucibleClient.getDraftSheet) {
-                        // Fallback to old method name
-                        draftResult = await crucibleClient.getDraftSheet(projectId);
-                    }
+                    draftResult = await crucibleClient.getDraftTileSheet(projectId);
                 } catch (draftErr) {
-                    console.warn('Could not load draft tile sheet (columns may not exist):', draftErr.message);
+                    console.warn('Could not load draft tile sheet:', draftErr.message);
                 }
 
                 // Load master tile sheet
                 try {
-                    if (crucibleClient.getMasterTileSheet) {
-                        masterResult = await crucibleClient.getMasterTileSheet(projectId);
-                    } else if (crucibleClient.getMasterSheet) {
-                        // Fallback to old unified master sheet
-                        masterResult = await crucibleClient.getMasterSheet(projectId);
-                    }
+                    masterResult = await crucibleClient.getMasterTileSheet(projectId);
                 } catch (masterErr) {
                     console.warn('Could not load master tile sheet:', masterErr.message);
-                }
-
-                // Check for legacy tiles that need migration (only if master tile sheet is empty)
-                if (!masterResult.atlas?.sprites || Object.keys(masterResult.atlas.sprites).length === 0) {
-                    await migrateLegacyTiles(projectId);
-                    // Reload master tile sheet after migration
-                    try {
-                        if (crucibleClient.getMasterTileSheet) {
-                            masterResult = await crucibleClient.getMasterTileSheet(projectId);
-                        }
-                    } catch (e) {
-                        console.warn('Could not reload master tile sheet after migration');
-                    }
                 }
 
                 // Try to load groups (may fail if table doesn't exist yet)
@@ -3299,7 +3276,7 @@
                 if (!confirm(`Delete "${tileName}" from drafts?`)) return;
 
                 try {
-                    await crucibleClient.removeFromDraft(state.projectId, tileName);
+                    await crucibleClient.removeFromDraftTile(state.projectId, tileName);
                     showToast(`Deleted "${tileName}" from drafts`);
                 } catch (err) {
                     console.error('Failed to delete draft tile:', err);
@@ -3691,10 +3668,10 @@
                     if (state.currentTileSource === 'draft' && state.currentTileName) {
                         if (state.currentTileName !== name) {
                             // Name changed - remove old
-                            await crucibleClient.removeFromDraft(state.projectId, state.currentTileName);
+                            await crucibleClient.removeFromDraftTile(state.projectId, state.currentTileName);
                         } else {
                             // Same name - remove to replace
-                            await crucibleClient.removeFromDraft(state.projectId, state.currentTileName);
+                            await crucibleClient.removeFromDraftTile(state.projectId, state.currentTileName);
                         }
                     }
 
@@ -3740,12 +3717,7 @@
             }
 
             try {
-                if (crucibleClient.publishDraftToMasterTileSheet) {
-                    await crucibleClient.publishDraftToMasterTileSheet(state.projectId, tileName);
-                } else {
-                    // Fallback to old method
-                    await crucibleClient.publishDraftToMaster(state.projectId, tileName);
-                }
+                await crucibleClient.publishDraftToMasterTileSheet(state.projectId, tileName);
                 showToast(`Published "${tileName}" to Master Tile Sheet`);
 
                 // Refresh and switch to master view
@@ -3774,8 +3746,8 @@
             }
 
             try {
-                const result = await crucibleClient.publishAllDraftsToMaster(state.projectId);
-                showToast(`Published ${result.published} tiles to Master Sheet`);
+                const result = await crucibleClient.publishAllDraftsToMasterTileSheet(state.projectId);
+                showToast(`Published ${result.published} tiles to Master Tile Sheet`);
 
                 // Refresh and switch to master view
                 await selectProject(state.projectId);
