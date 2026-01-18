@@ -976,13 +976,6 @@
             border-color: var(--accent-green);
         }
 
-        .form-input[readonly] {
-            background: var(--bg-mid);
-            color: var(--stone-mid);
-            cursor: not-allowed;
-            border-style: dashed;
-        }
-
         .ai-toolbar-btn {
             padding: 6px 12px;
             font-size: 11px;
@@ -1378,15 +1371,8 @@
                     <label class="form-label">Name</label>
                     <input type="text" class="form-input" id="tileName" placeholder="grass_tile_01">
                 </div>
-                <div class="form-row">
-                    <div class="form-group">
-                        <label class="form-label">Width</label>
-                        <input type="number" class="form-input" id="tileWidth" value="16" min="8" max="64">
-                    </div>
-                    <div class="form-group">
-                        <label class="form-label">Height</label>
-                        <input type="number" class="form-input" id="tileHeight" value="16" min="8" max="64">
-                    </div>
+                <div class="tile-size-info" style="margin: 8px 0; font-size: 11px; color: var(--stone-mid);">
+                    Tile Size: <span id="tileSizeDisplay">16×16</span>px (from project)
                 </div>
                 <div class="form-group">
                     <label class="form-label">Type</label>
@@ -1417,10 +1403,10 @@
             <div class="panel-section">
                 <div class="section-header">Export</div>
                 <div class="export-actions">
-                    <button class="btn" id="saveTileBtn">Save Tile</button>
+                    <button class="btn" id="saveTileBtn">Save as Draft</button>
                     <button class="btn" id="downloadPngBtn">Download PNG</button>
-                    <button class="btn btn-primary" id="publishMasterBtn" title="Add to project's master spritesheet">
-                        Publish to Master
+                    <button class="btn btn-primary" id="publishMasterBtn" title="Save directly to master tile sheet">
+                        Save to Master
                     </button>
                 </div>
                 <div class="master-sheet-status" id="masterSheetStatus" style="margin-top: 8px; font-size: 10px; color: var(--stone-mid);"></div>
@@ -1694,8 +1680,7 @@
             addColorBtn: document.getElementById('addColorBtn'),
             removeColorBtn: document.getElementById('removeColorBtn'),
             tileName: document.getElementById('tileName'),
-            tileWidth: document.getElementById('tileWidth'),
-            tileHeight: document.getElementById('tileHeight'),
+            tileSizeDisplay: document.getElementById('tileSizeDisplay'),
             tileType: document.getElementById('tileType'),
             aiGenerateBtn: document.getElementById('aiGenerateBtn'),
             aiSpecPreview: document.getElementById('aiSpecPreview'),
@@ -1786,12 +1771,11 @@
                 const imgWidth = img.width;
                 const imgHeight = img.height;
 
-                // Update tile size if needed
+                // Update tile size if needed (for imported images)
                 if (imgWidth !== state.width || imgHeight !== state.height) {
                     state.width = imgWidth;
                     state.height = imgHeight;
-                    elements.tileWidth.value = imgWidth;
-                    elements.tileHeight.value = imgHeight;
+                    updateTileSizeDisplay();
 
                     // Recreate pixel data with new dimensions
                     const totalWidth = state.width * state.gridCols;
@@ -1875,8 +1859,7 @@
                 state.height = tileHeight;
                 state.gridCols = gridCols;
                 state.gridRows = gridRows;
-                elements.tileWidth.value = tileWidth;
-                elements.tileHeight.value = tileHeight;
+                updateTileSizeDisplay();
                 elements.gridCols.value = gridCols;
                 elements.gridRows.value = gridRows;
 
@@ -2031,8 +2014,10 @@
         }
 
         function initializeCanvas() {
-            state.width = parseInt(elements.tileWidth.value) || 16;
-            state.height = parseInt(elements.tileHeight.value) || 16;
+            // state.width/height are set from project settings
+            // Use default if not yet loaded
+            if (!state.width) state.width = 16;
+            if (!state.height) state.height = 16;
 
             const totalWidth = getTotalWidth();
             const totalHeight = getTotalHeight();
@@ -2050,6 +2035,12 @@
 
             updateCanvasSize();
             render();
+        }
+
+        function updateTileSizeDisplay() {
+            if (elements.tileSizeDisplay) {
+                elements.tileSizeDisplay.textContent = `${state.width}×${state.height}`;
+            }
         }
 
         function updateCanvasSize() {
@@ -2774,7 +2765,7 @@
                 return;
             }
 
-            // Load project settings to get tile size
+            // Load tile size from project settings
             try {
                 const settings = await crucibleClient.getProjectSettings(projectId);
                 const tileDefaults = settings.pixellab?.tileDefaults || {};
@@ -2783,19 +2774,14 @@
                 // Apply tile size from project
                 state.width = projectTileSize;
                 state.height = projectTileSize;
-                elements.tileWidth.value = projectTileSize;
-                elements.tileHeight.value = projectTileSize;
 
-                // Make inputs read-only since size is inherited from project
-                elements.tileWidth.readOnly = true;
-                elements.tileHeight.readOnly = true;
-                elements.tileWidth.title = 'Tile size inherited from project settings';
-                elements.tileHeight.title = 'Tile size inherited from project settings';
+                // Update display
+                updateTileSizeDisplay();
 
                 // Update canvas
-                resizeCanvas();
+                updateCanvasSize();
             } catch (err) {
-                console.warn('Could not load project settings for tile size:', err);
+                console.warn('Could not load project settings:', err);
             }
 
             try {
@@ -3152,8 +3138,7 @@
             }
             state.width = tileWidth;
             state.height = tileHeight;
-            elements.tileWidth.value = tileWidth;
-            elements.tileHeight.value = tileHeight;
+            updateTileSizeDisplay();
 
             // Create pixel data for the full group
             const totalWidth = getTotalWidth();
@@ -3420,8 +3405,7 @@
             state.selectedTileY = 0;
 
             elements.tileName.value = tile.name;
-            elements.tileWidth.value = state.width;
-            elements.tileHeight.value = state.height;
+            updateTileSizeDisplay();
             elements.gridCols.value = state.gridCols;
             elements.gridRows.value = state.gridRows;
             elements.tileType.value = meta.tileType || '';
@@ -3518,8 +3502,7 @@
             state.currentTileName = null;
             state.currentTileSource = 'new';
             state.currentGroupId = null;
-            state.width = parseInt(elements.tileWidth.value) || 16;
-            state.height = parseInt(elements.tileHeight.value) || 16;
+            // Keep width/height from project settings
 
             // Reset grid to 1x1
             state.gridCols = 1;
@@ -4110,8 +4093,7 @@
             if (genWidth !== state.width || genHeight !== state.height) {
                 state.width = genWidth;
                 state.height = genHeight;
-                elements.tileWidth.value = genWidth;
-                elements.tileHeight.value = genHeight;
+                updateTileSizeDisplay();
 
                 // Recreate pixel data with new dimensions
                 const totalWidth = state.width * state.gridCols;
@@ -4358,20 +4340,7 @@
 
             elements.removeColorBtn.addEventListener('click', removeColorFromPalette);
 
-            // Tile size changes
-            elements.tileWidth.addEventListener('change', () => {
-                if (!state.currentTileId) {
-                    state.width = parseInt(elements.tileWidth.value) || 16;
-                    initializeCanvas();
-                }
-            });
-
-            elements.tileHeight.addEventListener('change', () => {
-                if (!state.currentTileId) {
-                    state.height = parseInt(elements.tileHeight.value) || 16;
-                    initializeCanvas();
-                }
-            });
+            // Tile size is inherited from project settings (no manual change)
 
             // New tile
             elements.newTileBtn.addEventListener('click', newTile);
