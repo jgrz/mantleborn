@@ -755,6 +755,103 @@
         .image-info strong {
             color: var(--stone-light);
         }
+
+        /* Parts System */
+        .parts-list {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+            max-height: 200px;
+            overflow-y: auto;
+        }
+
+        .parts-empty {
+            font-size: 11px;
+            color: var(--stone-mid);
+            font-style: italic;
+        }
+
+        .part-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px;
+            background: var(--bg-surface);
+            border: 1px solid var(--stone-dark);
+            border-radius: 4px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .part-item:hover {
+            border-color: var(--stone-mid);
+        }
+
+        .part-item.selected {
+            border-color: var(--accent);
+            background: rgba(168, 85, 247, 0.15);
+        }
+
+        .part-item-preview {
+            width: 32px;
+            height: 32px;
+            background: var(--bg-deep);
+            border-radius: 2px;
+            overflow: hidden;
+        }
+
+        .part-item-preview canvas {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+        }
+
+        .part-item-info {
+            flex: 1;
+            font-size: 11px;
+        }
+
+        .part-item-name {
+            color: var(--stone-light);
+            font-weight: 500;
+        }
+
+        .part-item-dims {
+            color: var(--stone-mid);
+            font-size: 10px;
+        }
+
+        .part-item-delete {
+            background: none;
+            border: none;
+            color: var(--stone-mid);
+            cursor: pointer;
+            padding: 4px;
+            font-size: 14px;
+            line-height: 1;
+        }
+
+        .part-item-delete:hover {
+            color: var(--error);
+        }
+
+        .parts-mode-indicator {
+            font-size: 9px;
+            padding: 2px 6px;
+            border-radius: 3px;
+            margin-left: 8px;
+        }
+
+        .parts-mode-indicator.selecting {
+            background: var(--accent);
+            color: white;
+        }
+
+        .toolbar-btn.active {
+            background: var(--accent);
+            border-color: var(--accent);
+            color: white;
+        }
     </style>
 </head>
 <body>
@@ -796,6 +893,11 @@
                 <div class="toolbar-group">
                     <button class="toolbar-btn" id="resetImageBtn">Reset Image</button>
                 </div>
+                <div class="toolbar-divider"></div>
+                <div class="toolbar-group parts-toolbar" id="partsToolbar" style="display: none;">
+                    <button class="toolbar-btn" id="addPartBtn" title="Select a region from the source image">+ Add Part</button>
+                    <button class="toolbar-btn" id="clearPartsBtn" title="Clear all parts and return to single image mode">Clear Parts</button>
+                </div>
             </div>
 
             <!-- Canvas Area -->
@@ -813,6 +915,20 @@
 
         <!-- Right Panel -->
         <aside class="right-panel">
+            <!-- Parts Panel -->
+            <div class="panel-section" id="partsPanel" style="display: none;">
+                <div class="section-title">
+                    Parts
+                    <span class="parts-mode-indicator" id="partsModeIndicator"></span>
+                </div>
+                <div class="parts-list" id="partsList">
+                    <div class="parts-empty">No parts yet. Click "Add Part" to select regions from the source image.</div>
+                </div>
+                <div class="parts-hint" id="partsHint" style="display: none; font-size: 11px; color: var(--stone-mid); margin-top: 8px;">
+                    Draw a rectangle on the source image to select a region.
+                </div>
+            </div>
+
             <!-- Frame Settings -->
             <div class="panel-section">
                 <div class="section-title">Frame Settings</div>
@@ -1005,7 +1121,22 @@
             lensNeedsUpdate: true,
 
             // Tile naming modal
-            pendingTileData: null  // { resampled, cols, rows, tileNames: [] }
+            pendingTileData: null,  // { resampled, cols, rows, tileNames: [] }
+
+            // Parts system - for compositing multiple regions from source image
+            parts: [],              // Array of parts: { id, name, srcX, srcY, srcW, srcH, dstX, dstY, dstW, dstH }
+            selectedPartId: null,   // Currently selected part
+            partsMode: 'compose',   // 'compose' (arrange parts) | 'selectSource' (pick region from source)
+            nextPartId: 1,          // Auto-increment ID
+            partSelectionStart: null, // { x, y } for drawing selection on source
+            partSelectionCurrent: null, // { x, y } current mouse pos during selection
+            isDraggingPart: false,
+            isResizingPart: false,
+            partResizeHandle: null,
+            dragStartPartX: 0,
+            dragStartPartY: 0,
+            dragStartPartW: 0,
+            dragStartPartH: 0
         };
 
         // Resize handle size
@@ -1054,7 +1185,15 @@
             tileNamingList: document.getElementById('tileNamingList'),
             closeTileNamingBtn: document.getElementById('closeTileNamingBtn'),
             cancelTileNamingBtn: document.getElementById('cancelTileNamingBtn'),
-            saveTilesBtn: document.getElementById('saveTilesBtn')
+            saveTilesBtn: document.getElementById('saveTilesBtn'),
+            // Parts system
+            partsToolbar: document.getElementById('partsToolbar'),
+            addPartBtn: document.getElementById('addPartBtn'),
+            clearPartsBtn: document.getElementById('clearPartsBtn'),
+            partsPanel: document.getElementById('partsPanel'),
+            partsList: document.getElementById('partsList'),
+            partsModeIndicator: document.getElementById('partsModeIndicator'),
+            partsHint: document.getElementById('partsHint')
         };
 
         // ==========================================
@@ -1341,6 +1480,36 @@
             elements.tileNamingModal.addEventListener('click', (e) => {
                 if (e.target === elements.tileNamingModal) closeTileNamingModal();
             });
+
+            // Parts system
+            elements.addPartBtn.addEventListener('click', () => {
+                if (state.partsMode === 'selectSource') {
+                    exitSelectSourceMode();
+                } else {
+                    enterSelectSourceMode();
+                }
+            });
+            elements.clearPartsBtn.addEventListener('click', clearParts);
+            elements.partsList.addEventListener('click', (e) => {
+                const deleteBtn = e.target.closest('[data-delete-part]');
+                if (deleteBtn) {
+                    const partId = parseInt(deleteBtn.dataset.deletePart);
+                    deletePart(partId);
+                    return;
+                }
+                const partItem = e.target.closest('[data-part-id]');
+                if (partItem) {
+                    const partId = parseInt(partItem.dataset.partId);
+                    selectPart(partId);
+                }
+            });
+
+            // Escape to cancel selection mode
+            document.addEventListener('keydown', (e) => {
+                if (e.key === 'Escape' && state.partsMode === 'selectSource') {
+                    exitSelectSourceMode();
+                }
+            });
         }
 
         function handleFileSelect(e) {
@@ -1365,8 +1534,18 @@
                     state.resamplingApplied = false;
                     state.appliedResampleMethod = null;
 
+                    // Reset parts state for new image
+                    state.parts = [];
+                    state.selectedPartId = null;
+                    state.partsMode = 'compose';
+                    state.nextPartId = 1;
+                    state.partSelectionStart = null;
+
                     // Update UI
                     elements.dropZone.classList.add('hidden');
+                    elements.partsToolbar.style.display = 'flex';
+                    elements.partsPanel.style.display = 'block';
+                    updatePartsUI();
                     elements.imageInfo.classList.remove('hidden');
                     elements.imageInfo.innerHTML = `Image: <strong>${img.width} × ${img.height}</strong> px`;
 
@@ -1499,25 +1678,64 @@
             ctx.translate(cx + state.panX, cy + state.panY);
             ctx.scale(state.zoom, state.zoom);
 
-            // Draw original image if loaded (visible outside frame for reference)
+            // Draw original image if loaded
             if (state.sourceImage) {
                 ctx.save();
                 ctx.imageSmoothingEnabled = false;
                 const imgW = state.sourceImage.width * state.imageScaleX;
                 const imgH = state.sourceImage.height * state.imageScaleY;
 
-                // Create a clipping path for OUTSIDE the frame (show faded image outside)
-                ctx.save();
-                ctx.beginPath();
-                ctx.rect(-5000, -5000, 10000, 10000);
-                ctx.rect(0, 0, pixelW, pixelH);
-                ctx.clip('evenodd');
-                ctx.globalAlpha = 0.3;
-                ctx.drawImage(state.sourceImage, state.imageX, state.imageY, imgW, imgH);
-                ctx.restore();
+                // In selectSource mode, show full image more prominently
+                if (state.partsMode === 'selectSource') {
+                    // Draw full image with higher opacity for selection
+                    ctx.globalAlpha = 0.9;
+                    ctx.drawImage(state.sourceImage, state.imageX, state.imageY, imgW, imgH);
+                    ctx.globalAlpha = 1;
 
-                // Draw resize handles
-                drawResizeHandles(ctx, state.imageX, state.imageY, imgW, imgH);
+                    // Draw selection rectangle if currently selecting
+                    if (state.partSelectionStart && state.partSelectionCurrent) {
+                        const start = state.partSelectionStart;
+                        const current = state.partSelectionCurrent;
+                        const selX = Math.min(start.x, current.x) * state.imageScaleX + state.imageX;
+                        const selY = Math.min(start.y, current.y) * state.imageScaleY + state.imageY;
+                        const selW = Math.abs(current.x - start.x) * state.imageScaleX;
+                        const selH = Math.abs(current.y - start.y) * state.imageScaleY;
+
+                        ctx.strokeStyle = '#00ff00';
+                        ctx.lineWidth = 2 / state.zoom;
+                        ctx.setLineDash([5 / state.zoom, 3 / state.zoom]);
+                        ctx.strokeRect(selX, selY, selW, selH);
+                        ctx.setLineDash([]);
+
+                        // Fill with semi-transparent highlight
+                        ctx.fillStyle = 'rgba(0, 255, 0, 0.2)';
+                        ctx.fillRect(selX, selY, selW, selH);
+                    }
+                } else if (state.parts.length === 0) {
+                    // No parts mode - show original image with handles
+                    // Create a clipping path for OUTSIDE the frame (show faded image outside)
+                    ctx.save();
+                    ctx.beginPath();
+                    ctx.rect(-5000, -5000, 10000, 10000);
+                    ctx.rect(0, 0, pixelW, pixelH);
+                    ctx.clip('evenodd');
+                    ctx.globalAlpha = 0.3;
+                    ctx.drawImage(state.sourceImage, state.imageX, state.imageY, imgW, imgH);
+                    ctx.restore();
+
+                    // Draw resize handles for original image
+                    drawResizeHandles(ctx, state.imageX, state.imageY, imgW, imgH);
+                } else {
+                    // Parts mode - show image faded outside frame for reference
+                    ctx.save();
+                    ctx.beginPath();
+                    ctx.rect(-5000, -5000, 10000, 10000);
+                    ctx.rect(0, 0, pixelW, pixelH);
+                    ctx.clip('evenodd');
+                    ctx.globalAlpha = 0.15;
+                    ctx.drawImage(state.sourceImage, state.imageX, state.imageY, imgW, imgH);
+                    ctx.restore();
+                }
                 ctx.restore();
             }
 
@@ -1559,6 +1777,30 @@
             ctx.fillRect(pixelW - m, 0, m, m);
             ctx.fillRect(0, pixelH - m, m, m);
             ctx.fillRect(pixelW - m, pixelH - m, m, m);
+
+            // Draw part handles if we have parts and a selected part
+            if (state.parts.length > 0 && state.partsMode === 'compose') {
+                const selectedPart = getSelectedPart();
+                if (selectedPart) {
+                    // Draw border around selected part
+                    ctx.strokeStyle = '#00ff88';
+                    ctx.lineWidth = 2 / state.zoom;
+                    ctx.setLineDash([]);
+                    ctx.strokeRect(selectedPart.dstX, selectedPart.dstY, selectedPart.dstW, selectedPart.dstH);
+
+                    // Draw resize handles for selected part
+                    drawResizeHandles(ctx, selectedPart.dstX, selectedPart.dstY, selectedPart.dstW, selectedPart.dstH);
+                }
+
+                // Draw light borders around other parts
+                state.parts.forEach(part => {
+                    if (part.id !== state.selectedPartId) {
+                        ctx.strokeStyle = 'rgba(255, 255, 255, 0.3)';
+                        ctx.lineWidth = 1 / state.zoom;
+                        ctx.strokeRect(part.dstX, part.dstY, part.dstW, part.dstH);
+                    }
+                });
+            }
 
             ctx.restore();
 
@@ -1847,28 +2089,84 @@
                 return;
             }
 
-            // Check resize handles first
-            const handle = getResizeHandle(wx, wy);
-            if (handle) {
-                state.isResizing = true;
-                state.resizeHandle = handle;
-                state.dragStartX = sx;
-                state.dragStartY = sy;
-                state.dragStartImageX = state.imageX;
-                state.dragStartImageY = state.imageY;
-                state.dragStartImageScaleX = state.imageScaleX;
-                state.dragStartImageScaleY = state.imageScaleY;
-                return;
+            // Parts: selectSource mode - start drawing selection on source image
+            if (state.partsMode === 'selectSource' && state.sourceImage) {
+                // Convert to source image coordinates
+                const imgW = state.sourceImage.width * state.imageScaleX;
+                const imgH = state.sourceImage.height * state.imageScaleY;
+                // Check if click is on the source image
+                if (wx >= state.imageX && wx <= state.imageX + imgW &&
+                    wy >= state.imageY && wy <= state.imageY + imgH) {
+                    // Convert to source image pixel coordinates
+                    const srcX = (wx - state.imageX) / state.imageScaleX;
+                    const srcY = (wy - state.imageY) / state.imageScaleY;
+                    state.partSelectionStart = { x: srcX, y: srcY };
+                    state.partSelectionCurrent = { x: srcX, y: srcY };
+                    state.dragStartX = sx;
+                    state.dragStartY = sy;
+                    return;
+                }
             }
 
-            // Check if inside image for dragging
-            if (isInsideImage(wx, wy)) {
-                state.isDragging = true;
-                state.dragStartX = sx;
-                state.dragStartY = sy;
-                state.dragStartImageX = state.imageX;
-                state.dragStartImageY = state.imageY;
-                return;
+            // Parts: compose mode - check for part interactions (only when we have parts)
+            if (state.partsMode === 'compose' && state.parts.length > 0) {
+                // Check for part resize handles first
+                const partHandle = getPartResizeHandle(wx, wy);
+                if (partHandle) {
+                    const part = getSelectedPart();
+                    if (part) {
+                        state.isResizingPart = true;
+                        state.partResizeHandle = partHandle;
+                        state.dragStartX = sx;
+                        state.dragStartY = sy;
+                        state.dragStartPartX = part.dstX;
+                        state.dragStartPartY = part.dstY;
+                        state.dragStartPartW = part.dstW;
+                        state.dragStartPartH = part.dstH;
+                        return;
+                    }
+                }
+
+                // Check if clicking on a part to drag it
+                const clickedPart = getPartAtPoint(wx, wy);
+                if (clickedPart) {
+                    state.selectedPartId = clickedPart.id;
+                    state.isDraggingPart = true;
+                    state.dragStartX = sx;
+                    state.dragStartY = sy;
+                    state.dragStartPartX = clickedPart.dstX;
+                    state.dragStartPartY = clickedPart.dstY;
+                    updatePartsUI();
+                    renderWorkspace();
+                    return;
+                }
+            }
+
+            // Original image manipulation (only if no parts, or clicked outside parts)
+            if (state.parts.length === 0) {
+                // Check resize handles first
+                const handle = getResizeHandle(wx, wy);
+                if (handle) {
+                    state.isResizing = true;
+                    state.resizeHandle = handle;
+                    state.dragStartX = sx;
+                    state.dragStartY = sy;
+                    state.dragStartImageX = state.imageX;
+                    state.dragStartImageY = state.imageY;
+                    state.dragStartImageScaleX = state.imageScaleX;
+                    state.dragStartImageScaleY = state.imageScaleY;
+                    return;
+                }
+
+                // Check if inside image for dragging
+                if (isInsideImage(wx, wy)) {
+                    state.isDragging = true;
+                    state.dragStartX = sx;
+                    state.dragStartY = sy;
+                    state.dragStartImageX = state.imageX;
+                    state.dragStartImageY = state.imageY;
+                    return;
+                }
             }
         }
 
@@ -1876,6 +2174,7 @@
             const rect = elements.workspaceCanvas.getBoundingClientRect();
             const sx = e.clientX - rect.left;
             const sy = e.clientY - rect.top;
+            const { x: wx, y: wy } = screenToWorld(sx, sy);
 
             // Handle panning
             if (state.isPanning) {
@@ -1884,6 +2183,100 @@
                 state.panX = state.dragStartPanX + dx;
                 state.panY = state.dragStartPanY + dy;
                 renderWorkspace();
+                return;
+            }
+
+            // Handle part selection drawing
+            if (state.partSelectionStart && state.partsMode === 'selectSource') {
+                const imgW = state.sourceImage.width * state.imageScaleX;
+                const imgH = state.sourceImage.height * state.imageScaleY;
+                // Clamp to image bounds
+                const clampedWx = Math.max(state.imageX, Math.min(state.imageX + imgW, wx));
+                const clampedWy = Math.max(state.imageY, Math.min(state.imageY + imgH, wy));
+                const srcX = (clampedWx - state.imageX) / state.imageScaleX;
+                const srcY = (clampedWy - state.imageY) / state.imageScaleY;
+                state.partSelectionCurrent = { x: srcX, y: srcY };
+                renderWorkspace();
+                return;
+            }
+
+            // Handle part dragging
+            if (state.isDraggingPart) {
+                const dx = (sx - state.dragStartX) / state.zoom;
+                const dy = (sy - state.dragStartY) / state.zoom;
+                const part = getSelectedPart();
+                if (part) {
+                    part.dstX = state.dragStartPartX + dx;
+                    part.dstY = state.dragStartPartY + dy;
+                    renderWorkspace();
+                    updateLens();
+                }
+                return;
+            }
+
+            // Handle part resizing
+            if (state.isResizingPart) {
+                const dx = (sx - state.dragStartX) / state.zoom;
+                const dy = (sy - state.dragStartY) / state.zoom;
+                const part = getSelectedPart();
+                if (part) {
+                    const handle = state.partResizeHandle;
+                    const origW = state.dragStartPartW;
+                    const origH = state.dragStartPartH;
+                    const aspectRatio = part.srcW / part.srcH;
+
+                    let newX = state.dragStartPartX;
+                    let newY = state.dragStartPartY;
+                    let newW = origW;
+                    let newH = origH;
+
+                    // Corner handles - preserve aspect ratio
+                    if (handle === 'br') {
+                        const diagDelta = (dx + dy) / 2;
+                        newW = Math.max(4, origW + diagDelta);
+                        newH = newW / aspectRatio;
+                    } else if (handle === 'tl') {
+                        const diagDelta = (dx + dy) / 2;
+                        newW = Math.max(4, origW - diagDelta);
+                        newH = newW / aspectRatio;
+                        newX = state.dragStartPartX + (origW - newW);
+                        newY = state.dragStartPartY + (origH - newH);
+                    } else if (handle === 'tr') {
+                        const diagDelta = (dx - dy) / 2;
+                        newW = Math.max(4, origW + diagDelta);
+                        newH = newW / aspectRatio;
+                        newY = state.dragStartPartY + (origH - newH);
+                    } else if (handle === 'bl') {
+                        const diagDelta = (-dx + dy) / 2;
+                        newW = Math.max(4, origW + diagDelta);
+                        newH = newW / aspectRatio;
+                        newX = state.dragStartPartX + (origW - newW);
+                    }
+                    // Edge handles - stretch one dimension, recalc other to maintain ratio
+                    else if (handle === 'r') {
+                        newW = Math.max(4, origW + dx);
+                        newH = newW / aspectRatio;
+                    } else if (handle === 'l') {
+                        newW = Math.max(4, origW - dx);
+                        newH = newW / aspectRatio;
+                        newX = state.dragStartPartX + (origW - newW);
+                    } else if (handle === 'b') {
+                        newH = Math.max(4, origH + dy);
+                        newW = newH * aspectRatio;
+                    } else if (handle === 't') {
+                        newH = Math.max(4, origH - dy);
+                        newW = newH * aspectRatio;
+                        newY = state.dragStartPartY + (origH - newH);
+                    }
+
+                    part.dstX = newX;
+                    part.dstY = newY;
+                    part.dstW = newW;
+                    part.dstH = newH;
+                    renderWorkspace();
+                    updateLens();
+                    updatePartsUI();
+                }
                 return;
             }
 
@@ -2014,6 +2407,39 @@
         }
 
         function onMouseUp() {
+            // Handle part selection completion
+            if (state.partSelectionStart && state.partSelectionCurrent && state.partsMode === 'selectSource') {
+                const start = state.partSelectionStart;
+                const current = state.partSelectionCurrent;
+
+                // Normalize selection (handle dragging in any direction)
+                const srcX = Math.min(start.x, current.x);
+                const srcY = Math.min(start.y, current.y);
+                const srcW = Math.abs(current.x - start.x);
+                const srcH = Math.abs(current.y - start.y);
+
+                // Only create part if selection has meaningful size
+                if (srcW > 2 && srcH > 2) {
+                    addPart(Math.floor(srcX), Math.floor(srcY), Math.ceil(srcW), Math.ceil(srcH));
+                }
+
+                state.partSelectionStart = null;
+                state.partSelectionCurrent = null;
+                return;
+            }
+
+            // Handle part interactions
+            const wasPartInteracting = state.isDraggingPart || state.isResizingPart;
+            state.isDraggingPart = false;
+            state.isResizingPart = false;
+            state.partResizeHandle = null;
+
+            if (wasPartInteracting) {
+                updatePartsUI();
+                updateLens();
+                renderWorkspace();
+            }
+
             const wasInteracting = state.isDragging || state.isResizing;
             state.isDragging = false;
             state.isResizing = false;
@@ -2053,10 +2479,22 @@
             const tempCtx = tempCanvas.getContext('2d');
             tempCtx.imageSmoothingEnabled = false;
 
-            // Draw the portion of the image that's inside the frame
-            const imgW = state.sourceImage.width * state.imageScaleX;
-            const imgH = state.sourceImage.height * state.imageScaleY;
-            tempCtx.drawImage(state.sourceImage, state.imageX, state.imageY, imgW, imgH);
+            // If we have parts, composite them; otherwise draw whole image
+            if (state.parts.length > 0) {
+                // Draw each part at its destination position/size
+                state.parts.forEach(part => {
+                    tempCtx.drawImage(
+                        state.sourceImage,
+                        part.srcX, part.srcY, part.srcW, part.srcH,  // Source region
+                        part.dstX, part.dstY, part.dstW, part.dstH   // Destination
+                    );
+                });
+            } else {
+                // Draw the portion of the image that's inside the frame
+                const imgW = state.sourceImage.width * state.imageScaleX;
+                const imgH = state.sourceImage.height * state.imageScaleY;
+                tempCtx.drawImage(state.sourceImage, state.imageX, state.imageY, imgW, imgH);
+            }
 
             // Apply resampling with current method (always show resampled in lens)
             state.lensCanvas = resampleCanvas(tempCanvas, pixelW, pixelH, state.resampleMethod);
@@ -2480,6 +2918,174 @@
             await crucibleClient.createTileGroup(
                 state.projectId, groupName, cols, rows, arrangement
             );
+        }
+
+        // ==========================================
+        // PARTS SYSTEM
+        // ==========================================
+        function updatePartsUI() {
+            // Update parts list
+            if (state.parts.length === 0) {
+                elements.partsList.innerHTML = '<div class="parts-empty">No parts yet. Click "Add Part" to select regions from the source image.</div>';
+            } else {
+                elements.partsList.innerHTML = state.parts.map(part => `
+                    <div class="part-item ${part.id === state.selectedPartId ? 'selected' : ''}" data-part-id="${part.id}">
+                        <div class="part-item-preview">
+                            <canvas width="32" height="32" data-preview-for="${part.id}"></canvas>
+                        </div>
+                        <div class="part-item-info">
+                            <div class="part-item-name">${part.name}</div>
+                            <div class="part-item-dims">${part.srcW}×${part.srcH} → ${Math.round(part.dstW)}×${Math.round(part.dstH)}</div>
+                        </div>
+                        <button class="part-item-delete" data-delete-part="${part.id}">×</button>
+                    </div>
+                `).join('');
+
+                // Render previews
+                state.parts.forEach(part => {
+                    const canvas = elements.partsList.querySelector(`canvas[data-preview-for="${part.id}"]`);
+                    if (canvas && state.sourceImage) {
+                        const ctx = canvas.getContext('2d');
+                        ctx.imageSmoothingEnabled = false;
+                        ctx.clearRect(0, 0, 32, 32);
+                        // Scale to fit in 32x32
+                        const scale = Math.min(32 / part.srcW, 32 / part.srcH);
+                        const w = part.srcW * scale;
+                        const h = part.srcH * scale;
+                        const x = (32 - w) / 2;
+                        const y = (32 - h) / 2;
+                        ctx.drawImage(state.sourceImage, part.srcX, part.srcY, part.srcW, part.srcH, x, y, w, h);
+                    }
+                });
+            }
+
+            // Update mode indicator
+            if (state.partsMode === 'selectSource') {
+                elements.partsModeIndicator.textContent = 'SELECTING';
+                elements.partsModeIndicator.className = 'parts-mode-indicator selecting';
+                elements.partsHint.style.display = 'block';
+                elements.addPartBtn.classList.add('active');
+            } else {
+                elements.partsModeIndicator.textContent = '';
+                elements.partsModeIndicator.className = 'parts-mode-indicator';
+                elements.partsHint.style.display = 'none';
+                elements.addPartBtn.classList.remove('active');
+            }
+        }
+
+        function enterSelectSourceMode() {
+            if (!state.sourceImage) {
+                showToast('Load an image first', true);
+                return;
+            }
+            state.partsMode = 'selectSource';
+            state.partSelectionStart = null;
+            updatePartsUI();
+            renderWorkspace();
+            showToast('Draw a rectangle on the image to select a region');
+        }
+
+        function exitSelectSourceMode() {
+            state.partsMode = 'compose';
+            state.partSelectionStart = null;
+            updatePartsUI();
+            renderWorkspace();
+        }
+
+        function addPart(srcX, srcY, srcW, srcH) {
+            const { pixelW, pixelH } = getFrameDimensions();
+
+            // Default destination: scale proportionally to fit frame width, positioned at bottom of existing parts
+            const existingBottom = state.parts.reduce((max, p) => Math.max(max, p.dstY + p.dstH), 0);
+            const scale = Math.min(pixelW / srcW, (pixelH - existingBottom) / srcH, 1);
+            const dstW = srcW * scale;
+            const dstH = srcH * scale;
+            const dstX = (pixelW - dstW) / 2; // Center horizontally
+            const dstY = existingBottom; // Stack below existing parts
+
+            const part = {
+                id: state.nextPartId++,
+                name: `Part ${state.parts.length + 1}`,
+                srcX, srcY, srcW, srcH,
+                dstX, dstY, dstW, dstH
+            };
+
+            state.parts.push(part);
+            state.selectedPartId = part.id;
+            exitSelectSourceMode();
+            updateLens();
+            renderWorkspace();
+            showToast(`Added ${part.name}`);
+        }
+
+        function deletePart(partId) {
+            state.parts = state.parts.filter(p => p.id !== partId);
+            if (state.selectedPartId === partId) {
+                state.selectedPartId = state.parts.length > 0 ? state.parts[0].id : null;
+            }
+            updatePartsUI();
+            updateLens();
+            renderWorkspace();
+        }
+
+        function clearParts() {
+            state.parts = [];
+            state.selectedPartId = null;
+            state.partsMode = 'compose';
+            state.nextPartId = 1;
+            updatePartsUI();
+            updateLens();
+            renderWorkspace();
+            showToast('Parts cleared');
+        }
+
+        function selectPart(partId) {
+            state.selectedPartId = partId;
+            updatePartsUI();
+            renderWorkspace();
+        }
+
+        function getSelectedPart() {
+            return state.parts.find(p => p.id === state.selectedPartId);
+        }
+
+        function getPartAtPoint(wx, wy) {
+            // Check parts in reverse order (top parts first)
+            for (let i = state.parts.length - 1; i >= 0; i--) {
+                const p = state.parts[i];
+                if (wx >= p.dstX && wx <= p.dstX + p.dstW &&
+                    wy >= p.dstY && wy <= p.dstY + p.dstH) {
+                    return p;
+                }
+            }
+            return null;
+        }
+
+        function getPartResizeHandle(wx, wy) {
+            const part = getSelectedPart();
+            if (!part) return null;
+
+            const threshold = HANDLE_SIZE / state.zoom;
+            const { dstX: x, dstY: y, dstW: w, dstH: h } = part;
+
+            const nearLeft = Math.abs(wx - x) < threshold;
+            const nearRight = Math.abs(wx - (x + w)) < threshold;
+            const nearTop = Math.abs(wy - y) < threshold;
+            const nearBottom = Math.abs(wy - (y + h)) < threshold;
+
+            const inXRange = wx >= x - threshold && wx <= x + w + threshold;
+            const inYRange = wy >= y - threshold && wy <= y + h + threshold;
+
+            if (nearTop && nearLeft && inXRange && inYRange) return 'tl';
+            if (nearTop && nearRight && inXRange && inYRange) return 'tr';
+            if (nearBottom && nearLeft && inXRange && inYRange) return 'bl';
+            if (nearBottom && nearRight && inXRange && inYRange) return 'br';
+            if (nearTop && inXRange) return 't';
+            if (nearBottom && inXRange) return 'b';
+            if (nearLeft && inYRange) return 'l';
+            if (nearRight && inYRange) return 'r';
+
+            return null;
         }
 
         // ==========================================
