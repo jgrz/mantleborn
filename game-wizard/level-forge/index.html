@@ -273,12 +273,24 @@
             background: var(--bg-deep);
         }
 
+        .canvas-viewport {
+            flex: 1;
+            overflow: auto;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: var(--bg-deep);
+            position: relative;
+        }
+
         .grid-wrapper {
             position: relative;
             background: var(--bg-mid);
             border: 2px solid var(--stone-dark);
             border-radius: 4px;
             padding: 2px;
+            transform-origin: center center;
+            transition: transform 0.15s ease-out;
         }
 
         /* Unified level canvas (backgrounds + visual tiles) */
@@ -1000,12 +1012,59 @@
         }
 
         /* Grid editor toolbar - only show when grid tab active */
-        .grid-toolbar {
+        /* Unified toolbar - always visible */
+        .level-toolbar {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            padding: 12px 16px;
+            background: var(--bg-mid);
+            border-bottom: 1px solid var(--stone-dark);
+            flex-shrink: 0;
+        }
+
+        .level-toolbar .toolbar-section {
             display: none;
         }
 
-        .grid-toolbar.active {
+        .level-toolbar .toolbar-section.active {
             display: flex;
+            align-items: center;
+            gap: 16px;
+        }
+
+        /* Zoom controls - always visible */
+        .zoom-controls {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-left: auto;
+        }
+
+        .zoom-btn {
+            padding: 4px 8px;
+            font-size: 10px;
+            background: var(--bg-surface);
+            border: 1px solid var(--stone-dark);
+            border-radius: 3px;
+            color: var(--stone-light);
+            cursor: pointer;
+        }
+
+        .zoom-btn:hover {
+            background: var(--stone-dark);
+        }
+
+        .zoom-btn.active {
+            background: var(--accent-ember);
+            border-color: var(--accent-ember);
+            color: var(--bg-deep);
+        }
+
+        .zoom-label {
+            font-size: 10px;
+            color: var(--stone-mid);
+            text-transform: uppercase;
         }
 
         /* ============================================
@@ -1588,30 +1647,64 @@
         <!-- Editor Panel -->
         <div class="editor-panel">
             <!-- Grid Editor Toolbar -->
-            <div class="toolbar grid-toolbar active" id="gridToolbar">
-                <div class="toolbar-group">
-                    <span class="toolbar-label">Tool</span>
-                    <button class="tool-btn active" data-tool="paint" title="Paint (P)">&#9998;</button>
-                    <button class="tool-btn" data-tool="fill" title="Fill (F)">&#9699;</button>
-                    <button class="tool-btn" data-tool="select" title="Select (S)">&#9634;</button>
+            <!-- Unified Level Toolbar -->
+            <div class="level-toolbar" id="levelToolbar">
+                <!-- Grid Tools Section -->
+                <div class="toolbar-section active" id="gridToolsSection">
+                    <div class="toolbar-group">
+                        <span class="toolbar-label">Tool</span>
+                        <button class="tool-btn active" data-tool="paint" title="Paint (P)">&#9998;</button>
+                        <button class="tool-btn" data-tool="fill" title="Fill (F)">&#9699;</button>
+                        <button class="tool-btn" data-tool="select" title="Select (S)">&#9634;</button>
+                    </div>
+                    <div class="toolbar-divider"></div>
+                    <div class="toolbar-group">
+                        <span class="toolbar-label">State</span>
+                        <button class="state-btn" data-state="undefined" title="Undefined (1)">?</button>
+                        <button class="state-btn active" data-state="open" title="Open (2)">&#10003;</button>
+                        <button class="state-btn" data-state="obstruction" title="Obstruction (3)">&#10005;</button>
+                        <button class="state-btn" data-state="spawn" title="Spawn Point (4)">&#9679;</button>
+                        <button class="state-btn" data-state="exit" title="Exit (5)">&#10132;</button>
+                        <button class="state-btn" data-state="return" title="Return (6)">&#8644;</button>
+                    </div>
+                    <div class="toolbar-divider"></div>
+                    <div class="toolbar-group">
+                        <button class="btn btn-small btn-danger" id="clearGridBtn">Clear All</button>
+                    </div>
                 </div>
 
-                <div class="toolbar-divider"></div>
-
-                <div class="toolbar-group">
-                    <span class="toolbar-label">State</span>
-                    <button class="state-btn" data-state="undefined" title="Undefined (1)">?</button>
-                    <button class="state-btn active" data-state="open" title="Open (2)">&#10003;</button>
-                    <button class="state-btn" data-state="obstruction" title="Obstruction (3)">&#10005;</button>
-                    <button class="state-btn" data-state="spawn" title="Spawn Point (4)">&#9679;</button>
-                    <button class="state-btn" data-state="exit" title="Exit (5)">&#10132;</button>
-                    <button class="state-btn" data-state="return" title="Return (6)">&#8644;</button>
+                <!-- Background Tools Section -->
+                <div class="toolbar-section" id="bgToolsSection">
+                    <div class="toolbar-group">
+                        <div class="file-input-wrapper">
+                            <button class="btn btn-small" id="addBgLayerBtn">+ Add Layer</button>
+                            <input type="file" id="bgFileInput" accept="image/*">
+                        </div>
+                        <button class="btn btn-small btn-ai" id="fromLibraryBtn">From Library</button>
+                    </div>
                 </div>
 
-                <div class="toolbar-divider"></div>
+                <!-- Tile Tools Section -->
+                <div class="toolbar-section" id="tileToolsSection">
+                    <div class="toolbar-group">
+                        <span class="toolbar-label">Tool</span>
+                        <button class="tool-btn active" data-tile-tool="paint" title="Paint (P)">&#9998;</button>
+                        <button class="tool-btn" data-tile-tool="erase" title="Erase (E)">&#9003;</button>
+                        <button class="tool-btn" data-tile-tool="fill" title="Fill (F)">&#9699;</button>
+                    </div>
+                    <div class="toolbar-divider"></div>
+                    <div class="toolbar-group">
+                        <button class="btn btn-small btn-danger" id="clearTilesBtn">Clear Tiles</button>
+                    </div>
+                </div>
 
-                <div class="toolbar-group">
-                    <button class="btn btn-small btn-danger" id="clearGridBtn">Clear All</button>
+                <!-- Zoom Controls - Always Visible -->
+                <div class="zoom-controls">
+                    <span class="zoom-label">Zoom</span>
+                    <button class="zoom-btn active" data-zoom="1">1x</button>
+                    <button class="zoom-btn" data-zoom="2">2x</button>
+                    <button class="zoom-btn" data-zoom="4">4x</button>
+                    <button class="zoom-btn" data-zoom="0.5">Fit</button>
                 </div>
             </div>
 
@@ -1619,12 +1712,14 @@
             <div class="tab-content">
                 <!-- Unified Level Editor (shared by all tabs) -->
                 <div class="tab-panel active" id="gridPanel">
-                    <div class="grid-wrapper">
-                        <!-- Unified canvas showing backgrounds + visual tiles -->
-                        <canvas class="level-canvas" id="levelCanvas"></canvas>
-                        <!-- Collision grid overlay -->
-                        <div class="grid grid-visible" id="grid"></div>
-                        <div class="selection-box" id="selectionBox"></div>
+                    <div class="canvas-viewport" id="canvasViewport">
+                        <div class="grid-wrapper" id="gridWrapper">
+                            <!-- Unified canvas showing backgrounds + visual tiles -->
+                            <canvas class="level-canvas" id="levelCanvas"></canvas>
+                            <!-- Collision grid overlay -->
+                            <div class="grid grid-visible" id="grid"></div>
+                            <div class="selection-box" id="selectionBox"></div>
+                        </div>
                     </div>
 
                     <!-- Demo Mode Overlay -->
@@ -1638,17 +1733,10 @@
                     </div>
                 </div>
 
-                <!-- Background Editor Panel -->
+                <!-- Background Editor Panel (just layers list, tools in unified toolbar) -->
                 <div class="tab-panel" id="backgroundPanel">
                     <div class="background-editor">
-                        <div class="background-toolbar">
-                            <div class="file-input-wrapper">
-                                <button class="btn btn-small">+ Add Layer</button>
-                                <input type="file" id="bgFileInput" accept="image/*">
-                            </div>
-                            <button class="btn btn-small btn-ai" id="fromLibraryBtn">From Library</button>
-                        </div>
-                        <div class="background-preview-wrapper">
+                        <div class="background-preview-wrapper" style="display: none;">
                             <canvas id="backgroundCanvas"></canvas>
                         </div>
                         <div class="background-layers" id="backgroundLayers">
@@ -1657,40 +1745,26 @@
                     </div>
                 </div>
 
-                <!-- Tile Painter Panel -->
+                <!-- Tile Painter Panel (just palette, tools in unified toolbar) -->
                 <div class="tab-panel" id="tilesPanel">
                     <div class="tile-painter">
-                        <div class="tile-toolbar">
-                            <div class="toolbar-group">
-                                <span class="toolbar-label">Tool</span>
-                                <button class="tool-btn active" data-tile-tool="paint" title="Paint (P)">&#9998;</button>
-                                <button class="tool-btn" data-tile-tool="erase" title="Erase (E)">&#9003;</button>
-                                <button class="tool-btn" data-tile-tool="fill" title="Fill (F)">&#9699;</button>
-                            </div>
-                            <div class="toolbar-divider"></div>
-                            <div class="toolbar-group">
-                                <button class="btn btn-small btn-danger" id="clearTilesBtn">Clear Tiles</button>
-                            </div>
+                        <div class="tile-canvas-wrapper" style="display: none;">
+                            <canvas id="tileCanvas"></canvas>
                         </div>
-                        <div class="tile-painter-main">
-                            <div class="tile-canvas-wrapper">
-                                <canvas id="tileCanvas"></canvas>
+                        <div class="sprite-palette">
+                            <div class="palette-header">
+                                <span>Tile Palette</span>
+                                <div class="palette-header-actions">
+                                    <button class="btn btn-tiny btn-ai" id="generateTilesetBtn" title="Generate tileset with AI">&#10024;</button>
+                                </div>
                             </div>
-                            <div class="sprite-palette">
-                                <div class="palette-header">
-                                    <span>Tile Palette</span>
-                                    <div class="palette-header-actions">
-                                        <button class="btn btn-tiny btn-ai" id="generateTilesetBtn" title="Generate tileset with AI">&#10024;</button>
-                                    </div>
-                                </div>
-                                <div class="palette-sheet-select">
-                                    <select class="form-input" id="spriteSheetSelect">
-                                        <option value="">-- Select Sheet --</option>
-                                    </select>
-                                </div>
-                                <div class="palette-grid" id="paletteGrid">
-                                    <div class="no-sprites-message">Select a tile sheet to load tiles</div>
-                                </div>
+                            <div class="palette-sheet-select">
+                                <select class="form-input" id="spriteSheetSelect">
+                                    <option value="">-- Select Sheet --</option>
+                                </select>
+                            </div>
+                            <div class="palette-grid" id="paletteGrid">
+                                <div class="no-sprites-message">Select a tile sheet to load tiles</div>
                             </div>
                         </div>
                     </div>
@@ -1970,6 +2044,14 @@
             // Tab state
             activeTab: 'grid',  // 'grid' | 'background' | 'tiles'
 
+            // Zoom and pan state
+            zoom: 1,
+            panX: 0,
+            panY: 0,
+            isPanning: false,
+            lastPanX: 0,
+            lastPanY: 0,
+
             // Background editor state
             backgrounds: [],  // Array of background layer objects
             selectedBgLayer: -1,
@@ -2027,6 +2109,8 @@
             // Grid editor
             grid: document.getElementById('grid'),
             levelCanvas: document.getElementById('levelCanvas'),
+            canvasViewport: document.getElementById('canvasViewport'),
+            gridWrapper: document.getElementById('gridWrapper'),
             selectionBox: document.getElementById('selectionBox'),
             gridWidth: document.getElementById('gridWidth'),
             gridHeight: document.getElementById('gridHeight'),
@@ -2043,7 +2127,12 @@
             newLevelBtn: document.getElementById('newLevelBtn'),
             jsonOutput: document.getElementById('jsonOutput'),
             toast: document.getElementById('toast'),
-            gridToolbar: document.getElementById('gridToolbar'),
+
+            // Unified toolbar
+            levelToolbar: document.getElementById('levelToolbar'),
+            gridToolsSection: document.getElementById('gridToolsSection'),
+            bgToolsSection: document.getElementById('bgToolsSection'),
+            tileToolsSection: document.getElementById('tileToolsSection'),
 
             // Demo mode
             playDemoBtn: document.getElementById('playDemoBtn'),
@@ -3397,8 +3486,10 @@
             elements.grid.classList.toggle('grid-visible', tabName === 'grid');
             elements.grid.classList.toggle('grid-hidden', tabName !== 'grid');
 
-            // Update grid toolbar visibility
-            elements.gridToolbar.classList.toggle('active', tabName === 'grid');
+            // Update toolbar sections
+            elements.gridToolsSection.classList.toggle('active', tabName === 'grid');
+            elements.bgToolsSection.classList.toggle('active', tabName === 'background');
+            elements.tileToolsSection.classList.toggle('active', tabName === 'tiles');
 
             // Update right panel settings
             elements.gridSettings.classList.toggle('active', tabName === 'grid');
@@ -3422,6 +3513,82 @@
         // Tab button click handlers
         document.querySelectorAll('.tab-btn').forEach(btn => {
             btn.addEventListener('click', () => switchTab(btn.dataset.tab));
+        });
+
+        // ==========================================
+        // Zoom and Pan Controls
+        // ==========================================
+        function setZoom(level) {
+            state.zoom = level;
+            elements.gridWrapper.style.transform = `scale(${level})`;
+
+            // Update zoom button states
+            document.querySelectorAll('.zoom-btn').forEach(btn => {
+                btn.classList.toggle('active', parseFloat(btn.dataset.zoom) === level);
+            });
+        }
+
+        function calculateFitZoom() {
+            const viewport = elements.canvasViewport;
+            const tileSize = state.tileSize;
+            const levelWidth = state.gridWidth * tileSize + 4; // +4 for border/padding
+            const levelHeight = state.gridHeight * tileSize + 4;
+
+            const scaleX = (viewport.clientWidth - 40) / levelWidth;
+            const scaleY = (viewport.clientHeight - 40) / levelHeight;
+            return Math.min(scaleX, scaleY, 1); // Cap at 1x
+        }
+
+        // Zoom button handlers
+        document.querySelectorAll('.zoom-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const zoom = btn.dataset.zoom;
+                if (zoom === '0.5') {
+                    // Fit button - calculate zoom to fit
+                    setZoom(calculateFitZoom());
+                } else {
+                    setZoom(parseFloat(zoom));
+                }
+            });
+        });
+
+        // Mouse wheel zoom
+        elements.canvasViewport.addEventListener('wheel', (e) => {
+            if (e.ctrlKey || e.metaKey) {
+                e.preventDefault();
+                const delta = e.deltaY > 0 ? -0.25 : 0.25;
+                const newZoom = Math.max(0.25, Math.min(4, state.zoom + delta));
+                setZoom(newZoom);
+            }
+        }, { passive: false });
+
+        // Middle mouse button pan
+        elements.canvasViewport.addEventListener('mousedown', (e) => {
+            if (e.button === 1) { // Middle mouse button
+                e.preventDefault();
+                state.isPanning = true;
+                state.lastPanX = e.clientX;
+                state.lastPanY = e.clientY;
+                elements.canvasViewport.style.cursor = 'grabbing';
+            }
+        });
+
+        document.addEventListener('mousemove', (e) => {
+            if (state.isPanning) {
+                const dx = e.clientX - state.lastPanX;
+                const dy = e.clientY - state.lastPanY;
+                elements.canvasViewport.scrollLeft -= dx;
+                elements.canvasViewport.scrollTop -= dy;
+                state.lastPanX = e.clientX;
+                state.lastPanY = e.clientY;
+            }
+        });
+
+        document.addEventListener('mouseup', (e) => {
+            if (state.isPanning) {
+                state.isPanning = false;
+                elements.canvasViewport.style.cursor = '';
+            }
         });
 
         // ==========================================
@@ -4383,6 +4550,14 @@
             if (!state.selectedSprite) return;
             if (x < 0 || x >= state.gridWidth || y < 0 || y >= state.gridHeight) return;
 
+            // Ensure row exists
+            if (!state.visualTiles[y]) {
+                state.visualTiles[y] = [];
+                for (let i = 0; i < state.gridWidth; i++) {
+                    state.visualTiles[y][i] = null;
+                }
+            }
+
             state.visualTiles[y][x] = {
                 spriteSheet: state.selectedSprite.sheetName,
                 spriteName: state.selectedSprite.name,
@@ -4439,6 +4614,7 @@
 
         function eraseVisualTile(x, y) {
             if (x < 0 || x >= state.gridWidth || y < 0 || y >= state.gridHeight) return;
+            if (!state.visualTiles[y]) return; // Row doesn't exist, nothing to erase
             state.visualTiles[y][x] = null;
             renderTileCanvas();
             renderLevelCanvas();
@@ -4463,6 +4639,14 @@
 
                 if (visited.has(key)) continue;
                 if (x < 0 || x >= state.gridWidth || y < 0 || y >= state.gridHeight) continue;
+
+                // Ensure row exists
+                if (!state.visualTiles[y]) {
+                    state.visualTiles[y] = [];
+                    for (let i = 0; i < state.gridWidth; i++) {
+                        state.visualTiles[y][i] = null;
+                    }
+                }
 
                 const currentTile = state.visualTiles[y][x];
                 const currentKey = currentTile ?
