@@ -4319,17 +4319,32 @@
                     const settings = await crucibleClient.getProjectSettings(state.projectId);
                     const style = settings.artStyle || {};
 
-                    // Map outline values
+                    // Map outline values to API format (spaces, not underscores)
                     if (style.outline) {
                         const outlineMap = {
-                            'no_outline': 'no_outline',
-                            'single_color_black': 'single_color_black_outline',
-                            'single_color_colored': 'single_color_colored_outline'
+                            'no_outline': 'lineless',
+                            'lineless': 'lineless',
+                            'single_color_black': 'single color outline',
+                            'single_color_black_outline': 'single color outline',
+                            'single_color_outline': 'single color outline',
+                            'single color outline': 'single color outline',
+                            'colored_outline': 'selective outline',
+                            'selective_outline': 'selective outline',
+                            'selective outline': 'selective outline'
                         };
-                        outline = outlineMap[style.outline] || style.outline;
+                        outline = outlineMap[style.outline] || 'single color outline';
                     }
-                    // Use project view setting
-                    if (style.view) view = style.view;
+                    // Map view values to API format (spaces, not underscores)
+                    if (style.view) {
+                        const viewMap = {
+                            'high_top_down': 'high top-down',
+                            'high top-down': 'high top-down',
+                            'low_top_down': 'low top-down',
+                            'low top-down': 'low top-down',
+                            'side': 'side'
+                        };
+                        view = viewMap[style.view] || 'low top-down';
+                    }
                 } catch (err) {
                     console.warn('Could not load project settings:', err);
                 }
