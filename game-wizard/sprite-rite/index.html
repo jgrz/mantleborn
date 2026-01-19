@@ -4389,16 +4389,26 @@
 
         async function handleGeneratedAsset(job) {
             // Called when a generation is complete and user clicks Import
-            if (!job.result_url) {
+
+            // Check if this is a character with rotation URLs
+            if (job.resultData?.rotation_urls) {
+                await importCharacterRotations(job);
+                return;
+            }
+
+            // Single image import (map objects, tiles, etc.)
+            if (!job.resultUrl && !job.result_url) {
                 showToast('No result URL available', 'error');
                 return;
             }
+
+            const imageUrl = job.resultUrl || job.result_url;
 
             try {
                 showToast('Importing generated asset...', 'info');
 
                 // Fetch the image
-                const response = await fetch(job.result_url);
+                const response = await fetch(imageUrl);
                 const blob = await response.blob();
 
                 // Create image from blob
@@ -4407,27 +4417,8 @@
 
                 img.onload = () => {
                     URL.revokeObjectURL(url);
-
-                    // Load into editor
-                    state.image = img;
-                    state.imageWidth = img.width;
-                    state.imageHeight = img.height;
-                    state.imageName = `generated_${job.job_type}_${Date.now()}.png`;
-                    state.sprites = [];
-                    state.selectedSpriteIndex = -1;
-
-                    // Update UI
-                    elements.canvasContainer.style.display = 'block';
-                    elements.dropZone.style.display = 'none';
-                    setupCanvases();
-                    drawImage();
-                    drawGrid();
-                    clearSelection();
-                    updateSpriteList();
-                    updateSpriteCount();
-                    elements.imageInfo.textContent = `${img.width} x ${img.height}`;
-
-                    showToast('Asset imported! Auto-detect sprites or select manually.', 'success');
+                    loadImageIntoEditor(img, `generated_${job.type}_${Date.now()}.png`);
+                    showToast('Asset imported! Select sprites and save them.', 'success');
                 };
 
                 img.onerror = () => {
@@ -4440,6 +4431,111 @@
                 console.error('Import error:', error);
                 showToast('Failed to import asset: ' + error.message, 'error');
             }
+        }
+
+        async function importCharacterRotations(job) {
+            // Import a PixelLab character with 8 rotation images
+            const rotations = job.resultData.rotation_urls;
+
+            // Define the order for the sprite sheet (2 rows x 4 cols)
+            const order = [
+                'south', 'south-west', 'west', 'north-west',
+                'north', 'north-east', 'east', 'south-east'
+            ];
+
+            try {
+                showToast('Downloading character sprites...', 'info');
+
+                // Download all rotation images
+                const images = {};
+                const promises = order.map(async (dir) => {
+                    const url = rotations[dir];
+                    if (!url) return;
+
+                    const response = await fetch(url);
+                    const blob = await response.blob();
+
+                    return new Promise((resolve, reject) => {
+                        const img = new Image();
+                        img.onload = () => {
+                            images[dir] = img;
+                            resolve();
+                        };
+                        img.onerror = reject;
+                        img.src = URL.createObjectURL(blob);
+                    });
+                });
+
+                await Promise.all(promises);
+
+                // Get dimensions from first image
+                const firstImg = images[order.find(d => images[d])];
+                if (!firstImg) {
+                    showToast('No images loaded', 'error');
+                    return;
+                }
+
+                const spriteWidth = firstImg.width;
+                const spriteHeight = firstImg.height;
+
+                // Create composite sprite sheet (2 rows x 4 cols for 8 directions)
+                const cols = 4;
+                const rows = 2;
+                const canvas = document.createElement('canvas');
+                canvas.width = spriteWidth * cols;
+                canvas.height = spriteHeight * rows;
+                const ctx = canvas.getContext('2d');
+
+                // Draw each rotation in order
+                order.forEach((dir, i) => {
+                    if (images[dir]) {
+                        const col = i % cols;
+                        const row = Math.floor(i / cols);
+                        ctx.drawImage(images[dir], col * spriteWidth, row * spriteHeight);
+                    }
+                });
+
+                // Convert canvas to image
+                const compositeImg = new Image();
+                compositeImg.onload = () => {
+                    // Clean up blob URLs
+                    Object.values(images).forEach(img => {
+                        if (img.src.startsWith('blob:')) {
+                            URL.revokeObjectURL(img.src);
+                        }
+                    });
+
+                    const name = job.resultData.name || job.prompt || 'character';
+                    loadImageIntoEditor(compositeImg, `${name}_rotations.png`);
+                    showToast(`Character imported! ${Object.keys(images).length} directions on sheet.`, 'success');
+                };
+                compositeImg.src = canvas.toDataURL('image/png');
+
+            } catch (error) {
+                console.error('Character import error:', error);
+                showToast('Failed to import character: ' + error.message, 'error');
+            }
+        }
+
+        function loadImageIntoEditor(img, filename) {
+            // Load an image into the sprite editor
+            state.image = img;
+            state.imageWidth = img.width;
+            state.imageHeight = img.height;
+            state.imageName = filename;
+            state.sprites = [];
+            state.selectedSpriteIndex = -1;
+
+            // Update UI
+            elements.canvasContainer.style.display = 'block';
+            elements.dropZone.style.display = 'none';
+            setupCanvases();
+            drawImage();
+            drawGrid();
+            clearSelection();
+            updateSpriteList();
+            updateSpriteCount();
+            elements.imageInfo.textContent = `${img.width} x ${img.height}`;
         }
 
         // Keyboard shortcuts
