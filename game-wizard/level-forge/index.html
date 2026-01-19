@@ -76,45 +76,13 @@
             gap: 8px;
         }
 
-        .home-btn {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            width: 32px;
-            height: 32px;
-            font-size: 18px;
-            text-decoration: none;
-            background: var(--bg-surface);
-            border: 1px solid var(--stone-dark);
-            border-radius: 4px;
-            transition: all 0.2s;
-        }
-
-        .home-btn:hover {
-            background: var(--stone-dark);
-            border-color: var(--accent-ember);
-        }
-
         .brand-icon {
             font-size: 20px;
-            animation: flicker 2s infinite;
-        }
-
-        @keyframes flicker {
-            0%, 100% { opacity: 1; }
-            50% { opacity: 0.8; }
-            70% { opacity: 1; }
-            75% { opacity: 0.7; }
-            80% { opacity: 1; }
         }
 
         .brand-text {
             font-family: 'Press Start 2P', cursive;
             font-size: 10px;
-            color: var(--stone-mid);
-        }
-
-        .brand-text span {
             color: var(--accent-ember);
             text-shadow: 0 0 10px rgba(224, 112, 32, 0.5);
         }
@@ -123,51 +91,6 @@
             display: flex;
             gap: 10px;
             align-items: center;
-        }
-
-        .header-select {
-            font-family: 'JetBrains Mono', monospace;
-            font-size: 12px;
-            padding: 8px 12px;
-            background: var(--bg-surface);
-            border: 1px solid var(--stone-dark);
-            border-radius: 4px;
-            color: var(--stone-light);
-            cursor: pointer;
-            min-width: 160px;
-        }
-
-        .header-select:focus {
-            outline: none;
-            border-color: var(--accent-ember);
-        }
-
-        .auth-indicator {
-            display: flex;
-            align-items: center;
-            gap: 6px;
-            padding: 6px 12px;
-            background: var(--bg-surface);
-            border: 1px solid var(--stone-dark);
-            border-radius: 4px;
-            font-size: 11px;
-            color: var(--stone-mid);
-        }
-
-        .auth-indicator.logged-in {
-            border-color: var(--tile-open);
-            color: var(--stone-light);
-        }
-
-        .auth-dot {
-            width: 8px;
-            height: 8px;
-            border-radius: 50%;
-            background: var(--stone-dark);
-        }
-
-        .auth-indicator.logged-in .auth-dot {
-            background: var(--tile-open-bright);
         }
 
         /* Buttons */
@@ -1590,21 +1513,13 @@
     <!-- Header -->
     <header class="header">
         <div class="brand">
-            <a href="/game-wizard/" class="home-btn" title="Back to Game Wizard">&#128302;</a>
-            <span class="brand-icon">&#128293;</span>
-            <span class="brand-text">GAME WIZARD / <span>LEVEL-FORGE</span></span>
+            <span class="brand-icon">&#128506;</span>
+            <span class="brand-text">LEVEL FORGE</span>
         </div>
         <div class="header-actions">
-            <select class="header-select" id="projectSelect">
-                <option value="">-- Select Project --</option>
-            </select>
             <button class="btn btn-crucible" id="sendToCrucibleBtn" title="Send to Crucible" disabled>&#129516; Send to Crucible</button>
             <button class="btn btn-play" id="playDemoBtn">&#9658; Play Demo</button>
             <button class="btn" id="newLevelBtn">New Level</button>
-            <div class="auth-indicator" id="authIndicator">
-                <span class="auth-dot"></span>
-                <span class="auth-text">...</span>
-            </div>
         </div>
     </header>
 
@@ -2102,9 +2017,7 @@
         // ==========================================
         const elements = {
             // Header
-            projectSelect: document.getElementById('projectSelect'),
             sendToCrucibleBtn: document.getElementById('sendToCrucibleBtn'),
-            authIndicator: document.getElementById('authIndicator'),
 
             // Grid editor
             grid: document.getElementById('grid'),
@@ -2204,20 +2117,6 @@
             elements.toast.textContent = message;
             elements.toast.classList.add('show');
             setTimeout(() => elements.toast.classList.remove('show'), 2500);
-        }
-
-        function updateAuthIndicator() {
-            const indicator = elements.authIndicator;
-            const textEl = indicator.querySelector('.auth-text');
-
-            if (state.user) {
-                const name = state.user.user_metadata?.display_name || state.user.email?.split('@')[0] || 'User';
-                indicator.classList.add('logged-in');
-                textEl.textContent = name;
-            } else {
-                indicator.classList.remove('logged-in');
-                textEl.textContent = 'Guest';
-            }
         }
 
         // ==========================================
@@ -5003,39 +4902,9 @@
         elements.clearTilesBtn.addEventListener('click', clearVisualTiles);
 
         // ==========================================
-        // Project Selection (Header)
+        // Project Selection
         // ==========================================
-        let allProjects = [];
         let selectedProject = null;
-
-        async function loadProjects() {
-            try {
-                const crucible = await getCrucible();
-                if (!crucible.isConfigured()) {
-                    console.warn('Crucible not configured');
-                    return;
-                }
-
-                allProjects = await crucible.getProjects();
-
-                elements.projectSelect.innerHTML = '<option value="">-- Select Project --</option>';
-                allProjects.forEach(p => {
-                    const opt = document.createElement('option');
-                    opt.value = p.id;
-                    opt.textContent = p.name;
-                    elements.projectSelect.appendChild(opt);
-                });
-
-                // Restore last selected project
-                const lastProject = localStorage.getItem('levelforge_project');
-                if (lastProject && allProjects.find(p => p.id === lastProject)) {
-                    elements.projectSelect.value = lastProject;
-                    await selectProject(lastProject);
-                }
-            } catch (err) {
-                console.error('Failed to load projects:', err);
-            }
-        }
 
         async function selectProject(projectId) {
             if (!projectId) {
@@ -5048,13 +4917,16 @@
                 return;
             }
 
-            selectedProject = allProjects.find(p => p.id === projectId);
+            // Fetch project details
+            const crucible = await getCrucible();
+            const projects = await crucible.getProjects();
+            selectedProject = projects.find(p => p.id === projectId);
+
             localStorage.setItem('levelforge_project', projectId);
             elements.sendToCrucibleBtn.disabled = false;
 
             // Load project settings to get tile size
             try {
-                const crucible = await getCrucible();
                 const settings = await crucible.getProjectSettings(projectId);
                 state.tileSize = settings.tileDefaults?.size || 16;
                 updateTileSizeDisplay();
@@ -5066,16 +4938,6 @@
             // Load master sheet for this project
             await loadMasterSheet(projectId);
         }
-
-        elements.projectSelect.addEventListener('change', (e) => {
-            const projectId = e.target.value;
-            const projectName = e.target.options[e.target.selectedIndex]?.text || '';
-            selectProject(projectId);
-            // Sync to persistent header
-            if (window.gwPersistentHeader) {
-                window.gwPersistentHeader.setProject(projectId, projectName);
-            }
-        });
 
         // ==========================================
         // Crucible Integration (Send Modal)
@@ -5229,36 +5091,29 @@
             // Initialize auth
             await crucibleClient.init();
             state.user = await crucibleClient.getUser();
-            updateAuthIndicator();
 
             // Listen for auth changes
             crucibleClient.onAuthStateChange((event, session) => {
                 state.user = session?.user || null;
-                updateAuthIndicator();
             });
 
             initGrid();
             initVisualTiles();
             loadSpriteIndex();
-            loadProjects();
             initGenerationQueue();
 
-            // Sync with persistent header project selection after projects load
-            setTimeout(async () => {
-                if (!selectedProject && window.gwPersistentHeader) {
-                    const saved = window.gwPersistentHeader.getSelectedProject();
-                    if (saved?.projectId && state.user) {
-                        elements.projectSelect.value = saved.projectId;
-                        await selectProject(saved.projectId);
-                    }
+            // Sync with persistent header project selection
+            if (window.gwPersistentHeader) {
+                const saved = window.gwPersistentHeader.getSelectedProject();
+                if (saved?.projectId && state.user) {
+                    await selectProject(saved.projectId);
                 }
-            }, 500);
+            }
 
             // Listen for project changes from persistent header
             window.addEventListener('gw:projectChange', async (e) => {
                 const { projectId } = e.detail;
                 if (projectId && projectId !== selectedProject?.id) {
-                    elements.projectSelect.value = projectId;
                     await selectProject(projectId);
                 }
             });
