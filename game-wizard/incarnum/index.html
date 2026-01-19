@@ -1053,23 +1053,9 @@
             color: white;
         }
 
-        /* Generation Queue Panel */
+        /* Generation Queue Panel - container for the GenerationQueue component */
         .generation-queue-panel {
-            position: fixed;
-            bottom: 20px;
-            right: 20px;
-            width: 320px;
-            max-height: 400px;
-            background: var(--bg-mid);
-            border: 1px solid var(--stone-dark);
-            border-radius: 8px;
-            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
-            z-index: 1500;
-            display: none;
-        }
-
-        .generation-queue-panel.visible {
-            display: block;
+            /* Component handles its own positioning and visibility */
         }
 
         /* View Queue Button */
