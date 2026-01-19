@@ -1795,13 +1795,12 @@
                 if (result.jobId) {
                     if (state.generationQueue) {
                         await state.generationQueue.addJob({
-                            pixellab_job_id: result.jobId,
-                            job_type: 'character',
+                            jobId: result.jobId,
+                            assetId: result.characterId,
+                            type: 'character',
                             prompt: prompt,
                             parameters: options,
-                            skeleton_keypoints: options.skeleton,
-                            project_id: state.projectId,
-                            user_id: state.user?.id
+                            skeletonKeypoints: options.skeleton
                         });
                         state.generationQueue.show();
                     }

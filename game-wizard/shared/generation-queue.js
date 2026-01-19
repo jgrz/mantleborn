@@ -511,9 +511,20 @@ class GenerationQueue {
                          status.status === 'failed' ? 'failed' :
                          status.status === 'processing' ? 'processing' : job.status;
 
-            if (status.result) {
-                job.resultData = status.result;
-                job.resultUrl = status.result.download_url || status.result.url;
+            // When job completes, fetch the actual asset to get URLs
+            if (job.status === 'completed' && oldStatus !== 'completed' && job.assetId) {
+                try {
+                    const assetData = await this.fetchCompletedAsset(job);
+                    if (assetData) {
+                        job.resultData = assetData;
+                        // For characters, use south-facing sprite as preview URL
+                        job.resultUrl = assetData.rotation_urls?.south ||
+                                       assetData.preview_url ||
+                                       assetData.download_url;
+                    }
+                } catch (e) {
+                    console.warn('Failed to fetch completed asset:', e);
+                }
             }
 
             if (status.status === 'failed') {
@@ -540,6 +551,29 @@ class GenerationQueue {
 
         } catch (e) {
             console.error('Failed to check job status:', e);
+        }
+    }
+
+    /**
+     * Fetch the completed asset based on job type
+     */
+    async fetchCompletedAsset(job) {
+        if (!this.pixelLabClient || !job.assetId) return null;
+
+        switch (job.type) {
+            case 'character':
+                return await this.pixelLabClient.getCharacter(job.assetId);
+            case 'tileset_topdown':
+                return await this.pixelLabClient.getTileset(job.assetId, 'topdown');
+            case 'tileset_sidescroller':
+                return await this.pixelLabClient.getTileset(job.assetId, 'sidescroller');
+            case 'isometric_tile':
+                return await this.pixelLabClient.getIsometricTile(job.assetId);
+            case 'map_object':
+                return await this.pixelLabClient.getMapObject(job.assetId);
+            default:
+                console.warn('Unknown job type for asset fetch:', job.type);
+                return null;
         }
     }
 

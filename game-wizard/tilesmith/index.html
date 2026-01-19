@@ -4060,15 +4060,17 @@
                     }
                 }
 
-                if (result.job_id) {
+                if (result.jobId) {
+                    // Get the correct assetId based on job type
+                    const assetId = result.tilesetId || result.tileId || result.objectId;
+
                     if (state.generationQueue) {
                         await state.generationQueue.addJob({
-                            pixellab_job_id: result.job_id,
-                            job_type: jobType,
+                            jobId: result.jobId,
+                            assetId: assetId,
+                            type: jobType,
                             prompt: prompt,
-                            parameters: { genType, size, style },
-                            project_id: state.projectId,
-                            user_id: state.user?.id
+                            parameters: { genType, size, style }
                         });
                     }
 

@@ -11,8 +11,9 @@ const PIXELLAB_API_URL = "https://api.pixellab.ai/v2";
 
 // Map our action names to PixelLab endpoints
 const ENDPOINT_MAP: Record<string, string> = {
-  // Characters
-  "create_character": "/generate-character-rotations",
+  // Characters (create_character is handled specially based on n_directions)
+  "create_character_4": "/create-character-with-4-directions",
+  "create_character_8": "/create-character-with-8-directions",
   "animate_character": "/animate-with-skeleton",
   "get_character": "/characters",
 
@@ -67,8 +68,15 @@ Deno.serve(async (req: Request) => {
       );
     }
 
+    // Handle create_character specially - route based on n_directions
+    let resolvedAction = action;
+    if (action === "create_character") {
+      const directions = params.n_directions || 8;
+      resolvedAction = directions === 4 ? "create_character_4" : "create_character_8";
+    }
+
     // Determine the PixelLab endpoint
-    let pixelLabEndpoint = ENDPOINT_MAP[action];
+    let pixelLabEndpoint = ENDPOINT_MAP[resolvedAction];
 
     if (!pixelLabEndpoint) {
       // Try using the endpoint field directly if provided
@@ -119,6 +127,8 @@ Deno.serve(async (req: Request) => {
       },
     };
 
+    console.log(`Using API token: ${apiToken ? apiToken.substring(0, 8) + '...' : 'NOT SET'}`);
+
     // Add body for POST requests
     if (method === "POST") {
       // Remove our wrapper fields, send clean params to PixelLab
@@ -131,10 +141,26 @@ Deno.serve(async (req: Request) => {
 
     // Make request to PixelLab
     console.log(`PixelLab ${method} ${url}`);
+    if (method === "POST") {
+      console.log(`Request body: ${fetchOptions.body}`);
+    }
     const response = await fetch(url, fetchOptions);
 
-    // Get response data
-    const responseData = await response.json();
+    // Get response data - handle non-JSON responses
+    const responseText = await response.text();
+    let responseData;
+    try {
+      responseData = JSON.parse(responseText);
+    } catch {
+      console.error(`PixelLab returned non-JSON: ${responseText}`);
+      return new Response(
+        JSON.stringify({
+          error: "PixelLab returned non-JSON response",
+          details: responseText.substring(0, 200)
+        }),
+        { status: response.status || 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
 
     // Check for errors
     if (!response.ok) {

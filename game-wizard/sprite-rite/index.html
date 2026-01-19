@@ -4311,22 +4311,21 @@
                 client.init(crucibleClient);
                 const result = await client.createCharacter(description, options);
 
-                if (result.job_id) {
+                if (result.jobId) {
                     // Save to database and add to queue
                     if (state.generationQueue) {
                         await state.generationQueue.addJob({
-                            pixellab_job_id: result.job_id,
-                            job_type: 'character',
+                            jobId: result.jobId,
+                            assetId: result.characterId,
+                            type: 'character',
                             prompt: description,
                             parameters: options,
-                            skeleton_keypoints: options.skeleton,
-                            project_id: state.projectId,
-                            user_id: state.user?.id
+                            skeletonKeypoints: options.skeleton
                         });
                         state.generationQueue.show();
                     }
                     showToast('Character generation queued!', 'success');
-                } else if (result.character_id) {
+                } else if (result.characterId) {
                     // Immediate result (rare)
                     showToast('Character generated!', 'success');
                 }
@@ -4369,15 +4368,14 @@
                 client.init(crucibleClient);
                 const result = await client.createMapObject(description, options);
 
-                if (result.job_id) {
+                if (result.jobId) {
                     if (state.generationQueue) {
                         await state.generationQueue.addJob({
-                            pixellab_job_id: result.job_id,
-                            job_type: 'map_object',
+                            jobId: result.jobId,
+                            assetId: result.objectId,
+                            type: 'map_object',
                             prompt: description,
-                            parameters: options,
-                            project_id: state.projectId,
-                            user_id: state.user?.id
+                            parameters: options
                         });
                         state.generationQueue.show();
                     }

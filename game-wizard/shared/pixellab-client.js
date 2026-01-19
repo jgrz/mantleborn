@@ -103,7 +103,7 @@ class PixelLabClient {
             action: 'create_character',
             description,
             n_directions: directions,
-            size,
+            image_size: { width: size, height: size },
             proportions: { type: 'preset', name: proportions },
             view,
             outline: style.outline || 'single_color_black_outline',
