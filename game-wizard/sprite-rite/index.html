@@ -4670,20 +4670,35 @@
                 const result = await client.createImageBitforge({ description, ...options });
                 console.log('Variant createImageBitforge result:', result);
 
-                if (result.jobId) {
+                // Check if we got immediate result (no background job)
+                const imageData = result.raw?.data?.image;
+                if (imageData?.type === 'base64' && imageData?.base64) {
+                    // Bitforge returned image directly - import immediately
+                    showToast('Variant generated! Importing...', 'success');
+                    const job = {
+                        type: 'bitforge_variant',
+                        sourceSheetId: state.spritesheetId,
+                        resultData: { image: imageData },
+                        resultUrl: `data:image/${imageData.format || 'png'};base64,${imageData.base64}`
+                    };
+                    await importVariantToSheet(job);
+                    elements.variantDescription.value = '';
+                } else if (result.jobId) {
+                    // Background job - add to queue for polling
                     if (state.generationQueue) {
                         await state.generationQueue.addJob({
                             jobId: result.jobId,
                             type: 'bitforge_variant',
                             prompt: description,
                             parameters: options,
-                            // Track source sheet for variant import
                             sourceSheetId: state.spritesheetId
                         });
                         state.generationQueue.show();
                     }
                     showToast('Variant generation queued!', 'success');
                     elements.variantDescription.value = '';
+                } else {
+                    showToast('No result received from generation', 'error');
                 }
             } catch (error) {
                 console.error('Variant generation error:', error);
