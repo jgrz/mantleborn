@@ -359,6 +359,11 @@ class GenerationQueue {
      * Add a new job to the queue
      */
     async addJob(job) {
+        console.log('=== GenerationQueue.addJob called ===');
+        console.log('Job:', job);
+        console.log('this.crucibleClient:', this.crucibleClient);
+        console.log('this.projectId:', this.projectId);
+
         // Save to database
         if (this.crucibleClient && this.projectId) {
             try {
@@ -392,13 +397,17 @@ class GenerationQueue {
             status: 'pending',
             createdAt: new Date()
         });
+        console.log('Job added to this.jobs, count:', this.jobs.length);
 
         this.render();
+        console.log('render() called');
         this.updateBadge();
 
         // Show queue if hidden
+        console.log('isVisible before show:', this.isVisible);
         if (!this.isVisible) {
             this.show();
+            console.log('show() called');
         }
 
         // Start polling if not already

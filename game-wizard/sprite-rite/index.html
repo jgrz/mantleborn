@@ -4395,9 +4395,13 @@
 
                 if (result.jobId) {
                     // Save to database and add to queue
-                    console.log('state.generationQueue:', state.generationQueue);
+                    console.log('=== QUEUE DEBUG ===');
+                    console.log('state.generationQueue exists:', !!state.generationQueue);
+                    console.log('state.generationQueue object:', state.generationQueue);
                     if (state.generationQueue) {
-                        console.log('Adding job to queue...');
+                        console.log('state.generationQueue.crucibleClient:', state.generationQueue.crucibleClient);
+                        console.log('state.generationQueue.projectId:', state.generationQueue.projectId);
+                        console.log('Calling addJob...');
                         await state.generationQueue.addJob({
                             jobId: result.jobId,
                             assetId: result.characterId,
