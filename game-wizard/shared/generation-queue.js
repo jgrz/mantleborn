@@ -527,18 +527,22 @@ class GenerationQueue {
 
                 // For map_object, the API doesn't have a GET endpoint - use job result directly
                 if (job.type === 'map_object') {
-                    // The result is in status.raw.data for map objects
-                    const result = status.raw?.data || status.result || {};
-                    job.resultData = result;
+                    // The result is in status.raw.data, with image in last_response
+                    const rawData = status.raw?.data || {};
+                    const lastResponse = rawData.last_response || {};
+
+                    // Store the full result with last_response at top level for easier access
+                    job.resultData = { ...rawData, image: lastResponse.image };
 
                     // Handle base64 image data - convert to data URL
-                    if (result.image?.type === 'base64' && result.image?.base64) {
-                        const format = result.image.format || 'png';
-                        job.resultUrl = `data:image/${format};base64,${result.image.base64}`;
+                    const imageData = lastResponse.image || rawData.image;
+                    if (imageData?.type === 'base64' && imageData?.base64) {
+                        const format = imageData.format || 'png';
+                        job.resultUrl = `data:image/${format};base64,${imageData.base64}`;
                     } else {
-                        job.resultUrl = result.download_url || result.url;
+                        job.resultUrl = lastResponse.download_url || lastResponse.url || rawData.download_url || rawData.url;
                     }
-                    console.log('Map object result data:', job.resultData, 'URL type:', job.resultUrl?.substring(0, 50));
+                    console.log('Map object last_response:', lastResponse, 'URL type:', job.resultUrl?.substring(0, 50));
                 } else if (job.assetId) {
                     // For other types, fetch the asset via dedicated endpoint
                     try {
