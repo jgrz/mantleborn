@@ -1788,6 +1788,7 @@
 
             try {
                 const client = new PixelLabClient();
+                client.init(crucibleClient);
                 const result = await client.createCharacter(prompt, options);
 
                 if (result.job_id) {

@@ -4308,6 +4308,7 @@
 
             try {
                 const client = new PixelLabClient();
+                client.init(crucibleClient);
                 const result = await client.createCharacter(description, options);
 
                 if (result.job_id) {
@@ -4365,6 +4366,7 @@
 
             try {
                 const client = new PixelLabClient();
+                client.init(crucibleClient);
                 const result = await client.createMapObject(description, options);
 
                 if (result.job_id) {
