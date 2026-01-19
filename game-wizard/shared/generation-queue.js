@@ -522,18 +522,30 @@ class GenerationQueue {
                          status.status === 'processing' ? 'processing' : job.status;
 
             // When job completes, fetch the actual asset to get URLs
-            if (job.status === 'completed' && oldStatus !== 'completed' && job.assetId) {
-                try {
-                    const assetData = await this.fetchCompletedAsset(job);
-                    if (assetData) {
-                        job.resultData = assetData;
-                        // For characters, use south-facing sprite as preview URL
-                        job.resultUrl = assetData.rotation_urls?.south ||
-                                       assetData.preview_url ||
-                                       assetData.download_url;
+            if (job.status === 'completed' && oldStatus !== 'completed') {
+                console.log('Job completed, status.result:', status.result, 'status.raw:', status.raw);
+
+                // For map_object, the API doesn't have a GET endpoint - use job result directly
+                if (job.type === 'map_object') {
+                    // The result should contain image data or URL
+                    const result = status.result || status.raw?.data?.last_response || {};
+                    job.resultData = result;
+                    job.resultUrl = result.image || result.download_url || result.url;
+                    console.log('Map object result data:', job.resultData, 'URL:', job.resultUrl);
+                } else if (job.assetId) {
+                    // For other types, fetch the asset via dedicated endpoint
+                    try {
+                        const assetData = await this.fetchCompletedAsset(job);
+                        if (assetData) {
+                            job.resultData = assetData;
+                            // For characters, use south-facing sprite as preview URL
+                            job.resultUrl = assetData.rotation_urls?.south ||
+                                           assetData.preview_url ||
+                                           assetData.download_url;
+                        }
+                    } catch (e) {
+                        console.warn('Failed to fetch completed asset:', e);
                     }
-                } catch (e) {
-                    console.warn('Failed to fetch completed asset:', e);
                 }
             }
 
