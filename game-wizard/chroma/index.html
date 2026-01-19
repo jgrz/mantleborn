@@ -709,6 +709,24 @@
                     <option value="floyd">Floyd-Steinberg</option>
                 </select>
             </div>
+
+            <!-- Advanced Dithering Options -->
+            <div class="form-group dither-advanced" id="bayerSizeGroup" style="display: none;">
+                <label class="form-label">Bayer Matrix Size</label>
+                <select class="form-input" id="bayerSize">
+                    <option value="2">2×2 (Subtle)</option>
+                    <option value="4" selected>4×4 (Classic)</option>
+                    <option value="8">8×8 (Strong pattern)</option>
+                </select>
+            </div>
+            <div class="form-group dither-advanced" id="ditherStrengthGroup" style="display: none;">
+                <label class="form-label">Dither Strength</label>
+                <div style="display: flex; align-items: center; gap: 8px;">
+                    <input type="range" id="ditherStrength" min="8" max="64" value="32" style="flex: 1; accent-color: var(--accent-violet);">
+                    <span id="ditherStrengthValue" style="min-width: 24px; font-size: 11px;">32</span>
+                </div>
+            </div>
+
             <div class="dither-warning" id="ditherWarning">
                 Dithering on small assets may appear noisy. Consider using "None" for assets 32x32 or smaller.
             </div>
@@ -885,6 +903,11 @@
             paletteCount: document.getElementById('paletteCount'),
             savePaletteBtn: document.getElementById('savePaletteBtn'),
             dithering: document.getElementById('dithering'),
+            bayerSizeGroup: document.getElementById('bayerSizeGroup'),
+            bayerSize: document.getElementById('bayerSize'),
+            ditherStrengthGroup: document.getElementById('ditherStrengthGroup'),
+            ditherStrength: document.getElementById('ditherStrength'),
+            ditherStrengthValue: document.getElementById('ditherStrengthValue'),
             ditherWarning: document.getElementById('ditherWarning'),
             applyBtn: document.getElementById('applyBtn'),
             previewEmpty: document.getElementById('previewEmpty'),
@@ -1281,14 +1304,16 @@
 
             // Apply quantization
             const dithering = elements.dithering.value;
+            const bayerSize = parseInt(elements.bayerSize.value);
+            const ditherStrength = parseInt(elements.ditherStrength.value);
             let quantizedData;
 
             if (dithering === 'none') {
                 quantizedData = quantizeNearest(originalData, paletteRgb);
             } else if (dithering === 'ordered') {
-                quantizedData = quantizeOrdered(originalData, paletteRgb);
+                quantizedData = quantizeOrdered(originalData, paletteRgb, bayerSize, ditherStrength);
             } else if (dithering === 'floyd') {
-                quantizedData = quantizeFloydSteinberg(originalData, paletteRgb);
+                quantizedData = quantizeFloydSteinberg(originalData, paletteRgb, ditherStrength);
             }
 
             state.quantizedData = quantizedData;
@@ -1335,7 +1360,31 @@
             return result;
         }
 
-        function quantizeOrdered(imageData, palette) {
+        // Bayer matrices for ordered dithering
+        const BAYER_2x2 = [
+            [0, 2],
+            [3, 1]
+        ];
+
+        const BAYER_4x4 = [
+            [0, 8, 2, 10],
+            [12, 4, 14, 6],
+            [3, 11, 1, 9],
+            [15, 7, 13, 5]
+        ];
+
+        const BAYER_8x8 = [
+            [0, 32, 8, 40, 2, 34, 10, 42],
+            [48, 16, 56, 24, 50, 18, 58, 26],
+            [12, 44, 4, 36, 14, 46, 6, 38],
+            [60, 28, 52, 20, 62, 30, 54, 22],
+            [3, 35, 11, 43, 1, 33, 9, 41],
+            [51, 19, 59, 27, 49, 17, 57, 25],
+            [15, 47, 7, 39, 13, 45, 5, 37],
+            [63, 31, 55, 23, 61, 29, 53, 21]
+        ];
+
+        function quantizeOrdered(imageData, palette, matrixSize, strength) {
             const result = new ImageData(
                 new Uint8ClampedArray(imageData.data),
                 imageData.width,
@@ -1344,20 +1393,27 @@
             const data = result.data;
             const width = imageData.width;
 
-            // Bayer 4x4 matrix
-            const bayer = [
-                [0, 8, 2, 10],
-                [12, 4, 14, 6],
-                [3, 11, 1, 9],
-                [15, 7, 13, 5]
-            ];
+            // Select matrix based on size
+            let matrix, divisor;
+            if (matrixSize === 2) {
+                matrix = BAYER_2x2;
+                divisor = 4;
+            } else if (matrixSize === 8) {
+                matrix = BAYER_8x8;
+                divisor = 64;
+            } else {
+                matrix = BAYER_4x4;
+                divisor = 16;
+            }
+
+            const size = matrix.length;
 
             for (let y = 0; y < imageData.height; y++) {
                 for (let x = 0; x < width; x++) {
                     const i = (y * width + x) * 4;
                     if (data[i + 3] < 128) continue;
 
-                    const threshold = (bayer[y % 4][x % 4] / 16 - 0.5) * 64;
+                    const threshold = (matrix[y % size][x % size] / divisor - 0.5) * strength;
 
                     const r = Math.max(0, Math.min(255, data[i] + threshold));
                     const g = Math.max(0, Math.min(255, data[i + 1] + threshold));
@@ -1373,7 +1429,7 @@
             return result;
         }
 
-        function quantizeFloydSteinberg(imageData, palette) {
+        function quantizeFloydSteinberg(imageData, palette, strength) {
             const result = new ImageData(
                 new Uint8ClampedArray(imageData.data),
                 imageData.width,
@@ -1382,6 +1438,9 @@
             const data = result.data;
             const width = imageData.width;
             const height = imageData.height;
+
+            // Strength factor (32 = normal, higher = more diffusion)
+            const strengthFactor = strength / 32;
 
             // Working copy for error diffusion
             const pixels = [];
@@ -1406,9 +1465,9 @@
                     pixel[1] = nearest[1];
                     pixel[2] = nearest[2];
 
-                    const errR = oldR - nearest[0];
-                    const errG = oldG - nearest[1];
-                    const errB = oldB - nearest[2];
+                    const errR = (oldR - nearest[0]) * strengthFactor;
+                    const errG = (oldG - nearest[1]) * strengthFactor;
+                    const errB = (oldB - nearest[2]) * strengthFactor;
 
                     // Distribute error
                     const distribute = (dx, dy, factor) => {
@@ -1769,6 +1828,19 @@
             });
             elements.extractBtn.addEventListener('click', extractPalette);
 
+            // Dithering options
+            elements.dithering.addEventListener('change', () => {
+                const mode = elements.dithering.value;
+                // Show Bayer size only for ordered dithering
+                elements.bayerSizeGroup.style.display = mode === 'ordered' ? 'block' : 'none';
+                // Show strength for both ordered and floyd-steinberg
+                elements.ditherStrengthGroup.style.display = mode !== 'none' ? 'block' : 'none';
+            });
+
+            elements.ditherStrength.addEventListener('input', () => {
+                elements.ditherStrengthValue.textContent = elements.ditherStrength.value;
+            });
+
             // Apply button
             elements.applyBtn.addEventListener('click', applyQuantization);
 
@@ -1854,12 +1926,22 @@
                     title: 'Quantization',
                     content: `
                         <h1>Quantization Options</h1>
-                        <h2>None (Nearest Color)</h2>
+                        <h2>Dithering Modes</h2>
+                        <h3>None (Nearest Color)</h3>
                         <p>Maps each pixel to the closest color in the palette. Clean results, but can lose gradients.</p>
-                        <h2>Ordered (Bayer Matrix)</h2>
+                        <h3>Ordered (Bayer Matrix)</h3>
                         <p>Uses a pattern-based dithering for smooth gradients. Good for retro aesthetics.</p>
-                        <h2>Floyd-Steinberg</h2>
+                        <h3>Floyd-Steinberg</h3>
                         <p>Error diffusion dithering for the smoothest gradients. Best for larger images.</p>
+                        <h2>Advanced Options</h2>
+                        <h3>Bayer Matrix Size (Ordered only)</h3>
+                        <ul>
+                            <li><strong>2×2</strong> - Subtle pattern, less visible dithering</li>
+                            <li><strong>4×4</strong> - Classic retro look (default)</li>
+                            <li><strong>8×8</strong> - Larger pattern, more pronounced effect</li>
+                        </ul>
+                        <h3>Dither Strength</h3>
+                        <p>Controls the intensity of the dithering effect. Lower values produce subtler results; higher values create more pronounced patterns. Default is 32.</p>
                     `
                 },
                 {

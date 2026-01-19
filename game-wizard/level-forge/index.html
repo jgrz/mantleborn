@@ -1584,7 +1584,6 @@
                                 <input type="file" id="bgFileInput" accept="image/*">
                             </div>
                             <button class="btn btn-small btn-ai" id="fromLibraryBtn">From Library</button>
-                            <button class="btn btn-small" id="pixelifyBtn" disabled>Pixelify</button>
                         </div>
                         <div class="background-preview-wrapper">
                             <canvas id="backgroundCanvas"></canvas>
@@ -1779,55 +1778,6 @@
                 </div>
             </div>
 
-            <!-- Pixelify Settings -->
-            <div class="section tab-settings" id="pixelifySettings">
-                <div class="section-header">Retro Pixelify</div>
-                <div class="form-group">
-                    <label class="form-label">Target Resolution</label>
-                    <select class="form-input" id="targetResolution">
-                        <option value="320x180">320×180 (Mantleborn)</option>
-                        <option value="320x224">320×224 (Genesis)</option>
-                        <option value="256x224">256×224 (SNES)</option>
-                        <option value="160x144">160×144 (Game Boy)</option>
-                        <option value="256x192">256×192 (Master System)</option>
-                        <option value="custom">Custom...</option>
-                    </select>
-                </div>
-                <div class="form-group custom-res-group" id="customResGroup" style="display: none;">
-                    <div class="range-row" style="gap: 4px;">
-                        <input type="number" class="form-input" id="customWidth" value="320" min="16" max="1920" style="width: 70px;">
-                        <span>×</span>
-                        <input type="number" class="form-input" id="customHeight" value="180" min="16" max="1080" style="width: 70px;">
-                    </div>
-                </div>
-                <div class="form-group">
-                    <label class="form-label">Palette Colors</label>
-                    <div class="range-row">
-                        <input type="range" id="paletteColors" value="16" min="4" max="64" step="4">
-                        <span class="range-value" id="paletteColorsValue">16</span>
-                    </div>
-                </div>
-                <div class="form-group">
-                    <label class="form-label">Dithering</label>
-                    <select class="form-input" id="ditherMode">
-                        <option value="none">None</option>
-                        <option value="bayer2">Bayer 2×2 (Subtle)</option>
-                        <option value="bayer4" selected>Bayer 4×4 (Classic)</option>
-                        <option value="bayer8">Bayer 8×8 (Strong)</option>
-                        <option value="floyd">Floyd-Steinberg</option>
-                    </select>
-                </div>
-                <div class="form-group">
-                    <label class="form-label">Dither Strength</label>
-                    <div class="range-row">
-                        <input type="range" id="ditherStrength" value="32" min="8" max="64">
-                        <span class="range-value" id="ditherStrengthValue">32</span>
-                    </div>
-                </div>
-                <button class="btn btn-primary" id="applyPixelify" style="width: 100%;">Apply Retro Effect</button>
-                <button class="btn btn-small" id="resetPixelify" style="width: 100%; margin-top: 8px;">Reset to Original</button>
-            </div>
-
             <!-- Tile Painter Settings -->
             <div class="section tab-settings" id="tileSettings">
                 <div class="section-header">Selected Tile</div>
@@ -1960,14 +1910,6 @@
             // Background editor state
             backgrounds: [],  // Array of background layer objects
             selectedBgLayer: -1,
-            pixelifySettings: {
-                targetRes: '320x180',
-                customWidth: 320,
-                customHeight: 180,
-                paletteColors: 16,
-                ditherMode: 'bayer4',
-                ditherStrength: 32
-            },
 
             // Tile painter state
             visualTiles: [],  // 2D array parallel to collision grid
@@ -2054,7 +1996,6 @@
             // Background editor
             bgFileInput: document.getElementById('bgFileInput'),
             fromLibraryBtn: document.getElementById('fromLibraryBtn'),
-            pixelifyBtn: document.getElementById('pixelifyBtn'),
             backgroundCanvas: document.getElementById('backgroundCanvas'),
             backgroundLayers: document.getElementById('backgroundLayers'),
 
@@ -2071,17 +2012,6 @@
             bgOffsetY: document.getElementById('bgOffsetY'),
             bgScale: document.getElementById('bgScale'),
             bgScaleValue: document.getElementById('bgScaleValue'),
-            targetResolution: document.getElementById('targetResolution'),
-            customResGroup: document.getElementById('customResGroup'),
-            customWidth: document.getElementById('customWidth'),
-            customHeight: document.getElementById('customHeight'),
-            paletteColors: document.getElementById('paletteColors'),
-            paletteColorsValue: document.getElementById('paletteColorsValue'),
-            ditherMode: document.getElementById('ditherMode'),
-            ditherStrength: document.getElementById('ditherStrength'),
-            ditherStrengthValue: document.getElementById('ditherStrengthValue'),
-            applyPixelify: document.getElementById('applyPixelify'),
-            resetPixelify: document.getElementById('resetPixelify'),
 
             // Tile painter
             tileCanvas: document.getElementById('tileCanvas'),
@@ -2095,7 +2025,6 @@
             // Tab settings panels
             gridSettings: document.getElementById('gridSettings'),
             bgSettings: document.getElementById('bgSettings'),
-            pixelifySettings: document.getElementById('pixelifySettings'),
             tileSettings: document.getElementById('tileSettings'),
 
             // Portal markers
@@ -2846,14 +2775,11 @@
                                     offsetX: bgData.offsetX,
                                     offsetY: bgData.offsetY,
                                     scale: bgData.scale,
-                                    visible: bgData.visible,
-                                    pixelified: false,
-                                    originalImageData: null
+                                    visible: bgData.visible
                                 };
                                 loadedCount++;
                                 if (loadedCount === levelData.backgrounds.length) {
                                     state.selectedBgLayer = state.backgrounds.length > 0 ? 0 : -1;
-                                    elements.pixelifyBtn.disabled = state.backgrounds.length === 0;
                                     renderBackgroundLayers();
                                     renderBackgroundPreview();
                                     updateBgLayerControls();
@@ -3392,7 +3318,6 @@
             // Update right panel settings
             elements.gridSettings.classList.toggle('active', tabName === 'grid');
             elements.bgSettings.classList.toggle('active', tabName === 'background');
-            elements.pixelifySettings.classList.toggle('active', tabName === 'background');
             elements.tileSettings.classList.toggle('active', tabName === 'tiles');
 
             // Render appropriate content
@@ -3428,13 +3353,10 @@
                         offsetX: 0,
                         offsetY: 0,
                         scale: 1,
-                        visible: true,
-                        pixelified: false,
-                        originalImageData: null
+                        visible: true
                     };
                     state.backgrounds.push(layer);
                     state.selectedBgLayer = state.backgrounds.length - 1;
-                    elements.pixelifyBtn.disabled = false;
                     renderBackgroundLayers();
                     renderBackgroundPreview();
                     updateBgLayerControls();
@@ -3514,7 +3436,6 @@
             if (state.selectedBgLayer >= state.backgrounds.length) {
                 state.selectedBgLayer = state.backgrounds.length - 1;
             }
-            elements.pixelifyBtn.disabled = state.backgrounds.length === 0;
             renderBackgroundLayers();
             renderBackgroundPreview();
             updateBgLayerControls();
@@ -3703,12 +3624,10 @@
                     offsetX: 0,
                     offsetY: 0,
                     scale: 1,
-                    visible: true,
-                    originalImageData: null
+                    visible: true
                 };
                 state.backgrounds.push(layer);
                 state.selectedBgLayer = state.backgrounds.length - 1;
-                elements.pixelifyBtn.disabled = false;
                 renderBackgroundLayers();
                 renderBackgroundPreview();
                 updateBgLayerControls();
@@ -3775,370 +3694,6 @@
                 elements.backgroundCanvas.style.cursor = state.selectedBgLayer >= 0 ? 'grab' : 'default';
                 updateJsonOutput();
             }
-        });
-
-        // Pixelify controls
-        elements.targetResolution.addEventListener('change', (e) => {
-            state.pixelifySettings.targetRes = e.target.value;
-            elements.customResGroup.style.display = e.target.value === 'custom' ? 'block' : 'none';
-        });
-
-        elements.customWidth.addEventListener('input', (e) => {
-            state.pixelifySettings.customWidth = parseInt(e.target.value) || 320;
-        });
-
-        elements.customHeight.addEventListener('input', (e) => {
-            state.pixelifySettings.customHeight = parseInt(e.target.value) || 180;
-        });
-
-        elements.paletteColors.addEventListener('input', (e) => {
-            elements.paletteColorsValue.textContent = e.target.value;
-            state.pixelifySettings.paletteColors = parseInt(e.target.value);
-        });
-
-        elements.ditherMode.addEventListener('change', (e) => {
-            state.pixelifySettings.ditherMode = e.target.value;
-        });
-
-        elements.ditherStrength.addEventListener('input', (e) => {
-            elements.ditherStrengthValue.textContent = e.target.value;
-            state.pixelifySettings.ditherStrength = parseInt(e.target.value);
-        });
-
-        // ==========================================
-        // Retro Pixelify Effect (Proper Workflow)
-        // ==========================================
-
-        // Resolution presets
-        const RESOLUTION_PRESETS = {
-            '320x180': { w: 320, h: 180 },
-            '320x224': { w: 320, h: 224 },
-            '256x224': { w: 256, h: 224 },
-            '160x144': { w: 160, h: 144 },
-            '256x192': { w: 256, h: 192 }
-        };
-
-        // Bayer dither matrices
-        const BAYER_2x2 = [
-            [0, 2],
-            [3, 1]
-        ];
-        const BAYER_4x4 = [
-            [0,  8,  2, 10],
-            [12, 4, 14,  6],
-            [3, 11,  1,  9],
-            [15, 7, 13,  5]
-        ];
-        const BAYER_8x8 = [
-            [ 0, 32,  8, 40,  2, 34, 10, 42],
-            [48, 16, 56, 24, 50, 18, 58, 26],
-            [12, 44,  4, 36, 14, 46,  6, 38],
-            [60, 28, 52, 20, 62, 30, 54, 22],
-            [ 3, 35, 11, 43,  1, 33,  9, 41],
-            [51, 19, 59, 27, 49, 17, 57, 25],
-            [15, 47,  7, 39, 13, 45,  5, 37],
-            [63, 31, 55, 23, 61, 29, 53, 21]
-        ];
-
-        // Median Cut palette extraction
-        function extractPalette(imageData, numColors) {
-            const pixels = [];
-            const data = imageData.data;
-
-            // Collect all pixels
-            for (let i = 0; i < data.length; i += 4) {
-                if (data[i + 3] > 128) { // Skip transparent
-                    pixels.push([data[i], data[i + 1], data[i + 2]]);
-                }
-            }
-
-            if (pixels.length === 0) return [[0, 0, 0]];
-
-            // Median cut algorithm
-            function medianCut(pixels, depth, maxDepth) {
-                if (depth >= maxDepth || pixels.length === 0) {
-                    // Average the pixels in this bucket
-                    const avg = [0, 0, 0];
-                    for (const p of pixels) {
-                        avg[0] += p[0];
-                        avg[1] += p[1];
-                        avg[2] += p[2];
-                    }
-                    const len = pixels.length || 1;
-                    return [[Math.round(avg[0] / len), Math.round(avg[1] / len), Math.round(avg[2] / len)]];
-                }
-
-                // Find the channel with the greatest range
-                let rMin = 255, rMax = 0, gMin = 255, gMax = 0, bMin = 255, bMax = 0;
-                for (const p of pixels) {
-                    rMin = Math.min(rMin, p[0]); rMax = Math.max(rMax, p[0]);
-                    gMin = Math.min(gMin, p[1]); gMax = Math.max(gMax, p[1]);
-                    bMin = Math.min(bMin, p[2]); bMax = Math.max(bMax, p[2]);
-                }
-
-                const rRange = rMax - rMin;
-                const gRange = gMax - gMin;
-                const bRange = bMax - bMin;
-
-                let sortChannel = 0;
-                if (gRange >= rRange && gRange >= bRange) sortChannel = 1;
-                else if (bRange >= rRange && bRange >= gRange) sortChannel = 2;
-
-                // Sort by the channel with greatest range
-                pixels.sort((a, b) => a[sortChannel] - b[sortChannel]);
-
-                const mid = Math.floor(pixels.length / 2);
-                const left = pixels.slice(0, mid);
-                const right = pixels.slice(mid);
-
-                return [
-                    ...medianCut(left, depth + 1, maxDepth),
-                    ...medianCut(right, depth + 1, maxDepth)
-                ];
-            }
-
-            const maxDepth = Math.ceil(Math.log2(numColors));
-            let palette = medianCut(pixels, 0, maxDepth);
-
-            // Trim to exact size
-            if (palette.length > numColors) {
-                palette = palette.slice(0, numColors);
-            }
-
-            return palette;
-        }
-
-        // Find nearest palette color
-        function findNearestColor(r, g, b, palette) {
-            let minDist = Infinity;
-            let nearest = palette[0];
-
-            for (const color of palette) {
-                const dr = r - color[0];
-                const dg = g - color[1];
-                const db = b - color[2];
-                const dist = dr * dr + dg * dg + db * db;
-
-                if (dist < minDist) {
-                    minDist = dist;
-                    nearest = color;
-                }
-            }
-
-            return nearest;
-        }
-
-        // Apply ordered dithering with palette
-        function applyOrderedDither(imageData, palette, matrix, strength) {
-            const { width, height, data } = imageData;
-            const matrixSize = matrix.length;
-            const matrixMax = matrixSize * matrixSize;
-
-            for (let y = 0; y < height; y++) {
-                for (let x = 0; x < width; x++) {
-                    const i = (y * width + x) * 4;
-                    if (data[i + 3] < 128) continue; // Skip transparent
-
-                    // Get threshold from matrix
-                    const threshold = (matrix[y % matrixSize][x % matrixSize] / matrixMax - 0.5) * strength;
-
-                    // Add threshold to color
-                    const r = Math.max(0, Math.min(255, data[i] + threshold));
-                    const g = Math.max(0, Math.min(255, data[i + 1] + threshold));
-                    const b = Math.max(0, Math.min(255, data[i + 2] + threshold));
-
-                    // Find nearest palette color
-                    const nearest = findNearestColor(r, g, b, palette);
-                    data[i] = nearest[0];
-                    data[i + 1] = nearest[1];
-                    data[i + 2] = nearest[2];
-                }
-            }
-        }
-
-        // Apply Floyd-Steinberg dithering with palette
-        function applyFloydSteinberg(imageData, palette) {
-            const { width, height, data } = imageData;
-
-            // Work with floating point errors
-            const errors = new Float32Array(width * height * 3);
-
-            for (let y = 0; y < height; y++) {
-                for (let x = 0; x < width; x++) {
-                    const i = (y * width + x) * 4;
-                    const ei = (y * width + x) * 3;
-
-                    if (data[i + 3] < 128) continue;
-
-                    // Get color with accumulated error
-                    const r = Math.max(0, Math.min(255, data[i] + errors[ei]));
-                    const g = Math.max(0, Math.min(255, data[i + 1] + errors[ei + 1]));
-                    const b = Math.max(0, Math.min(255, data[i + 2] + errors[ei + 2]));
-
-                    // Find nearest palette color
-                    const nearest = findNearestColor(r, g, b, palette);
-                    data[i] = nearest[0];
-                    data[i + 1] = nearest[1];
-                    data[i + 2] = nearest[2];
-
-                    // Calculate error
-                    const errR = r - nearest[0];
-                    const errG = g - nearest[1];
-                    const errB = b - nearest[2];
-
-                    // Distribute error to neighbors
-                    if (x + 1 < width) {
-                        const ni = ei + 3;
-                        errors[ni] += errR * 7 / 16;
-                        errors[ni + 1] += errG * 7 / 16;
-                        errors[ni + 2] += errB * 7 / 16;
-                    }
-                    if (y + 1 < height) {
-                        if (x > 0) {
-                            const ni = ei + width * 3 - 3;
-                            errors[ni] += errR * 3 / 16;
-                            errors[ni + 1] += errG * 3 / 16;
-                            errors[ni + 2] += errB * 3 / 16;
-                        }
-                        const ni = ei + width * 3;
-                        errors[ni] += errR * 5 / 16;
-                        errors[ni + 1] += errG * 5 / 16;
-                        errors[ni + 2] += errB * 5 / 16;
-                        if (x + 1 < width) {
-                            const nni = ei + width * 3 + 3;
-                            errors[nni] += errR * 1 / 16;
-                            errors[nni + 1] += errG * 1 / 16;
-                            errors[nni + 2] += errB * 1 / 16;
-                        }
-                    }
-                }
-            }
-        }
-
-        // Simple palette quantization (no dithering)
-        function applyNoDither(imageData, palette) {
-            const data = imageData.data;
-            for (let i = 0; i < data.length; i += 4) {
-                if (data[i + 3] < 128) continue;
-                const nearest = findNearestColor(data[i], data[i + 1], data[i + 2], palette);
-                data[i] = nearest[0];
-                data[i + 1] = nearest[1];
-                data[i + 2] = nearest[2];
-            }
-        }
-
-        function applyPixelifyEffect() {
-            if (state.selectedBgLayer < 0) {
-                showToast('Select a layer first');
-                return;
-            }
-
-            const layer = state.backgrounds[state.selectedBgLayer];
-            const { targetRes, customWidth, customHeight, paletteColors, ditherMode, ditherStrength } = state.pixelifySettings;
-
-            // Step 1: Get target resolution
-            let targetW, targetH;
-            if (targetRes === 'custom') {
-                targetW = customWidth;
-                targetH = customHeight;
-            } else {
-                const preset = RESOLUTION_PRESETS[targetRes];
-                targetW = preset.w;
-                targetH = preset.h;
-            }
-
-            // Create source canvas from original image
-            const srcCanvas = document.createElement('canvas');
-            const srcCtx = srcCanvas.getContext('2d');
-            srcCanvas.width = layer.image.width;
-            srcCanvas.height = layer.image.height;
-            srcCtx.drawImage(layer.image, 0, 0);
-
-            // Store original for undo
-            if (!layer.originalImageData) {
-                layer.originalImageData = srcCtx.getImageData(0, 0, srcCanvas.width, srcCanvas.height);
-            }
-
-            // Step 2: Downscale to target resolution (bilinear for sampling)
-            const smallCanvas = document.createElement('canvas');
-            const smallCtx = smallCanvas.getContext('2d');
-            smallCanvas.width = targetW;
-            smallCanvas.height = targetH;
-            smallCtx.imageSmoothingEnabled = true;
-            smallCtx.imageSmoothingQuality = 'medium';
-            smallCtx.drawImage(srcCanvas, 0, 0, targetW, targetH);
-
-            // Step 3: Extract palette from downscaled image
-            const smallImageData = smallCtx.getImageData(0, 0, targetW, targetH);
-            const palette = extractPalette(smallImageData, paletteColors);
-
-            // Step 4: Apply dithering with palette quantization
-            if (ditherMode === 'none') {
-                applyNoDither(smallImageData, palette);
-            } else if (ditherMode === 'floyd') {
-                applyFloydSteinberg(smallImageData, palette);
-            } else {
-                // Ordered dithering
-                let matrix;
-                if (ditherMode === 'bayer2') matrix = BAYER_2x2;
-                else if (ditherMode === 'bayer8') matrix = BAYER_8x8;
-                else matrix = BAYER_4x4;
-
-                applyOrderedDither(smallImageData, palette, matrix, ditherStrength);
-            }
-
-            smallCtx.putImageData(smallImageData, 0, 0);
-
-            // Step 5: Upscale back with nearest-neighbor (crisp pixels)
-            const outputCanvas = document.createElement('canvas');
-            const outputCtx = outputCanvas.getContext('2d');
-            outputCanvas.width = srcCanvas.width;
-            outputCanvas.height = srcCanvas.height;
-            outputCtx.imageSmoothingEnabled = false;
-            outputCtx.drawImage(smallCanvas, 0, 0, outputCanvas.width, outputCanvas.height);
-
-            // Update layer image
-            const newImg = new Image();
-            newImg.onload = () => {
-                layer.image = newImg;
-                layer.pixelified = true;
-                renderBackgroundPreview();
-                showToast(`Retro effect applied (${targetW}×${targetH}, ${paletteColors} colors)`);
-            };
-            newImg.src = outputCanvas.toDataURL();
-        }
-
-        function resetPixelify() {
-            if (state.selectedBgLayer < 0) return;
-
-            const layer = state.backgrounds[state.selectedBgLayer];
-            if (!layer.originalImageData) {
-                showToast('No original to restore');
-                return;
-            }
-
-            // Restore from original
-            const canvas = document.createElement('canvas');
-            canvas.width = layer.originalImageData.width;
-            canvas.height = layer.originalImageData.height;
-            const ctx = canvas.getContext('2d');
-            ctx.putImageData(layer.originalImageData, 0, 0);
-
-            const newImg = new Image();
-            newImg.onload = () => {
-                layer.image = newImg;
-                layer.pixelified = false;
-                renderBackgroundPreview();
-                showToast('Reset to original');
-            };
-            newImg.src = canvas.toDataURL();
-        }
-
-        elements.applyPixelify.addEventListener('click', applyPixelifyEffect);
-        elements.resetPixelify.addEventListener('click', resetPixelify);
-        elements.pixelifyBtn.addEventListener('click', () => {
-            // Just focus on the pixelify settings - they're already visible
-            showToast('Adjust settings and click Apply');
         });
 
         // ==========================================
@@ -5037,8 +4592,7 @@
                     offsetX: layer.offsetX,
                     offsetY: layer.offsetY,
                     scale: layer.scale,
-                    visible: layer.visible,
-                    pixelifyConfig: layer.pixelified ? state.pixelifySettings : null
+                    visible: layer.visible
                 }));
                 await crucible.saveBackgroundLayers(levelId, bgLayers);
 
