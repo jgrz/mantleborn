@@ -281,63 +281,95 @@
             padding: 2px;
         }
 
+        /* Unified level canvas (backgrounds + visual tiles) */
+        .level-canvas {
+            position: absolute;
+            top: 2px;
+            left: 2px;
+            image-rendering: pixelated;
+            pointer-events: none;
+            z-index: 0;
+        }
+
         .grid {
             display: grid;
             gap: 1px;
-            background: var(--stone-dark);
+            background: transparent;
+            position: relative;
+            z-index: 1;
+        }
+
+        /* Grid overlay visibility based on active tab */
+        .grid.grid-visible .tile {
+            background: rgba(26, 26, 46, 0.6);
+        }
+
+        .grid.grid-hidden .tile {
+            background: transparent;
+            border-color: transparent;
+        }
+
+        .grid.grid-hidden .tile[data-state] {
+            /* Keep state colors but very faint in hidden mode */
+            opacity: 0.15;
         }
 
         .tile {
-            width: 24px;
-            height: 24px;
-            background: var(--bg-mid);
+            /* Size is set dynamically by grid template */
+            background: transparent;
             cursor: pointer;
-            transition: background 0.1s;
+            transition: background 0.15s;
             position: relative;
+            border: 1px solid rgba(58, 58, 92, 0.3);
         }
 
         .tile:hover {
-            background: var(--tile-undefined-hover);
+            background: rgba(106, 106, 142, 0.3);
         }
 
         .tile[data-state="open"] {
-            background: var(--tile-open);
+            background: rgba(42, 90, 48, 0.5);
+            border-color: rgba(42, 90, 48, 0.8);
         }
 
         .tile[data-state="open"]:hover {
-            background: var(--tile-open-bright);
+            background: rgba(42, 90, 48, 0.7);
         }
 
         .tile[data-state="obstruction"] {
-            background: var(--tile-obstruction);
+            background: rgba(106, 42, 42, 0.5);
+            border-color: rgba(106, 42, 42, 0.8);
         }
 
         .tile[data-state="obstruction"]:hover {
-            background: var(--tile-obstruction-bright);
+            background: rgba(106, 42, 42, 0.7);
         }
 
         .tile[data-state="spawn"] {
-            background: var(--tile-spawn);
+            background: rgba(42, 74, 106, 0.5);
+            border-color: rgba(42, 74, 106, 0.8);
         }
 
         .tile[data-state="spawn"]:hover {
-            background: var(--tile-spawn-bright);
+            background: rgba(42, 74, 106, 0.7);
         }
 
         .tile[data-state="exit"] {
-            background: var(--tile-exit);
+            background: rgba(138, 74, 138, 0.5);
+            border-color: rgba(138, 74, 138, 0.8);
         }
 
         .tile[data-state="exit"]:hover {
-            background: var(--tile-exit-bright);
+            background: rgba(138, 74, 138, 0.7);
         }
 
         .tile[data-state="return"] {
-            background: var(--tile-return);
+            background: rgba(106, 90, 42, 0.5);
+            border-color: rgba(106, 90, 42, 0.8);
         }
 
         .tile[data-state="return"]:hover {
-            background: var(--tile-return-bright);
+            background: rgba(106, 90, 42, 0.7);
         }
 
         /* Direction arrows for portal tiles */
@@ -943,6 +975,30 @@
             justify-content: center;
         }
 
+        /* Grid panel is the base layer - always visible when active */
+        #gridPanel {
+            z-index: 1;
+        }
+
+        /* BG and Tiles panels overlay on top as toolbar areas */
+        #backgroundPanel.active,
+        #tilesPanel.active {
+            z-index: 2;
+            background: transparent;
+            pointer-events: none;
+        }
+
+        #backgroundPanel.active > *,
+        #tilesPanel.active > * {
+            pointer-events: auto;
+        }
+
+        /* Hide the separate canvases in BG/Tiles panels - use unified levelCanvas instead */
+        #backgroundPanel .background-preview-wrapper,
+        #tilesPanel .tile-canvas-wrapper {
+            display: none;
+        }
+
         /* Grid editor toolbar - only show when grid tab active */
         .grid-toolbar {
             display: none;
@@ -959,10 +1015,11 @@
         .background-editor {
             display: flex;
             flex-direction: column;
-            width: 100%;
-            height: 100%;
-            max-width: 100%;
-            align-items: stretch;
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            gap: 12px;
+            max-height: calc(100% - 40px);
         }
 
         .background-toolbar {
@@ -970,8 +1027,8 @@
             gap: 8px;
             padding: 12px;
             background: var(--bg-mid);
+            border: 1px solid var(--stone-dark);
             border-radius: 4px;
-            margin-bottom: 12px;
             flex-shrink: 0;
         }
 
@@ -1001,9 +1058,9 @@
             gap: 4px;
             max-height: 200px;
             overflow-y: auto;
-            margin-top: 12px;
             padding: 8px;
             background: var(--bg-mid);
+            border: 1px solid var(--stone-dark);
             border-radius: 4px;
         }
 
@@ -1107,8 +1164,11 @@
         .tile-painter {
             display: flex;
             flex-direction: column;
-            width: 100%;
-            height: 100%;
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            gap: 12px;
+            max-height: calc(100% - 40px);
         }
 
         .tile-toolbar {
@@ -1117,8 +1177,8 @@
             gap: 16px;
             padding: 12px;
             background: var(--bg-mid);
+            border: 1px solid var(--stone-dark);
             border-radius: 4px;
-            margin-bottom: 12px;
             flex-shrink: 0;
         }
 
@@ -1557,10 +1617,13 @@
 
             <!-- Tab Content -->
             <div class="tab-content">
-                <!-- Grid Editor Panel -->
+                <!-- Unified Level Editor (shared by all tabs) -->
                 <div class="tab-panel active" id="gridPanel">
                     <div class="grid-wrapper">
-                        <div class="grid" id="grid"></div>
+                        <!-- Unified canvas showing backgrounds + visual tiles -->
+                        <canvas class="level-canvas" id="levelCanvas"></canvas>
+                        <!-- Collision grid overlay -->
+                        <div class="grid grid-visible" id="grid"></div>
                         <div class="selection-box" id="selectionBox"></div>
                     </div>
 
@@ -1963,6 +2026,7 @@
 
             // Grid editor
             grid: document.getElementById('grid'),
+            levelCanvas: document.getElementById('levelCanvas'),
             selectionBox: document.getElementById('selectionBox'),
             gridWidth: document.getElementById('gridWidth'),
             gridHeight: document.getElementById('gridHeight'),
@@ -2077,8 +2141,9 @@
 
         function renderGrid() {
             elements.grid.innerHTML = '';
-            elements.grid.style.gridTemplateColumns = `repeat(${state.gridWidth}, 24px)`;
-            elements.grid.style.gridTemplateRows = `repeat(${state.gridHeight}, 24px)`;
+            const tileSize = state.tileSize + 'px';
+            elements.grid.style.gridTemplateColumns = `repeat(${state.gridWidth}, ${tileSize})`;
+            elements.grid.style.gridTemplateRows = `repeat(${state.gridHeight}, ${tileSize})`;
 
             for (let y = 0; y < state.gridHeight; y++) {
                 for (let x = 0; x < state.gridWidth; x++) {
@@ -2297,6 +2362,19 @@
             const x = parseInt(e.target.dataset.x);
             const y = parseInt(e.target.dataset.y);
 
+            // Handle visual tile painting when tiles tab is active
+            if (state.activeTab === 'tiles') {
+                state.tileMouseDown = true;
+                if (state.currentTileTool === 'paint') {
+                    paintVisualTile(x, y);
+                } else if (state.currentTileTool === 'erase') {
+                    eraseVisualTile(x, y);
+                } else if (state.currentTileTool === 'fill') {
+                    fillVisualTiles(x, y);
+                }
+                return;
+            }
+
             // Right-click to cycle portal direction
             if (e.button === 2) {
                 const tileState = state.tiles[y][x];
@@ -2326,10 +2404,20 @@
         }
 
         function handleTileMouseEnter(e) {
-            if (!state.isMouseDown) return;
-
             const x = parseInt(e.target.dataset.x);
             const y = parseInt(e.target.dataset.y);
+
+            // Handle visual tile painting when tiles tab is active
+            if (state.activeTab === 'tiles' && state.tileMouseDown) {
+                if (state.currentTileTool === 'paint') {
+                    paintVisualTile(x, y);
+                } else if (state.currentTileTool === 'erase') {
+                    eraseVisualTile(x, y);
+                }
+                return;
+            }
+
+            if (!state.isMouseDown) return;
 
             if (state.currentTool === 'paint') {
                 // Paint with current state while dragging
@@ -2355,6 +2443,7 @@
                 applySelectionFill();
             }
             state.isMouseDown = false;
+            state.tileMouseDown = false;
             elements.selectionBox.style.display = 'none';
         });
 
@@ -3211,33 +3300,26 @@
                     }
                 }
             } else {
-                // Draw visual tiles
+                // Draw ONLY visual tiles - no collision squares for empty cells
                 for (let y = 0; y < state.gridHeight; y++) {
                     for (let x = 0; x < state.gridWidth; x++) {
                         const vTile = state.visualTiles[y]?.[x];
-                        if (vTile) {
-                            let sheetImage;
-                            if (vTile.spriteSheet === '__master_tiles__') {
-                                sheetImage = state.masterTileSheetImage;
-                            } else if (vTile.spriteSheet === '__master_sprites__') {
-                                sheetImage = state.masterSpriteSheetImage;
-                            } else {
-                                sheetImage = state.spriteImages[vTile.spriteSheet];
-                            }
-                            if (sheetImage) {
-                                ctx.drawImage(
-                                    sheetImage,
-                                    vTile.x, vTile.y, vTile.width, vTile.height,
-                                    x * tileSize, y * tileSize, tileSize, tileSize
-                                );
-                            }
+                        if (!vTile) continue; // Skip empty cells entirely
+
+                        let sheetImage;
+                        if (vTile.spriteSheet === '__master_tiles__') {
+                            sheetImage = state.masterTileSheetImage;
+                        } else if (vTile.spriteSheet === '__master_sprites__') {
+                            sheetImage = state.masterSpriteSheetImage;
                         } else {
-                            // Draw collision color for empty tiles
-                            const tile = state.tiles[y][x];
-                            if (tile === 'obstruction') {
-                                ctx.fillStyle = '#6a2a2a';
-                                ctx.fillRect(x * tileSize, y * tileSize, tileSize - 1, tileSize - 1);
-                            }
+                            sheetImage = state.spriteImages[vTile.spriteSheet];
+                        }
+                        if (sheetImage) {
+                            ctx.drawImage(
+                                sheetImage,
+                                vTile.x, vTile.y, vTile.width, vTile.height,
+                                x * tileSize, y * tileSize, tileSize, tileSize
+                            );
                         }
                     }
                 }
@@ -3306,11 +3388,14 @@
                 btn.classList.toggle('active', btn.dataset.tab === tabName);
             });
 
-            // Update tab panels
-            document.querySelectorAll('.tab-panel').forEach(panel => {
-                panel.classList.remove('active');
-            });
-            document.getElementById(tabName + 'Panel').classList.add('active');
+            // Update tab panels - gridPanel stays visible, others toggle
+            elements.gridPanel.classList.add('active');
+            elements.backgroundPanel.classList.toggle('active', tabName === 'background');
+            elements.tilesPanel.classList.toggle('active', tabName === 'tiles');
+
+            // Toggle grid overlay visibility
+            elements.grid.classList.toggle('grid-visible', tabName === 'grid');
+            elements.grid.classList.toggle('grid-hidden', tabName !== 'grid');
 
             // Update grid toolbar visibility
             elements.gridToolbar.classList.toggle('active', tabName === 'grid');
@@ -3320,11 +3405,15 @@
             elements.bgSettings.classList.toggle('active', tabName === 'background');
             elements.tileSettings.classList.toggle('active', tabName === 'tiles');
 
-            // Render appropriate content
+            // Render appropriate content based on tab
+            // Note: renderBackgroundPreview and renderTileCanvas both call renderLevelCanvas internally
             if (tabName === 'background') {
                 renderBackgroundPreview();
             } else if (tabName === 'tiles') {
                 renderTileCanvas();
+                renderLevelCanvas();
+            } else {
+                renderLevelCanvas();
             }
 
             updateJsonOutput();
@@ -3506,6 +3595,71 @@
                 ctx.drawImage(layer.image, 0, 0, scaledWidth, scaledHeight);
                 ctx.restore();
             });
+
+            // Also update the unified level canvas
+            renderLevelCanvas();
+        }
+
+        // Unified level canvas - draws backgrounds + visual tiles
+        function renderLevelCanvas() {
+            const canvas = elements.levelCanvas;
+            const ctx = canvas.getContext('2d');
+            const tileSize = state.tileSize;
+            const levelWidth = state.gridWidth * tileSize;
+            const levelHeight = state.gridHeight * tileSize;
+
+            canvas.width = levelWidth;
+            canvas.height = levelHeight;
+            ctx.imageSmoothingEnabled = false;
+            ctx.clearRect(0, 0, levelWidth, levelHeight);
+
+            // Draw checkerboard for transparency
+            const checkSize = 8;
+            for (let y = 0; y < levelHeight; y += checkSize) {
+                for (let x = 0; x < levelWidth; x += checkSize) {
+                    ctx.fillStyle = ((x / checkSize + y / checkSize) % 2 === 0) ? '#252542' : '#1a1a2e';
+                    ctx.fillRect(x, y, checkSize, checkSize);
+                }
+            }
+
+            // Draw background layers (sorted by depth, furthest back first)
+            const sortedLayers = [...state.backgrounds]
+                .filter(l => l.visible)
+                .sort((a, b) => a.depth - b.depth);
+
+            sortedLayers.forEach(layer => {
+                ctx.save();
+                ctx.translate(layer.offsetX, layer.offsetY);
+                const scaledWidth = layer.image.width * layer.scale;
+                const scaledHeight = layer.image.height * layer.scale;
+                ctx.drawImage(layer.image, 0, 0, scaledWidth, scaledHeight);
+                ctx.restore();
+            });
+
+            // Draw visual tiles on top
+            for (let y = 0; y < state.gridHeight; y++) {
+                for (let x = 0; x < state.gridWidth; x++) {
+                    const tile = state.visualTiles[y]?.[x];
+                    if (!tile) continue;
+
+                    // Get the correct sheet image based on sheet type
+                    let sheetImage;
+                    if (tile.spriteSheet === '__master_tiles__') {
+                        sheetImage = state.masterTileSheetImage;
+                    } else if (tile.spriteSheet === '__master_sprites__') {
+                        sheetImage = state.masterSpriteSheetImage;
+                    } else {
+                        sheetImage = state.spriteImages[tile.spriteSheet];
+                    }
+                    if (!sheetImage) continue;
+
+                    ctx.drawImage(
+                        sheetImage,
+                        tile.x, tile.y, tile.width, tile.height,
+                        x * tileSize, y * tileSize, tileSize, tileSize
+                    );
+                }
+            }
         }
 
         // Background layer input handlers
@@ -4239,6 +4393,7 @@
             };
 
             renderTileCanvas();
+            renderLevelCanvas();
             updateJsonOutput();
         }
 
@@ -4286,6 +4441,7 @@
             if (x < 0 || x >= state.gridWidth || y < 0 || y >= state.gridHeight) return;
             state.visualTiles[y][x] = null;
             renderTileCanvas();
+            renderLevelCanvas();
             updateJsonOutput();
         }
 
@@ -4330,6 +4486,7 @@
                 }
             }
             renderTileCanvas();
+            renderLevelCanvas();
             updateJsonOutput();
             showToast('Visual tiles cleared');
         }
@@ -4660,6 +4817,7 @@
 
             initGrid();
             initVisualTiles();
+            renderLevelCanvas();
             loadSpriteIndex();
             initGenerationQueue();
 
