@@ -1382,6 +1382,34 @@
         </div>
     </div>
 
+    <!-- Edit Protection Modal -->
+    <div class="modal-overlay" id="editProtectionModal">
+        <div class="modal" style="max-width: 420px;">
+            <div class="modal-header">
+                <span class="modal-title">Edit Master Tile</span>
+            </div>
+            <div class="modal-body">
+                <p style="margin-bottom: 16px; color: var(--stone-light); line-height: 1.5;">
+                    <strong id="editProtectionTileName" style="color: var(--accent-green);">"Tile"</strong> is on the Master Sheet.
+                </p>
+                <p style="margin-bottom: 20px; color: var(--stone-mid); font-size: 12px; line-height: 1.5;">
+                    Changes to master tiles affect everywhere the tile is used. You can edit the original or make a copy to work with instead.
+                </p>
+                <div style="display: flex; flex-direction: column; gap: 10px;">
+                    <button class="btn btn-primary" id="editProtectionEditBtn" style="width: 100%; justify-content: center;">
+                        Edit Original
+                    </button>
+                    <button class="btn" id="editProtectionCopyBtn" style="width: 100%; justify-content: center; background: var(--stone-dark);">
+                        Make a Copy
+                    </button>
+                    <button class="btn" id="editProtectionCancelBtn" style="width: 100%; justify-content: center; background: transparent; border-color: var(--stone-dark); color: var(--stone-mid);">
+                        Cancel
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- Toast -->
     <div class="toast" id="toast"></div>
 
@@ -1444,6 +1472,7 @@
             currentTileId: null,
             currentTileName: null,      // Name of currently loaded tile
             currentTileSource: null,    // 'draft', 'master', or 'new'
+            pendingMasterEdit: null,    // Pending edit choice for master tiles
 
             // Sheet data
             libraryView: 'draft',       // 'draft' or 'master'
@@ -3380,66 +3409,94 @@
             await selectProject(state.projectId);
         }
 
-        // Load tile from sheet (draft or master) with edit protection for MTS
+        // Load tile from sheet (draft or master) with deferred edit protection for MTS
         async function loadTileFromSheet(tile, source) {
-            // Edit protection for Master tiles
+            // For master tiles, load the tile but set pending edit choice state
+            // The dialog will appear when user tries to edit
             if (source === 'master') {
-                const choice = await showEditProtectionDialog(tile.name);
-                if (choice === 'cancel') return;
-                if (choice === 'copy') {
-                    // Create a copy - prompt for new name and load as draft
-                    const newName = prompt(`Enter name for the copy:`, `${tile.name}_copy`);
-                    if (!newName || newName.trim() === '') return;
-
-                    try {
-                        // Duplicate from master to draft
-                        await crucibleClient.duplicateTileOnMaster(state.projectId, tile.name, newName.trim());
-                        // Now move that copy to draft and load it
-                        // Actually we need to extract and save to draft
-                        const sheetPng = state.masterSheet.png;
-                        const sheetImg = new Image();
-                        await new Promise((resolve, reject) => {
-                            sheetImg.onload = resolve;
-                            sheetImg.onerror = reject;
-                            sheetImg.src = sheetPng;
-                        });
-
-                        // Extract tile from master sheet
-                        const tempCanvas = document.createElement('canvas');
-                        tempCanvas.width = tile.width;
-                        tempCanvas.height = tile.height;
-                        const tempCtx = tempCanvas.getContext('2d');
-                        tempCtx.drawImage(
-                            sheetImg,
-                            tile.x, tile.y, tile.width, tile.height,
-                            0, 0, tile.width, tile.height
-                        );
-                        const imageData = tempCanvas.toDataURL('image/png');
-
-                        // Save to draft
-                        await crucibleClient.saveToDraft(state.projectId, newName.trim(), imageData, tile.width, tile.height);
-
-                        // Reload sheets and switch to draft view
-                        await selectProject(state.projectId);
-                        switchSheetView('draft');
-
-                        // Load the new draft tile
-                        const newDraftTile = state.draftTiles.find(t => t.name === newName.trim());
-                        if (newDraftTile) {
-                            await loadTileFromSheetInternal(newDraftTile, 'draft');
-                        }
-                        showToast(`Created copy "${newName.trim()}" in drafts`);
-                        return;
-                    } catch (err) {
-                        console.error('Failed to create copy:', err);
-                        showToast('Failed to create copy', true);
-                        return;
-                    }
-                }
-                // choice === 'edit' - proceed with loading the master tile (read-only warning acknowledged)
+                state.pendingMasterEdit = {
+                    tile: tile,
+                    tileName: tile.name,
+                    resolved: false
+                };
+            } else {
+                // Clear any pending state when loading non-master tiles
+                state.pendingMasterEdit = null;
             }
 
             await loadTileFromSheetInternal(tile, source);
+        }
+
+        // Handle pending master edit choice - returns true if edit should proceed
+        async function resolvePendingMasterEdit() {
+            if (!state.pendingMasterEdit || state.pendingMasterEdit.resolved) {
+                return true; // No pending choice, proceed with edit
+            }
+
+            const { tile, tileName } = state.pendingMasterEdit;
+            const choice = await showEditProtectionDialog(tileName);
+
+            if (choice === 'cancel') {
+                // User cancelled - unload the tile
+                newTile();
+                state.pendingMasterEdit = null;
+                return false;
+            }
+
+            if (choice === 'copy') {
+                // Create a copy - prompt for new name and load as draft
+                const newName = prompt(`Enter name for the copy:`, `${tileName}_copy`);
+                if (!newName || newName.trim() === '') {
+                    // User cancelled the name prompt - don't proceed
+                    return false;
+                }
+
+                try {
+                    // Extract tile from master sheet
+                    const sheetPng = state.masterSheet.png;
+                    const sheetImg = new Image();
+                    await new Promise((resolve, reject) => {
+                        sheetImg.onload = resolve;
+                        sheetImg.onerror = reject;
+                        sheetImg.src = sheetPng;
+                    });
+
+                    const tempCanvas = document.createElement('canvas');
+                    tempCanvas.width = tile.width;
+                    tempCanvas.height = tile.height;
+                    const tempCtx = tempCanvas.getContext('2d');
+                    tempCtx.drawImage(
+                        sheetImg,
+                        tile.x, tile.y, tile.width, tile.height,
+                        0, 0, tile.width, tile.height
+                    );
+                    const imageData = tempCanvas.toDataURL('image/png');
+
+                    // Save to draft
+                    await crucibleClient.saveToDraft(state.projectId, newName.trim(), imageData, tile.width, tile.height);
+
+                    // Reload sheets and switch to draft view
+                    await selectProject(state.projectId);
+                    switchSheetView('draft');
+
+                    // Load the new draft tile
+                    const newDraftTile = state.draftTiles.find(t => t.name === newName.trim());
+                    if (newDraftTile) {
+                        await loadTileFromSheetInternal(newDraftTile, 'draft');
+                    }
+                    showToast(`Created copy "${newName.trim()}" in drafts`);
+                    state.pendingMasterEdit = null;
+                    return true; // Proceed with editing the copy
+                } catch (err) {
+                    console.error('Failed to create copy:', err);
+                    showToast('Failed to create copy', true);
+                    return false;
+                }
+            }
+
+            // choice === 'edit' - proceed with editing the master tile
+            state.pendingMasterEdit.resolved = true;
+            return true;
         }
 
         // Internal function to load tile without protection checks
@@ -3526,19 +3583,40 @@
         // Show edit protection dialog for MTS tiles
         function showEditProtectionDialog(tileName) {
             return new Promise((resolve) => {
-                const result = confirm(
-                    `"${tileName}" is on the Master Sheet.\n\n` +
-                    `Changes will affect everywhere this tile is used.\n\n` +
-                    `Click OK to edit the original, or Cancel to make a copy instead.`
-                );
+                const modal = document.getElementById('editProtectionModal');
+                const tileNameEl = document.getElementById('editProtectionTileName');
+                const editBtn = document.getElementById('editProtectionEditBtn');
+                const copyBtn = document.getElementById('editProtectionCopyBtn');
+                const cancelBtn = document.getElementById('editProtectionCancelBtn');
 
-                if (result) {
-                    resolve('edit');
-                } else {
-                    // Ask if they want to make a copy
-                    const makeCopy = confirm('Would you like to make a copy to edit instead?');
-                    resolve(makeCopy ? 'copy' : 'cancel');
+                tileNameEl.textContent = `"${tileName}"`;
+                modal.classList.add('active');
+
+                function cleanup() {
+                    modal.classList.remove('active');
+                    editBtn.removeEventListener('click', onEdit);
+                    copyBtn.removeEventListener('click', onCopy);
+                    cancelBtn.removeEventListener('click', onCancel);
                 }
+
+                function onEdit() {
+                    cleanup();
+                    resolve('edit');
+                }
+
+                function onCopy() {
+                    cleanup();
+                    resolve('copy');
+                }
+
+                function onCancel() {
+                    cleanup();
+                    resolve('cancel');
+                }
+
+                editBtn.addEventListener('click', onEdit);
+                copyBtn.addEventListener('click', onCopy);
+                cancelBtn.addEventListener('click', onCancel);
             });
         }
 
@@ -3565,6 +3643,7 @@
             state.currentTileName = null;
             state.currentTileSource = 'new';
             state.currentGroupId = null;
+            state.pendingMasterEdit = null;
             // Keep width/height from project settings
 
             // Reset grid to 1x1
@@ -4611,8 +4690,15 @@
             }
         }
 
-        function handleMouseDown(e) {
+        async function handleMouseDown(e) {
             const { x, y } = getPixelPos(e);
+
+            // Check for pending master edit - show dialog before allowing modifications
+            const isModifyingTool = ['pencil', 'eraser', 'fill'].includes(state.tool);
+            if (isModifyingTool && state.pendingMasterEdit && !state.pendingMasterEdit.resolved) {
+                const canProceed = await resolvePendingMasterEdit();
+                if (!canProceed) return;
+            }
 
             // Handle floating selection first (takes priority over tools)
             if (state.floatingSelection) {
