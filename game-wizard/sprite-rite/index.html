@@ -4142,13 +4142,18 @@
             }
 
             // Initialize generation queue
+            console.log('initAIGeneration - GenerationQueue:', typeof GenerationQueue, 'panel:', elements.generationQueuePanel);
             if (typeof GenerationQueue !== 'undefined' && elements.generationQueuePanel) {
+                console.log('Creating GenerationQueue...');
                 state.generationQueue = new GenerationQueue({
                     onImport: handleGeneratedAsset,
                     onError: (error) => showToast(error, 'error'),
                     onJobsChange: updateQueueCount
                 });
                 state.generationQueue.createUI(elements.generationQueuePanel);
+                console.log('GenerationQueue created successfully:', state.generationQueue);
+            } else {
+                console.warn('GenerationQueue NOT created - GenerationQueue:', typeof GenerationQueue, 'panel:', elements.generationQueuePanel);
             }
 
             // Setup event listeners
@@ -4390,7 +4395,9 @@
 
                 if (result.jobId) {
                     // Save to database and add to queue
+                    console.log('state.generationQueue:', state.generationQueue);
                     if (state.generationQueue) {
+                        console.log('Adding job to queue...');
                         await state.generationQueue.addJob({
                             jobId: result.jobId,
                             assetId: result.characterId,
