@@ -4384,7 +4384,7 @@
             try {
                 const client = new PixelLabClient();
                 client.init(crucibleClient);
-                const result = await client.createCharacter(description, options);
+                const result = await client.createCharacter({ description, ...options });
 
                 if (result.jobId) {
                     // Save to database and add to queue
@@ -4441,7 +4441,7 @@
             try {
                 const client = new PixelLabClient();
                 client.init(crucibleClient);
-                const result = await client.createMapObject(description, options);
+                const result = await client.createMapObject({ description, ...options });
 
                 if (result.jobId) {
                     if (state.generationQueue) {

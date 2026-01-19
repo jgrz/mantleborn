@@ -1789,7 +1789,7 @@
             try {
                 const client = new PixelLabClient();
                 client.init(crucibleClient);
-                const result = await client.createCharacter(prompt, options);
+                const result = await client.createCharacter({ description: prompt, ...options });
                 console.log('PixelLab result:', result);
 
                 if (result.jobId) {
