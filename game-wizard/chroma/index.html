@@ -941,12 +941,38 @@
             try {
                 if (state.assetType === 'tiles') {
                     // Load from master tile sheet
-                    const masterSheet = await MasterSheet.load(state.projectId, 'tiles');
-                    state.assets = masterSheet?.tiles || [];
+                    const masterSheet = await crucibleClient.getMasterTileSheet(state.projectId);
+                    // Convert atlas sprites object to array
+                    state.assets = [];
+                    if (masterSheet?.atlas?.sprites) {
+                        for (const [name, def] of Object.entries(masterSheet.atlas.sprites)) {
+                            state.assets.push({
+                                name,
+                                x: def.x,
+                                y: def.y,
+                                width: def.w,
+                                height: def.h,
+                                masterPng: masterSheet.png
+                            });
+                        }
+                    }
                 } else {
                     // Load from master sprite sheet
-                    const masterSheet = await MasterSheet.load(state.projectId, 'sprites');
-                    state.assets = masterSheet?.sprites || [];
+                    const masterSheet = await crucibleClient.getMasterSpriteSheet(state.projectId);
+                    // Convert atlas sprites object to array
+                    state.assets = [];
+                    if (masterSheet?.atlas?.sprites) {
+                        for (const [name, def] of Object.entries(masterSheet.atlas.sprites)) {
+                            state.assets.push({
+                                name,
+                                x: def.x,
+                                y: def.y,
+                                width: def.w,
+                                height: def.h,
+                                masterPng: masterSheet.png
+                            });
+                        }
+                    }
                 }
 
                 renderAssetGrid();
@@ -956,13 +982,27 @@
             }
         }
 
-        function renderAssetGrid() {
+        async function renderAssetGrid() {
             if (state.assets.length === 0) {
                 elements.assetGrid.innerHTML = `<div class="asset-empty">No ${state.assetType} found.<br>Create some in ${state.assetType === 'tiles' ? 'Tilesmith' : 'Sprite-Rite'} first.</div>`;
                 return;
             }
 
             elements.assetGrid.innerHTML = '';
+
+            // Load the master PNG once
+            const masterPng = state.assets[0]?.masterPng;
+            let masterImg = null;
+
+            if (masterPng) {
+                masterImg = new Image();
+                await new Promise((resolve, reject) => {
+                    masterImg.onload = resolve;
+                    masterImg.onerror = reject;
+                    masterImg.src = masterPng;
+                });
+            }
+
             state.assets.forEach((asset, index) => {
                 const item = document.createElement('div');
                 item.className = 'asset-item';
@@ -975,21 +1015,16 @@
                 // Create canvas for the asset
                 const canvas = document.createElement('canvas');
                 const ctx = canvas.getContext('2d');
+                canvas.width = asset.width;
+                canvas.height = asset.height;
 
-                if (asset.imageData) {
-                    canvas.width = asset.width || asset.imageData.width;
-                    canvas.height = asset.height || asset.imageData.height;
-
-                    // Convert base64 to ImageData if needed
-                    if (typeof asset.imageData === 'string') {
-                        const img = new Image();
-                        img.onload = () => {
-                            ctx.drawImage(img, 0, 0);
-                        };
-                        img.src = asset.imageData;
-                    } else {
-                        ctx.putImageData(asset.imageData, 0, 0);
-                    }
+                // Extract this asset from the master sheet
+                if (masterImg) {
+                    ctx.drawImage(
+                        masterImg,
+                        asset.x, asset.y, asset.width, asset.height,
+                        0, 0, asset.width, asset.height
+                    );
                 }
 
                 const name = document.createElement('div');
@@ -1050,6 +1085,30 @@
             showToast(`Parsed ${state.palette.length} colors`);
         }
 
+        // Helper function to extract an asset's image data from the master sheet
+        async function getAssetImageData(asset) {
+            if (!asset || !asset.masterPng) return null;
+
+            const masterImg = new Image();
+            await new Promise((resolve, reject) => {
+                masterImg.onload = resolve;
+                masterImg.onerror = reject;
+                masterImg.src = asset.masterPng;
+            });
+
+            const canvas = document.createElement('canvas');
+            const ctx = canvas.getContext('2d');
+            canvas.width = asset.width;
+            canvas.height = asset.height;
+            ctx.drawImage(
+                masterImg,
+                asset.x, asset.y, asset.width, asset.height,
+                0, 0, asset.width, asset.height
+            );
+
+            return ctx.getImageData(0, 0, canvas.width, canvas.height);
+        }
+
         async function extractPalette() {
             if (state.selectedAssets.length === 0) {
                 showToast('Select an asset first', 'error');
@@ -1059,34 +1118,20 @@
             const assetIndex = state.selectedAssets[0];
             const asset = state.assets[assetIndex];
 
-            if (!asset || !asset.imageData) {
+            if (!asset || !asset.masterPng) {
                 showToast('Asset has no image data', 'error');
                 return;
             }
 
             const colorCount = parseInt(elements.extractCount.value);
 
-            // Get image data
-            const canvas = document.createElement('canvas');
-            const ctx = canvas.getContext('2d');
-
-            if (typeof asset.imageData === 'string') {
-                const img = new Image();
-                await new Promise((resolve, reject) => {
-                    img.onload = resolve;
-                    img.onerror = reject;
-                    img.src = asset.imageData;
-                });
-                canvas.width = img.width;
-                canvas.height = img.height;
-                ctx.drawImage(img, 0, 0);
-            } else {
-                canvas.width = asset.imageData.width;
-                canvas.height = asset.imageData.height;
-                ctx.putImageData(asset.imageData, 0, 0);
+            // Get image data from master sheet
+            const imageData = await getAssetImageData(asset);
+            if (!imageData) {
+                showToast('Failed to extract asset image', 'error');
+                return;
             }
 
-            const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
             state.palette = extractColorsKMeans(imageData, colorCount);
 
             renderPaletteGrid();
@@ -1216,32 +1261,17 @@
             const assetIndex = state.selectedAssets[0];
             const asset = state.assets[assetIndex];
 
-            if (!asset || !asset.imageData) {
+            if (!asset || !asset.masterPng) {
                 showToast('Asset has no image data', 'error');
                 return;
             }
 
-            // Get original image data
-            const canvas = document.createElement('canvas');
-            const ctx = canvas.getContext('2d');
-
-            if (typeof asset.imageData === 'string') {
-                const img = new Image();
-                await new Promise((resolve, reject) => {
-                    img.onload = resolve;
-                    img.onerror = reject;
-                    img.src = asset.imageData;
-                });
-                canvas.width = img.width;
-                canvas.height = img.height;
-                ctx.drawImage(img, 0, 0);
-            } else {
-                canvas.width = asset.imageData.width;
-                canvas.height = asset.imageData.height;
-                ctx.putImageData(asset.imageData, 0, 0);
+            // Get original image data from master sheet
+            const originalData = await getAssetImageData(asset);
+            if (!originalData) {
+                showToast('Failed to extract asset image', 'error');
+                return;
             }
-
-            const originalData = ctx.getImageData(0, 0, canvas.width, canvas.height);
             state.originalData = new ImageData(
                 new Uint8ClampedArray(originalData.data),
                 originalData.width,
@@ -1267,7 +1297,7 @@
             state.previewAsset = asset;
 
             // Check for dither warning
-            const isSmall = canvas.width <= 32 && canvas.height <= 32;
+            const isSmall = asset.width <= 32 && asset.height <= 32;
             elements.ditherWarning.classList.toggle('visible', isSmall && dithering !== 'none');
 
             // Show preview
@@ -1587,24 +1617,37 @@
                 const assetIndex = state.selectedAssets[0];
                 const asset = state.assets[assetIndex];
 
-                if (elements.overwriteOriginal.checked) {
-                    // Update existing asset
-                    asset.imageData = base64;
-                } else {
-                    // Create new asset with _chroma suffix
-                    const newAsset = {
-                        ...asset,
-                        name: `${asset.name || 'asset'}_chroma`,
-                        imageData: base64
-                    };
-                    state.assets.push(newAsset);
-                }
+                // Determine the name for the new/updated asset
+                const saveName = elements.overwriteOriginal.checked
+                    ? asset.name
+                    : `${asset.name || 'asset'}_chroma`;
 
-                // Save to master sheet
+                // Save to master sheet using crucibleClient
                 if (state.assetType === 'tiles') {
-                    await MasterSheet.save(state.projectId, 'tiles', { tiles: state.assets });
+                    if (elements.overwriteOriginal.checked) {
+                        // Remove old tile first, then add new one
+                        await crucibleClient.removeTileFromMasterSheet(state.projectId, asset.name);
+                    }
+                    await crucibleClient.publishToMasterTileSheet(
+                        state.projectId,
+                        saveName,
+                        base64,
+                        state.quantizedData.width,
+                        state.quantizedData.height,
+                        'chroma'
+                    );
                 } else {
-                    await MasterSheet.save(state.projectId, 'sprites', { sprites: state.assets });
+                    if (elements.overwriteOriginal.checked) {
+                        await crucibleClient.removeSpriteFromMasterSheet(state.projectId, asset.name);
+                    }
+                    await crucibleClient.publishToMasterSpriteSheet(
+                        state.projectId,
+                        saveName,
+                        base64,
+                        state.quantizedData.width,
+                        state.quantizedData.height,
+                        'chroma'
+                    );
                 }
 
                 elements.saveIndicator.textContent = 'Saved';
@@ -1764,27 +1807,61 @@
             toolName: 'Chroma',
             toolIcon: '&#127912;',
             accentColor: '#a855f7',
-            docs: {
-                overview: `Chroma is a palette restriction tool for applying color palettes to your pixel art assets.`,
-                sections: [
-                    {
-                        title: 'Asset Selection',
-                        content: `Select tiles or sprites from your project to apply palette restrictions. Use Ctrl/Cmd+click to select multiple assets.`
-                    },
-                    {
-                        title: 'Palette Sources',
-                        content: `• **Preset**: Choose from classic palettes like Game Boy, NES, PICO-8\n• **Custom**: Enter hex codes manually\n• **Extract**: Automatically extract colors from an asset\n• **Project**: Use saved project palettes`
-                    },
-                    {
-                        title: 'Quantization',
-                        content: `• **None**: Maps each pixel to nearest palette color\n• **Ordered (Bayer)**: Uses pattern dithering for gradients\n• **Floyd-Steinberg**: Error diffusion for smooth gradients`
-                    },
-                    {
-                        title: 'Touch-up Mode',
-                        content: `For small assets (32x32 or smaller), you can manually paint pixels with palette colors to fix any unwanted quantization artifacts.`
-                    }
-                ]
-            }
+            docs: [
+                {
+                    id: 'overview',
+                    title: 'Overview',
+                    content: `
+                        <h1>Chroma</h1>
+                        <p>Chroma is a palette restriction tool for applying color palettes to your pixel art assets. Unify your art style by quantizing colors to a specific palette.</p>
+                        <h2>Key Features</h2>
+                        <ul>
+                            <li>Apply preset palettes (Game Boy, NES, PICO-8, etc.)</li>
+                            <li>Extract palettes from existing assets</li>
+                            <li>Multiple dithering algorithms</li>
+                            <li>Touch-up mode for small assets</li>
+                        </ul>
+                    `
+                },
+                {
+                    id: 'palettes',
+                    title: 'Palette Sources',
+                    content: `
+                        <h1>Palette Sources</h1>
+                        <p>Choose where your target palette comes from:</p>
+                        <h2>Preset</h2>
+                        <p>Classic gaming palettes like Game Boy, CGA, NES, PICO-8, Lospec 16, and ENDESGA 32.</p>
+                        <h2>Custom</h2>
+                        <p>Enter hex codes manually, one per line.</p>
+                        <h2>Extract</h2>
+                        <p>Automatically extract dominant colors from a selected asset using K-means clustering.</p>
+                        <h2>Project</h2>
+                        <p>Use palettes you've saved to your project.</p>
+                    `
+                },
+                {
+                    id: 'quantization',
+                    title: 'Quantization',
+                    content: `
+                        <h1>Quantization Options</h1>
+                        <h2>None (Nearest Color)</h2>
+                        <p>Maps each pixel to the closest color in the palette. Clean results, but can lose gradients.</p>
+                        <h2>Ordered (Bayer Matrix)</h2>
+                        <p>Uses a pattern-based dithering for smooth gradients. Good for retro aesthetics.</p>
+                        <h2>Floyd-Steinberg</h2>
+                        <p>Error diffusion dithering for the smoothest gradients. Best for larger images.</p>
+                    `
+                },
+                {
+                    id: 'touchup',
+                    title: 'Touch-up Mode',
+                    content: `
+                        <h1>Touch-up Mode</h1>
+                        <p>For small assets (32x32 or smaller), Chroma enables touch-up mode where you can manually paint pixels with palette colors to fix any unwanted quantization artifacts.</p>
+                        <p>Click on the palette swatches to select a color, then click pixels in the preview to paint them.</p>
+                    `
+                }
+            ]
         });
     </script>
 </body>
