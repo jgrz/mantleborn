@@ -1670,11 +1670,12 @@
 
             // Initialize generation queue
             if (typeof GenerationQueue !== 'undefined' && elements.generationQueuePanel) {
-                state.generationQueue = new GenerationQueue(elements.generationQueuePanel, {
+                state.generationQueue = new GenerationQueue({
                     onImport: handlePixelLabImport,
                     onError: (error) => showToast(error, 'error'),
                     onJobsChange: updateQueueCount
                 });
+                state.generationQueue.createUI(elements.generationQueuePanel);
             }
 
             // Setup engine toggle
@@ -1842,6 +1843,14 @@
 
             try {
                 const crucible = await getCrucible();
+
+                // Initialize generation queue with project
+                if (state.generationQueue) {
+                    const pixelLabClient = new PixelLabClient();
+                    pixelLabClient.init(crucible);
+                    state.generationQueue.init(crucible, pixelLabClient, projectId);
+                    await state.generationQueue.loadJobs();
+                }
 
                 // Load characters
                 state.characters = await crucible.getCharacters(projectId);
