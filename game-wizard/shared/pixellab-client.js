@@ -362,8 +362,7 @@ class PixelLabClient {
         const body = {
             action: 'create_map_object',
             description,
-            width,
-            height,
+            image_size: { width, height },
             view,
             outline: outline || style.outline || 'single color outline',
             shading: shading || style.shading || 'medium shading',

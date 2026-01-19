@@ -1850,17 +1850,16 @@
                         <div class="ai-form-group">
                             <label class="ai-form-label">Outline</label>
                             <select class="ai-form-select" id="aiMapObjectOutline">
-                                <option value="single_color_black_outline">Black Outline</option>
-                                <option value="single_color_outline">Single Color</option>
-                                <option value="colored_outline">Colored Outline</option>
-                                <option value="no_outline">No Outline</option>
+                                <option value="single color outline">Single Color Outline</option>
+                                <option value="selective outline">Selective Outline</option>
+                                <option value="lineless">Lineless</option>
                             </select>
                         </div>
                         <div class="ai-form-group">
                             <label class="ai-form-label">View</label>
                             <select class="ai-form-select" id="aiMapObjectView">
-                                <option value="high_top_down">High Top-Down</option>
-                                <option value="low_top_down" selected>Low Top-Down</option>
+                                <option value="high top-down">High Top-Down</option>
+                                <option value="low top-down" selected>Low Top-Down</option>
                                 <option value="side">Side View</option>
                             </select>
                         </div>
@@ -4312,8 +4311,8 @@
             // Load project settings for defaults
             let width = 32;
             let height = 32;
-            let outline = 'single_color_black_outline';
-            let view = 'low_top_down';
+            let outline = 'single color outline';
+            let view = 'low top-down';
 
             if (state.projectId && typeof crucibleClient !== 'undefined') {
                 try {

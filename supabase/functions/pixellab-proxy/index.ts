@@ -30,7 +30,7 @@ const ENDPOINT_MAP: Record<string, string> = {
   "get_isometric_tile": "/isometric-tiles",
 
   // Map objects
-  "create_map_object": "/generate-map-object",
+  "create_map_object": "/map-objects",
   "get_map_object": "/map-objects",
 
   // Skeleton
