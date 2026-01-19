@@ -4629,20 +4629,23 @@
                 return;
             }
 
-            // Extract selected area as base64
+            // Extract selected area and scale to minimum 32x32
             const { x, y, w, h } = state.selection;
+
+            // API requires minimum 32x32 - init_image must match output size
+            const outputWidth = Math.max(32, w);
+            const outputHeight = Math.max(32, h);
+
             const tempCanvas = document.createElement('canvas');
-            tempCanvas.width = w;
-            tempCanvas.height = h;
+            tempCanvas.width = outputWidth;
+            tempCanvas.height = outputHeight;
             const tempCtx = tempCanvas.getContext('2d');
-            tempCtx.drawImage(state.image, x, y, w, h, 0, 0, w, h);
+            // Use nearest-neighbor scaling to preserve pixel art
+            tempCtx.imageSmoothingEnabled = false;
+            tempCtx.drawImage(state.image, x, y, w, h, 0, 0, outputWidth, outputHeight);
             // Get raw base64 without the data URL prefix
             const dataUrl = tempCanvas.toDataURL('image/png');
             const base64Data = dataUrl.split(',')[1];
-
-            // API requires minimum 32x32
-            const outputWidth = Math.max(32, w);
-            const outputHeight = Math.max(32, h);
 
             const options = {
                 width: outputWidth,
