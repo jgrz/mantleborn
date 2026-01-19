@@ -1710,8 +1710,11 @@
                 elements.viewQueueBtn.addEventListener('click', () => {
                     console.log('Queue button clicked, generationQueue:', state.generationQueue);
                     console.log('Queue container:', state.generationQueue?.container);
+                    console.log('isVisible before toggle:', state.generationQueue?.isVisible);
                     if (state.generationQueue) {
                         state.generationQueue.toggle();
+                        console.log('isVisible after toggle:', state.generationQueue?.isVisible);
+                        console.log('Container classes:', state.generationQueue?.container?.className);
                     } else {
                         console.error('No generation queue initialized!');
                     }
