@@ -4604,24 +4604,31 @@
         }
 
         function loadImageIntoEditor(img, filename) {
-            // Load an image into the sprite editor
+            // Load an image into the sprite editor (matches loadSpriteSheetImage pattern)
             state.image = img;
+            state.imageName = filename;
+            state.imagePath = null; // Local image, no URL
             state.imageWidth = img.width;
             state.imageHeight = img.height;
-            state.imageName = filename;
+            state.imageData = null; // Clear cached pixel data
+            state.islandMap = null; // Clear cached island map
             state.sprites = [];
+            state.selection = null;
             state.selectedSpriteIndex = -1;
+            state.editingSpriteIndex = -1;
+            hideCreatePanel();
 
             // Update UI
-            elements.canvasContainer.style.display = 'block';
             elements.dropZone.style.display = 'none';
-            setupCanvases();
-            drawImage();
-            drawGrid();
-            clearSelection();
+            elements.canvasContainer.style.display = 'block';
+
+            updateCanvasSize();
+            render();
+
+            elements.imageInfo.textContent = `${filename} — ${img.width}×${img.height}px`;
             updateSpriteList();
-            updateSpriteCount();
-            elements.imageInfo.textContent = `${img.width} x ${img.height}`;
+            updateJsonPreview();
+            showToast('Image loaded into editor');
         }
 
         // Keyboard shortcuts

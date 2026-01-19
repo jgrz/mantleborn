@@ -14,6 +14,7 @@ class GenerationQueue {
         // Callbacks
         this.onImport = options.onImport || null;
         this.onRetry = options.onRetry || null;
+        this.onJobsChange = options.onJobsChange || null;
 
         // State
         this.jobs = [];
@@ -700,14 +701,19 @@ class GenerationQueue {
      */
     updateBadge() {
         const badge = this.container?.querySelector('.gq-badge');
-        if (!badge) return;
+        if (badge) {
+            const activeCount = this.jobs.filter(j =>
+                j.status === 'pending' || j.status === 'processing' || j.status === 'completed'
+            ).length;
 
-        const activeCount = this.jobs.filter(j =>
-            j.status === 'pending' || j.status === 'processing' || j.status === 'completed'
-        ).length;
+            badge.textContent = activeCount;
+            badge.style.display = activeCount > 0 ? 'inline-block' : 'none';
+        }
 
-        badge.textContent = activeCount;
-        badge.style.display = activeCount > 0 ? 'inline-block' : 'none';
+        // Notify external listeners
+        if (this.onJobsChange) {
+            this.onJobsChange();
+        }
     }
 
     /**
