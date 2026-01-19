@@ -1790,11 +1790,12 @@
                 const client = new PixelLabClient();
                 client.init(crucibleClient);
                 const result = await client.createCharacter(prompt, options);
+                console.log('PixelLab result:', result);
 
-                if (result.job_id) {
+                if (result.jobId) {
                     if (state.generationQueue) {
                         await state.generationQueue.addJob({
-                            pixellab_job_id: result.job_id,
+                            pixellab_job_id: result.jobId,
                             job_type: 'character',
                             prompt: prompt,
                             parameters: options,
