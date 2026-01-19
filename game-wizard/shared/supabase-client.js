@@ -18,6 +18,7 @@ class CrucibleClient {
     constructor() {
         this.client = null;
         this.initialized = false;
+        this.supabaseUrl = SUPABASE_URL;  // Expose URL for PixelLab client
         this.context = {
             projectId: null,
             projectName: null,
