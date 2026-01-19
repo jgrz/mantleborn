@@ -2340,6 +2340,14 @@
 
                 // Load master sheet preview
                 updateMasterSheetPreview();
+
+                // Initialize generation queue with project
+                if (state.generationQueue) {
+                    const pixelLabClient = new PixelLabClient();
+                    pixelLabClient.init(crucibleClient);
+                    state.generationQueue.init(crucibleClient, pixelLabClient, projectId);
+                    await state.generationQueue.loadJobs();
+                }
             } catch (error) {
                 console.error('Failed to load spritesheets:', error);
                 showToast('Failed to load sprite sheets', 'error');
@@ -4091,11 +4099,12 @@
             }
 
             // Initialize generation queue
-            if (typeof GenerationQueue !== 'undefined') {
-                state.generationQueue = new GenerationQueue(elements.generationQueuePanel, {
+            if (typeof GenerationQueue !== 'undefined' && elements.generationQueuePanel) {
+                state.generationQueue = new GenerationQueue({
                     onImport: handleGeneratedAsset,
                     onError: (error) => showToast(error, 'error')
                 });
+                state.generationQueue.createUI(elements.generationQueuePanel);
             }
 
             // Setup event listeners
