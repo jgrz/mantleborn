@@ -763,11 +763,25 @@ class GenerationQueue {
     }
 
     /**
-     * Dismiss a job (remove from UI)
+     * Dismiss a job (remove from UI and database)
      */
     async dismissJob(jobId) {
         const index = this.jobs.findIndex(j => j.id === jobId || j.jobId === jobId);
         if (index >= 0) {
+            const job = this.jobs[index];
+
+            // Delete from database if we have a database ID
+            if (job.id && this.crucibleClient) {
+                try {
+                    await this.crucibleClient.client
+                        .from('pixel_generations')
+                        .delete()
+                        .eq('id', job.id);
+                } catch (e) {
+                    console.error('Failed to delete job from database:', e);
+                }
+            }
+
             this.jobs.splice(index, 1);
             this.render();
             this.updateBadge();
