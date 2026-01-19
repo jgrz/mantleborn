@@ -1522,9 +1522,7 @@
         // DOM Elements
         // ==========================================
         const elements = {
-            projectSelect: document.getElementById('projectSelect'),
             saveIndicator: document.getElementById('saveIndicator'),
-            authIndicator: document.getElementById('authIndicator'),
             previewEmpty: document.getElementById('previewEmpty'),
             previewWrapper: document.getElementById('previewWrapper'),
             previewCanvas: document.getElementById('previewCanvas'),
@@ -1620,14 +1618,11 @@
 
                 const crucible = await getCrucible();
                 state.user = await crucible.getUser();
-                updateAuthIndicator();
-                await loadProjects();
 
                 // Sync with persistent header project selection
                 if (!state.projectId && window.gwPersistentHeader) {
                     const saved = window.gwPersistentHeader.getSelectedProject();
                     if (saved?.projectId && state.user) {
-                        elements.projectSelect.value = saved.projectId;
                         await selectProject(saved.projectId);
                     }
                 }
@@ -1636,7 +1631,6 @@
                 window.addEventListener('gw:projectChange', async (e) => {
                     const { projectId } = e.detail;
                     if (projectId && projectId !== state.projectId) {
-                        elements.projectSelect.value = projectId;
                         await selectProject(projectId);
                     }
                 });
@@ -1819,41 +1813,6 @@
             // For now, show a link
             const spriteRiteUrl = `/game-wizard/sprite-rite/?project=${state.projectId}`;
             console.log('Import in Sprite-Rite:', spriteRiteUrl, job);
-        }
-
-        function updateAuthIndicator() {
-            if (state.user) {
-                const name = state.user.user_metadata?.display_name || state.user.email?.split('@')[0] || 'User';
-                elements.authIndicator.classList.add('logged-in');
-                elements.authIndicator.querySelector('.auth-text').textContent = name;
-            } else {
-                elements.authIndicator.classList.remove('logged-in');
-                elements.authIndicator.querySelector('.auth-text').textContent = 'Guest';
-            }
-        }
-
-        async function loadProjects() {
-            try {
-                const crucible = await getCrucible();
-                const projects = await crucible.getProjects();
-
-                elements.projectSelect.innerHTML = '<option value="">-- Select Project --</option>';
-                projects.forEach(p => {
-                    const opt = document.createElement('option');
-                    opt.value = p.id;
-                    opt.textContent = p.name;
-                    elements.projectSelect.appendChild(opt);
-                });
-
-                // Restore last project
-                const lastProject = localStorage.getItem('character_forge_project');
-                if (lastProject && projects.find(p => p.id === lastProject)) {
-                    elements.projectSelect.value = lastProject;
-                    await selectProject(lastProject);
-                }
-            } catch (err) {
-                console.error('Failed to load projects:', err);
-            }
         }
 
         async function selectProject(projectId) {
@@ -3075,16 +3034,6 @@
         // Event Listeners
         // ==========================================
         function setupEventListeners() {
-            elements.projectSelect.addEventListener('change', (e) => {
-                const projectId = e.target.value;
-                const projectName = e.target.options[e.target.selectedIndex]?.text || '';
-                selectProject(projectId);
-                // Sync to persistent header
-                if (window.gwPersistentHeader) {
-                    window.gwPersistentHeader.setProject(projectId, projectName);
-                }
-            });
-
             elements.newCharacterBtn.addEventListener('click', createCharacter);
 
             // AI Generation Modal

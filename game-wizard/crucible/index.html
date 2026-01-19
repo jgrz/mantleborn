@@ -1820,8 +1820,6 @@
             settingsTransition: document.getElementById('settingsTransition'),
             settingsCharSize: document.getElementById('settingsCharSize'),
             settingsDirections: document.getElementById('settingsDirections'),
-            // Auth
-            authIndicator: document.getElementById('authIndicator')
         };
 
         // =============================================
@@ -2722,15 +2720,6 @@
                 showToast('Supabase not configured - see instructions', 'error');
             }
 
-            // Listen for auth state changes
-            crucible.client?.auth.onAuthStateChange((event, session) => {
-                updateAuthIndicator(session?.user);
-            });
-
-            // Check initial auth state
-            const user = await crucible.getUser();
-            updateAuthIndicator(user);
-
             // Initialize notifications
             if (typeof initNotifications === 'function') {
                 await initNotifications('#headerActions');
@@ -2755,17 +2744,6 @@
                     await selectProject(projectId);
                 }
             });
-        }
-
-        function updateAuthIndicator(user) {
-            if (user) {
-                const displayName = user.user_metadata?.display_name || user.email?.split('@')[0] || 'User';
-                elements.authIndicator.classList.add('logged-in');
-                elements.authIndicator.querySelector('.auth-text').textContent = displayName;
-            } else {
-                elements.authIndicator.classList.remove('logged-in');
-                elements.authIndicator.querySelector('.auth-text').textContent = 'Guest';
-            }
         }
 
         init();

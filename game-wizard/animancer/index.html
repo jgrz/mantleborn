@@ -1255,10 +1255,8 @@
         // DOM Elements
         // ==========================================
         const elements = {
-            projectSelect: document.getElementById('projectSelect'),
             sourceFilter: document.getElementById('sourceFilter'),
             saveIndicator: document.getElementById('saveIndicator'),
-            authIndicator: document.getElementById('authIndicator'),
             paletteEmpty: document.getElementById('paletteEmpty'),
             paletteContent: document.getElementById('paletteContent'),
             spriteGrid: document.getElementById('spriteGrid'),
@@ -1312,11 +1310,8 @@
 
             await crucibleClient.init();
             state.user = await crucibleClient.getUser();
-            updateAuthIndicator();
 
-            if (state.user) {
-                await loadProjects();
-            } else {
+            if (!state.user) {
                 loadFromLocalStorage();
             }
 
@@ -1324,7 +1319,6 @@
             if (!state.projectId && window.gwPersistentHeader) {
                 const saved = window.gwPersistentHeader.getSelectedProject();
                 if (saved?.projectId && state.user) {
-                    elements.projectSelect.value = saved.projectId;
                     await selectProject(saved.projectId);
                 }
             }
@@ -1333,7 +1327,6 @@
             window.addEventListener('gw:projectChange', async (e) => {
                 const { projectId } = e.detail;
                 if (projectId && projectId !== state.projectId) {
-                    elements.projectSelect.value = projectId;
                     await selectProject(projectId);
                 }
             });
@@ -1399,47 +1392,9 @@
             showToast('Animation ready! Import frames from the result.', 'success');
         }
 
-        function updateAuthIndicator() {
-            const indicator = elements.authIndicator;
-            const textEl = indicator.querySelector('.auth-text');
-
-            if (state.user) {
-                indicator.classList.add('logged-in');
-                const name = state.user.user_metadata?.display_name || state.user.email?.split('@')[0] || 'User';
-                textEl.textContent = name;
-            } else {
-                indicator.classList.remove('logged-in');
-                textEl.textContent = 'Guest';
-            }
-        }
-
         // ==========================================
         // Project & Spritesheet Loading
         // ==========================================
-        async function loadProjects() {
-            try {
-                const projects = await crucibleClient.getProjects();
-
-                elements.projectSelect.innerHTML = '<option value="">-- Select Project --</option>';
-                projects.forEach(p => {
-                    const opt = document.createElement('option');
-                    opt.value = p.id;
-                    opt.textContent = p.name;
-                    elements.projectSelect.appendChild(opt);
-                });
-
-                // Restore last selected project
-                const lastProject = localStorage.getItem('animstation_project');
-                if (lastProject && projects.find(p => p.id === lastProject)) {
-                    elements.projectSelect.value = lastProject;
-                    await selectProject(lastProject);
-                }
-            } catch (err) {
-                console.error('Failed to load projects:', err);
-                showToast('Failed to load projects');
-            }
-        }
-
         async function selectProject(projectId) {
             state.projectId = projectId;
             state.sprites = [];
@@ -2523,16 +2478,6 @@
         // Event Listeners
         // ==========================================
         function setupEventListeners() {
-            elements.projectSelect.addEventListener('change', (e) => {
-                const projectId = e.target.value;
-                const projectName = e.target.options[e.target.selectedIndex]?.text || '';
-                selectProject(projectId);
-                // Sync to persistent header
-                if (window.gwPersistentHeader) {
-                    window.gwPersistentHeader.setProject(projectId, projectName);
-                }
-            });
-
             elements.sourceFilter.addEventListener('change', (e) => {
                 state.sourceFilter = e.target.value;
                 renderSpritePalette();

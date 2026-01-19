@@ -1138,8 +1138,6 @@
         // ELEMENTS
         // ==========================================
         const elements = {
-            projectSelect: document.getElementById('projectSelect'),
-            authIndicator: document.getElementById('authIndicator'),
             canvasArea: document.getElementById('canvasArea'),
             workspace: document.getElementById('workspace'),
             workspaceCanvas: document.getElementById('workspaceCanvas'),
@@ -1214,23 +1212,16 @@
             console.log('[Frameweft] crucibleClient.init() done');
             state.user = await crucibleClient.getUser();
             console.log('[Frameweft] getUser returned:', state.user);
-            updateAuthIndicator();
 
             crucibleClient.onAuthStateChange((event, session) => {
                 console.log('[Frameweft] onAuthStateChange:', event, session?.user?.email);
                 state.user = session?.user || null;
-                updateAuthIndicator();
             });
-
-            const projects = await crucibleClient.getMyProjects();
-            console.log('[Frameweft] getMyProjects returned:', projects?.length, 'projects');
-            populateProjectSelector(projects);
 
             // Sync with persistent header project selection
             if (!state.projectId && window.gwPersistentHeader) {
                 const saved = window.gwPersistentHeader.getSelectedProject();
                 if (saved?.projectId && state.user) {
-                    elements.projectSelect.value = saved.projectId;
                     await loadProject(saved.projectId);
                 }
             }
@@ -1239,7 +1230,6 @@
             window.addEventListener('gw:projectChange', async (e) => {
                 const { projectId } = e.detail;
                 if (projectId && projectId !== state.projectId) {
-                    elements.projectSelect.value = projectId;
                     await loadProject(projectId);
                 }
             });
@@ -1247,39 +1237,6 @@
             setupEventListeners();
             resizeWorkspace();
             renderWorkspace();
-        }
-
-        function updateAuthIndicator() {
-            if (state.user) {
-                const name = state.user.user_metadata?.display_name || state.user.email?.split('@')[0] || 'User';
-                elements.authIndicator.classList.add('logged-in');
-                elements.authIndicator.innerHTML = `
-                    <div class="auth-dot"></div>
-                    <span>${name}</span>
-                `;
-            } else {
-                elements.authIndicator.classList.remove('logged-in');
-                elements.authIndicator.innerHTML = `
-                    <div class="auth-dot"></div>
-                    <span>Guest</span>
-                `;
-            }
-        }
-
-        function populateProjectSelector(projects) {
-            elements.projectSelect.innerHTML = '<option value="">Select Project</option>';
-            projects.forEach(project => {
-                const option = document.createElement('option');
-                option.value = project.id;
-                option.textContent = project.name;
-                elements.projectSelect.appendChild(option);
-            });
-
-            const context = crucibleClient.getContext();
-            if (context?.projectId) {
-                elements.projectSelect.value = context.projectId;
-                loadProject(context.projectId);
-            }
         }
 
         async function loadProject(projectId) {
@@ -1366,17 +1323,6 @@
         // EVENT LISTENERS
         // ==========================================
         function setupEventListeners() {
-            // Project selection
-            elements.projectSelect.addEventListener('change', (e) => {
-                const projectId = e.target.value;
-                const projectName = e.target.options[e.target.selectedIndex]?.text || '';
-                if (projectId) loadProject(projectId);
-                // Sync to persistent header
-                if (window.gwPersistentHeader) {
-                    window.gwPersistentHeader.setProject(projectId, projectName);
-                }
-            });
-
             // File upload
             elements.uploadBtn.addEventListener('click', () => elements.fileInput.click());
             elements.fileInput.addEventListener('change', handleFileSelect);
