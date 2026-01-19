@@ -19,6 +19,7 @@ class CrucibleClient {
         this.client = null;
         this.initialized = false;
         this.supabaseUrl = SUPABASE_URL;  // Expose URL for PixelLab client
+        this.anonKey = SUPABASE_ANON_KEY;  // Expose anon key for edge function calls
         this.context = {
             projectId: null,
             projectName: null,

@@ -42,6 +42,7 @@ class PixelLabClient {
             method,
             headers: {
                 'Content-Type': 'application/json',
+                'apikey': this.supabaseClient.anonKey || ''
             }
         };
 
