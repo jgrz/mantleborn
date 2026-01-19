@@ -2256,8 +2256,9 @@
 
             let { x, y, w, h } = state.selection;
             // Handle negative width/height from dragging up/left
-            if (w < 0) { x += w; w = -w; }
-            if (h < 0) { y += h; h = -h; }
+            // w/h are now offset by 1 (e.g., -2 means 2 pixels in negative direction)
+            if (w < 0) { x += w + 1; w = -w; }
+            if (h < 0) { y += h + 1; h = -h; }
 
             // Clamp to canvas bounds
             const totalW = getTotalWidth();
@@ -4746,8 +4747,11 @@
 
             // Handle select tool - update selection bounds
             if (state.tool === 'select' && state.isDrawing && state.selection) {
-                state.selection.w = x - state.selection.x;
-                state.selection.h = y - state.selection.y;
+                // Add 1 to include the endpoint pixel in the selection
+                const dx = x - state.selection.x;
+                const dy = y - state.selection.y;
+                state.selection.w = dx >= 0 ? dx + 1 : dx - 1;
+                state.selection.h = dy >= 0 ? dy + 1 : dy - 1;
                 render();
                 return;
             }
