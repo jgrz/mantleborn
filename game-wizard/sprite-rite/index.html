@@ -4581,21 +4581,45 @@
                     }
                 });
 
-                // Convert canvas to image
-                const compositeImg = new Image();
-                compositeImg.onload = () => {
-                    // Clean up blob URLs
-                    Object.values(images).forEach(img => {
-                        if (img.src.startsWith('blob:')) {
-                            URL.revokeObjectURL(img.src);
-                        }
-                    });
+                // Clean up blob URLs
+                Object.values(images).forEach(img => {
+                    if (img.src.startsWith('blob:')) {
+                        URL.revokeObjectURL(img.src);
+                    }
+                });
 
-                    const name = job.resultData.name || job.prompt || 'character';
-                    loadImageIntoEditor(compositeImg, `${name}_rotations.png`);
-                    showToast(`Character imported! ${Object.keys(images).length} directions on sheet.`, 'success');
-                };
-                compositeImg.src = canvas.toDataURL('image/png');
+                // Convert canvas to blob and upload as spritesheet
+                const name = job.resultData.name || job.prompt || 'character';
+                const filename = `${name.replace(/[^a-z0-9]/gi, '_')}_rotations`;
+
+                canvas.toBlob(async (blob) => {
+                    try {
+                        // Create a File object from the blob
+                        const file = new File([blob], `${filename}.png`, { type: 'image/png' });
+
+                        // Upload as a spritesheet
+                        showToast('Saving to sprite sheets...');
+                        const sheet = await crucibleClient.uploadSpritesheet(state.projectId, file, {
+                            name: filename,
+                            category: 'ai_generated'
+                        });
+
+                        // Add to dropdown and select
+                        const option = document.createElement('option');
+                        option.value = sheet.id;
+                        option.textContent = sheet.name;
+                        option.dataset.url = sheet.publicUrl;
+                        elements.spriteSheetSelect.appendChild(option);
+                        elements.spriteSheetSelect.value = sheet.id;
+
+                        // Load it
+                        await selectSpritesheet(sheet.id);
+                        showToast(`Character imported! ${Object.keys(images).length} directions saved to "${sheet.name}"`, 'success');
+                    } catch (uploadError) {
+                        console.error('Failed to save spritesheet:', uploadError);
+                        showToast('Failed to save spritesheet: ' + uploadError.message, 'error');
+                    }
+                }, 'image/png');
 
             } catch (error) {
                 console.error('Character import error:', error);
