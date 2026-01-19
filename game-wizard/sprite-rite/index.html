@@ -4152,6 +4152,15 @@
                 });
                 state.generationQueue.createUI(elements.generationQueuePanel);
                 console.log('GenerationQueue created successfully:', state.generationQueue);
+
+                // If project already selected, initialize queue now
+                if (state.projectId) {
+                    const pixelLabClient = new PixelLabClient();
+                    pixelLabClient.init(crucibleClient);
+                    state.generationQueue.init(crucibleClient, pixelLabClient, state.projectId);
+                    state.generationQueue.loadJobs();
+                    console.log('Queue initialized with project:', state.projectId);
+                }
             } else {
                 console.warn('GenerationQueue NOT created - GenerationQueue:', typeof GenerationQueue, 'panel:', elements.generationQueuePanel);
             }
