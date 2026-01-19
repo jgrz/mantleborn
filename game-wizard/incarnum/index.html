@@ -1669,6 +1669,8 @@
             }
 
             // Initialize generation queue
+            console.log('GenerationQueue defined:', typeof GenerationQueue !== 'undefined');
+            console.log('generationQueuePanel:', elements.generationQueuePanel);
             if (typeof GenerationQueue !== 'undefined' && elements.generationQueuePanel) {
                 state.generationQueue = new GenerationQueue({
                     onImport: handlePixelLabImport,
@@ -1676,6 +1678,10 @@
                     onJobsChange: updateQueueCount
                 });
                 state.generationQueue.createUI(elements.generationQueuePanel);
+                console.log('GenerationQueue created:', state.generationQueue);
+                console.log('Queue container after createUI:', state.generationQueue.container);
+            } else {
+                console.error('Could not initialize GenerationQueue');
             }
 
             // Setup engine toggle
@@ -1702,8 +1708,12 @@
             // View queue button
             if (elements.viewQueueBtn) {
                 elements.viewQueueBtn.addEventListener('click', () => {
+                    console.log('Queue button clicked, generationQueue:', state.generationQueue);
+                    console.log('Queue container:', state.generationQueue?.container);
                     if (state.generationQueue) {
                         state.generationQueue.toggle();
+                    } else {
+                        console.error('No generation queue initialized!');
                     }
                 });
             }
