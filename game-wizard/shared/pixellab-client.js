@@ -104,11 +104,11 @@ class PixelLabClient {
             description,
             n_directions: directions,
             size,
-            proportions: JSON.stringify({ type: 'preset', name: proportions }),
+            proportions: { type: 'preset', name: proportions },
             view,
-            outline: style.outline || 'single color black outline',
-            shading: style.shading || 'basic shading',
-            detail: style.detail || 'medium detail'
+            outline: style.outline || 'single_color_black_outline',
+            shading: style.shading || 'basic_shading',
+            detail: style.detail || 'medium_detail'
         };
 
         if (skeletonKeypoints) {
