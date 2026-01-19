@@ -1257,6 +1257,21 @@
                 </div>
             </div>
 
+            <!-- Generate Variant -->
+            <div class="panel-section" id="variantSection" style="display: none;">
+                <div class="section-header" style="color: var(--accent-purple, #a855f7);">Generate Variant</div>
+                <p style="font-size: 11px; color: var(--stone-mid); margin-bottom: 8px;">
+                    Use the current tile as a base to generate a variation with AI.
+                </p>
+                <div class="form-group">
+                    <label class="form-label">Describe the variant</label>
+                    <input type="text" class="form-input" id="variantDescription" placeholder="e.g., cracked version, mossy, snow covered">
+                </div>
+                <button class="btn" id="generateVariantBtn" style="width: 100%; background: var(--accent-purple, #a855f7); border-color: var(--accent-purple, #a855f7); color: white;">
+                    Generate Variant
+                </button>
+            </div>
+
             <!-- Export -->
             <div class="panel-section">
                 <div class="section-header">Export</div>
@@ -1590,7 +1605,10 @@
             saveGroupBtn: document.getElementById('saveGroupBtn'),
             masterSheetStatus: document.getElementById('masterSheetStatus'),
             toast: document.getElementById('toast'),
-            generationQueuePanel: document.getElementById('generationQueuePanel')
+            generationQueuePanel: document.getElementById('generationQueuePanel'),
+            variantSection: document.getElementById('variantSection'),
+            variantDescription: document.getElementById('variantDescription'),
+            generateVariantBtn: document.getElementById('generateVariantBtn')
         };
 
         const ctx = elements.mainCanvas.getContext('2d');
@@ -1818,6 +1836,127 @@
             } catch (err) {
                 console.error('Failed to import tileset:', err);
                 showToast('Failed to import tileset: ' + err.message, true);
+            }
+        }
+
+        // ==========================================
+        // VARIANT GENERATION
+        // ==========================================
+
+        function updateVariantSection() {
+            // Show variant section when we have content on canvas
+            const hasContent = state.currentTileName || state.isDirty;
+            elements.variantSection.style.display = hasContent ? 'block' : 'none';
+        }
+
+        async function generateVariant() {
+            const description = elements.variantDescription.value.trim();
+            if (!description) {
+                showToast('Please describe the variant', true);
+                return;
+            }
+
+            if (!state.projectId) {
+                showToast('Please select a project first', true);
+                return;
+            }
+
+            // Get current canvas content as base64
+            const tempCanvas = document.createElement('canvas');
+            const totalWidth = state.width * state.gridCols;
+            const totalHeight = state.height * state.gridRows;
+            tempCanvas.width = totalWidth;
+            tempCanvas.height = totalHeight;
+            const tempCtx = tempCanvas.getContext('2d');
+            tempCtx.drawImage(elements.mainCanvas, 0, 0);
+            const dataUrl = tempCanvas.toDataURL('image/png');
+            const base64Data = dataUrl.split(',')[1];
+
+            // Ensure minimum 32x32
+            const outputWidth = Math.max(32, totalWidth);
+            const outputHeight = Math.max(32, totalHeight);
+
+            // If smaller than 32x32, scale up the init_image
+            let initBase64 = base64Data;
+            if (totalWidth < 32 || totalHeight < 32) {
+                const scaledCanvas = document.createElement('canvas');
+                scaledCanvas.width = outputWidth;
+                scaledCanvas.height = outputHeight;
+                const scaledCtx = scaledCanvas.getContext('2d');
+                scaledCtx.imageSmoothingEnabled = false;
+                scaledCtx.drawImage(elements.mainCanvas, 0, 0, totalWidth, totalHeight, 0, 0, outputWidth, outputHeight);
+                initBase64 = scaledCanvas.toDataURL('image/png').split(',')[1];
+            }
+
+            elements.generateVariantBtn.disabled = true;
+            showToast('Generating variant...', false);
+
+            try {
+                const client = new PixelLabClient();
+                client.init(crucibleClient);
+
+                const result = await client.createImageBitforge({
+                    description,
+                    width: outputWidth,
+                    height: outputHeight,
+                    outline: 'single color outline',
+                    init_image: {
+                        type: 'base64',
+                        base64: initBase64,
+                        format: 'png'
+                    },
+                    no_background: false // Tiles usually have backgrounds
+                });
+
+                // Check if we got immediate result
+                const imageData = result.raw?.data?.image;
+                if (imageData?.type === 'base64' && imageData?.base64) {
+                    // Import variant as new draft tile
+                    const variantName = (state.currentTileName || 'tile') + '_variant';
+                    const imgSrc = `data:image/${imageData.format || 'png'};base64,${imageData.base64}`;
+
+                    // Save to draft
+                    await crucibleClient.saveToDraft(state.projectId, variantName, imgSrc, outputWidth, outputHeight);
+
+                    // Reload project to show new draft
+                    await selectProject(state.projectId);
+                    switchSheetView('draft');
+
+                    // Add to queue for history
+                    if (state.generationQueue) {
+                        await state.generationQueue.addJob({
+                            type: 'tile_variant',
+                            prompt: description,
+                            status: 'imported',
+                            resultUrl: imgSrc,
+                            importedToType: 'draft_tile',
+                            importedToId: variantName
+                        });
+                    }
+
+                    showToast(`Variant "${variantName}" saved to drafts!`);
+                    elements.variantDescription.value = '';
+                } else if (result.jobId) {
+                    // Background job - add to queue
+                    if (state.generationQueue) {
+                        await state.generationQueue.addJob({
+                            jobId: result.jobId,
+                            type: 'tile_variant',
+                            prompt: description,
+                            parameters: { width: outputWidth, height: outputHeight }
+                        });
+                        state.generationQueue.show();
+                    }
+                    showToast('Variant generation queued!');
+                    elements.variantDescription.value = '';
+                } else {
+                    showToast('No result from generation', true);
+                }
+            } catch (err) {
+                console.error('Variant generation error:', err);
+                showToast('Generation failed: ' + err.message, true);
+            } finally {
+                elements.generateVariantBtn.disabled = false;
             }
         }
 
@@ -3578,6 +3717,7 @@
             state.isDirty = false;
             elements.saveIndicator.textContent = source === 'master' ? 'Master' : 'Draft';
             elements.saveIndicator.className = `save-indicator ${source}`;
+            updateVariantSection();
         }
 
         // Show edit protection dialog for MTS tiles
@@ -3668,6 +3808,7 @@
             state.isDirty = false;
             elements.saveIndicator.textContent = 'New';
             elements.saveIndicator.className = 'save-indicator';
+            updateVariantSection();
         }
 
         // Create a new tile group from canvas contents
@@ -3965,6 +4106,7 @@
             state.isDirty = true;
             elements.saveIndicator.textContent = 'Modified';
             elements.saveIndicator.className = 'save-indicator';
+            updateVariantSection();
         }
 
         // ==========================================
@@ -4538,6 +4680,9 @@
             elements.aiModalClose.addEventListener('click', closeAiModal);
             elements.aiModalCancel.addEventListener('click', closeAiModal);
             elements.aiModalGenerate.addEventListener('click', generateTileWithPixelLab);
+
+            // Variant generation
+            elements.generateVariantBtn.addEventListener('click', generateVariant);
 
             // Toggle isometric shape selector based on perspective
             document.getElementById('aiPerspective').addEventListener('change', (e) => {
