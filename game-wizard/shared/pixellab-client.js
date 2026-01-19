@@ -102,7 +102,7 @@ class PixelLabClient {
         const body = {
             action: 'create_character',
             description,
-            n_directions: directions,
+            n_directions: directions,  // Used by proxy to pick endpoint, stripped before sending
             image_size: { width: size, height: size },
             proportions: { type: 'preset', name: proportions },
             view,

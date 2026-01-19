@@ -135,6 +135,7 @@ Deno.serve(async (req: Request) => {
       const pixelLabParams = { ...params };
       delete pixelLabParams.action;
       delete pixelLabParams.endpoint;
+      delete pixelLabParams.n_directions;  // Used for routing, not needed by PixelLab
 
       fetchOptions.body = JSON.stringify(pixelLabParams);
     }
