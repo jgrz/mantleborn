@@ -1086,7 +1086,9 @@
             color: var(--stone-light);
             cursor: pointer;
             z-index: 1400;
-            display: none;
+            display: flex;
+            align-items: center;
+            gap: 8px;
         }
 
         .view-queue-btn:hover {
@@ -1095,9 +1097,7 @@
         }
 
         .view-queue-btn.has-jobs {
-            display: flex;
-            align-items: center;
-            gap: 8px;
+            border-color: var(--accent-pink);
         }
 
         .queue-count {
