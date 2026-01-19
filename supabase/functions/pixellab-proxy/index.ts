@@ -33,6 +33,9 @@ const ENDPOINT_MAP: Record<string, string> = {
   "create_map_object": "/map-objects",
   "get_map_object": "/map-objects",
 
+  // Bitforge (supports init_image for variants)
+  "create_image_bitforge": "/create-image-bitforge",
+
   // Skeleton
   "estimate_skeleton": "/estimate-skeleton",
 

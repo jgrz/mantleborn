@@ -4647,13 +4647,13 @@
                 width: outputWidth,
                 height: outputHeight,
                 outline: 'single color outline',
-                view: 'low top-down',
-                // background_image for map objects (not init_image)
-                background_image: {
+                // Bitforge supports init_image for generating variants
+                init_image: {
                     type: 'base64',
                     base64: dataUrl,
                     format: 'png'
-                }
+                },
+                no_background: true
             };
 
             showToast('Queuing variant generation...', 'info');
@@ -4662,16 +4662,15 @@
             try {
                 const client = new PixelLabClient();
                 client.init(crucibleClient);
-                console.log('Calling createMapObject for variant with:', { description, width: w, height: h, hasBackgroundImage: true });
-                const result = await client.createMapObject({ description, ...options });
-                console.log('Variant createMapObject result:', result);
+                console.log('Calling createImageBitforge for variant with:', { description, width: outputWidth, height: outputHeight });
+                const result = await client.createImageBitforge({ description, ...options });
+                console.log('Variant createImageBitforge result:', result);
 
                 if (result.jobId) {
                     if (state.generationQueue) {
                         await state.generationQueue.addJob({
                             jobId: result.jobId,
-                            assetId: result.objectId,
-                            type: 'map_object_variant',
+                            type: 'bitforge_variant',
                             prompt: description,
                             parameters: options,
                             // Track source sheet for variant import
@@ -4700,7 +4699,7 @@
             }
 
             // Check if this is a variant - needs special handling to add to source sheet
-            if (job.type === 'map_object_variant') {
+            if (job.type === 'bitforge_variant') {
                 await importVariantToSheet(job);
                 return;
             }

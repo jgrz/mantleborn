@@ -403,6 +403,62 @@ class PixelLabClient {
     }
 
     // =============================================
+    // BITFORGE (STYLE/VARIANT GENERATION)
+    // =============================================
+
+    /**
+     * Create an image using Bitforge with optional init_image for variants
+     * This endpoint supports init_image for generating variants from existing sprites
+     * @param {Object} options - Generation options
+     * @returns {Promise<{jobId: string}>}
+     */
+    async createImageBitforge(options = {}) {
+        const {
+            description,
+            width = 32,
+            height = 32,
+            init_image,
+            style_image,
+            no_background = true,
+            negative_prompt,
+            outline = 'single color outline',
+            shading = 'medium shading',
+            detail = 'medium detail'
+        } = options;
+
+        const body = {
+            action: 'create_image_bitforge',
+            description,
+            image_size: { width, height },
+            outline,
+            shading,
+            detail,
+            no_background
+        };
+
+        if (negative_prompt) {
+            body.negative_prompt = negative_prompt;
+        }
+
+        // init_image for generating variants based on existing sprite
+        if (init_image) {
+            body.init_image = init_image;
+        }
+
+        // style_image for style transfer
+        if (style_image) {
+            body.style_image = style_image;
+        }
+
+        const result = await this._request('create-image-bitforge', 'POST', body);
+
+        return {
+            jobId: result.data?.job_id || result.data?.background_job_id,
+            raw: result
+        };
+    }
+
+    // =============================================
     // SKELETON / POSE
     // =============================================
 
