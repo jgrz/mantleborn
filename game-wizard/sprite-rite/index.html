@@ -4629,12 +4629,12 @@
                 return;
             }
 
-            // Extract selected area and scale to minimum 32x32
+            // Extract selected area and scale to minimum 16x16
             const { x, y, w, h } = state.selection;
 
-            // API requires minimum 32x32 - init_image must match output size
-            const outputWidth = Math.max(32, w);
-            const outputHeight = Math.max(32, h);
+            // API requires minimum 16x16 - init_image must match output size
+            const outputWidth = Math.max(16, w);
+            const outputHeight = Math.max(16, h);
 
             const tempCanvas = document.createElement('canvas');
             tempCanvas.width = outputWidth;

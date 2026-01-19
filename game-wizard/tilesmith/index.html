@@ -1872,13 +1872,13 @@
             const dataUrl = tempCanvas.toDataURL('image/png');
             const base64Data = dataUrl.split(',')[1];
 
-            // Ensure minimum 32x32
-            const outputWidth = Math.max(32, totalWidth);
-            const outputHeight = Math.max(32, totalHeight);
+            // Ensure minimum 16x16
+            const outputWidth = Math.max(16, totalWidth);
+            const outputHeight = Math.max(16, totalHeight);
 
-            // If smaller than 32x32, scale up the init_image
+            // If smaller than 16x16, scale up the init_image
             let initBase64 = base64Data;
-            if (totalWidth < 32 || totalHeight < 32) {
+            if (totalWidth < 16 || totalHeight < 16) {
                 const scaledCanvas = document.createElement('canvas');
                 scaledCanvas.width = outputWidth;
                 scaledCanvas.height = outputHeight;
