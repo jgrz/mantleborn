@@ -4677,11 +4677,26 @@
                     showToast('Variant generated! Importing...', 'success');
                     const job = {
                         type: 'bitforge_variant',
+                        prompt: description,
                         sourceSheetId: state.spritesheetId,
                         resultData: { image: imageData },
                         resultUrl: `data:image/${imageData.format || 'png'};base64,${imageData.base64}`
                     };
                     await importVariantToSheet(job);
+
+                    // Add to queue as imported for UX feedback/history
+                    if (state.generationQueue) {
+                        await state.generationQueue.addJob({
+                            type: 'bitforge_variant',
+                            prompt: description,
+                            parameters: options,
+                            sourceSheetId: state.spritesheetId,
+                            status: 'imported',
+                            resultUrl: job.resultUrl,
+                            importedToType: 'spritesheet',
+                            importedToId: state.spritesheetId
+                        });
+                    }
                     elements.variantDescription.value = '';
                 } else if (result.jobId) {
                     // Background job - add to queue for polling

@@ -365,6 +365,9 @@ class GenerationQueue {
         console.log('this.crucibleClient:', this.crucibleClient);
         console.log('this.projectId:', this.projectId);
 
+        // Use provided status or default to pending
+        const status = job.status || 'pending';
+
         // Save to database
         if (this.crucibleClient && this.projectId) {
             try {
@@ -377,10 +380,13 @@ class GenerationQueue {
                         pixellab_job_id: job.jobId,
                         pixellab_asset_id: job.assetId,
                         job_type: job.type,
-                        status: 'pending',
+                        status: status,
                         prompt: job.prompt,
                         parameters: job.parameters || {},
-                        skeleton_keypoints: job.skeletonKeypoints
+                        skeleton_keypoints: job.skeletonKeypoints,
+                        result_url: job.resultUrl,
+                        imported_to_type: job.importedToType,
+                        imported_to_id: job.importedToId
                     })
                     .select()
                     .single();
@@ -395,7 +401,7 @@ class GenerationQueue {
 
         this.jobs.unshift({
             ...job,
-            status: 'pending',
+            status: status,
             createdAt: new Date()
         });
         console.log('Job added to this.jobs, count:', this.jobs.length);
