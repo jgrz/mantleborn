@@ -293,10 +293,13 @@
             border: 1px solid var(--bg-deep);
         }
 
-        /* Tile Library */
+        /* Tile Library - footer-style, stays in view */
         .tile-library {
             border-top: 1px solid var(--stone-dark);
             padding-top: 12px;
+            flex-shrink: 0;
+            max-height: 200px;
+            overflow-y: auto;
         }
 
         .library-header {
@@ -366,8 +369,6 @@
             display: flex;
             gap: 8px;
             flex-wrap: wrap;
-            max-height: 100px;
-            overflow-y: auto;
         }
 
         .library-empty {
