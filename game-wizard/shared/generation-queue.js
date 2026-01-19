@@ -89,7 +89,7 @@ class GenerationQueue {
                 border: 1px solid var(--stone-dark, #3a3a5c);
                 border-radius: 8px;
                 box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
-                z-index: 1000;
+                z-index: 10001;
                 display: none;
                 flex-direction: column;
                 font-family: 'JetBrains Mono', monospace;
