@@ -4502,6 +4502,15 @@
             let imageUrl = job.resultUrl || job.result_url;
             let blob = null;
 
+            console.log('handleGeneratedAsset job:', {
+                hasResultData: !!job.resultData,
+                hasImage: !!job.resultData?.image,
+                imageType: job.resultData?.image?.type,
+                hasBase64: !!job.resultData?.image?.base64,
+                resultUrl: imageUrl?.substring?.(0, 50) || imageUrl,
+                jobKeys: Object.keys(job)
+            });
+
             // Handle base64 data from resultData.image
             if (job.resultData?.image?.type === 'base64' && job.resultData?.image?.base64) {
                 const base64 = job.resultData.image.base64;
