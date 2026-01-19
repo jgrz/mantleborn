@@ -617,6 +617,7 @@
             <div class="asset-tabs">
                 <button class="asset-tab active" data-type="tiles">Tiles</button>
                 <button class="asset-tab" data-type="sprites">Sprites</button>
+                <button class="asset-tab" data-type="backgrounds">BGs</button>
             </div>
             <div class="asset-grid" id="assetGrid">
                 <!-- Populated by JS -->
@@ -908,6 +909,9 @@
         // INITIALIZATION
         // ==========================================
         async function init() {
+            // Wait for crucibleClient to be ready
+            await crucibleClient.init();
+
             // Listen for project changes
             window.addEventListener('gw:projectChange', async (e) => {
                 state.projectId = e.detail.projectId;
@@ -939,43 +943,36 @@
             elements.assetGrid.innerHTML = '<div class="asset-empty">Loading...</div>';
 
             try {
+                let masterSheet;
+                let assetsObj;
+
                 if (state.assetType === 'tiles') {
-                    // Load from master tile sheet
-                    const masterSheet = await crucibleClient.getMasterTileSheet(state.projectId);
-                    // Convert atlas sprites object to array
-                    state.assets = [];
-                    if (masterSheet?.atlas?.sprites) {
-                        for (const [name, def] of Object.entries(masterSheet.atlas.sprites)) {
-                            state.assets.push({
-                                name,
-                                x: def.x,
-                                y: def.y,
-                                width: def.w,
-                                height: def.h,
-                                masterPng: masterSheet.png
-                            });
-                        }
-                    }
-                } else {
-                    // Load from master sprite sheet
-                    const masterSheet = await crucibleClient.getMasterSpriteSheet(state.projectId);
-                    // Convert atlas sprites object to array
-                    state.assets = [];
-                    if (masterSheet?.atlas?.sprites) {
-                        for (const [name, def] of Object.entries(masterSheet.atlas.sprites)) {
-                            state.assets.push({
-                                name,
-                                x: def.x,
-                                y: def.y,
-                                width: def.w,
-                                height: def.h,
-                                masterPng: masterSheet.png
-                            });
-                        }
+                    masterSheet = await crucibleClient.getMasterTileSheet(state.projectId);
+                    assetsObj = masterSheet?.atlas?.sprites;
+                } else if (state.assetType === 'sprites') {
+                    masterSheet = await crucibleClient.getMasterSpriteSheet(state.projectId);
+                    assetsObj = masterSheet?.atlas?.sprites;
+                } else if (state.assetType === 'backgrounds') {
+                    masterSheet = await crucibleClient.getMasterBackgroundSheet(state.projectId);
+                    assetsObj = masterSheet?.atlas?.backgrounds;
+                }
+
+                // Convert atlas object to array
+                state.assets = [];
+                if (assetsObj) {
+                    for (const [name, def] of Object.entries(assetsObj)) {
+                        state.assets.push({
+                            name,
+                            x: def.x,
+                            y: def.y,
+                            width: def.w,
+                            height: def.h,
+                            masterPng: masterSheet.png
+                        });
                     }
                 }
 
-                renderAssetGrid();
+                await renderAssetGrid();
             } catch (error) {
                 console.error('Failed to load assets:', error);
                 elements.assetGrid.innerHTML = '<div class="asset-empty">Failed to load assets</div>';
@@ -984,7 +981,8 @@
 
         async function renderAssetGrid() {
             if (state.assets.length === 0) {
-                elements.assetGrid.innerHTML = `<div class="asset-empty">No ${state.assetType} found.<br>Create some in ${state.assetType === 'tiles' ? 'Tilesmith' : 'Sprite-Rite'} first.</div>`;
+                const toolMap = { tiles: 'Tilesmith', sprites: 'Sprite-Rite', backgrounds: 'Frameweft' };
+                elements.assetGrid.innerHTML = `<div class="asset-empty">No ${state.assetType} found.<br>Create some in ${toolMap[state.assetType]} first.</div>`;
                 return;
             }
 
@@ -1636,11 +1634,23 @@
                         state.quantizedData.height,
                         'chroma'
                     );
-                } else {
+                } else if (state.assetType === 'sprites') {
                     if (elements.overwriteOriginal.checked) {
                         await crucibleClient.removeSpriteFromMasterSheet(state.projectId, asset.name);
                     }
                     await crucibleClient.publishToMasterSpriteSheet(
+                        state.projectId,
+                        saveName,
+                        base64,
+                        state.quantizedData.width,
+                        state.quantizedData.height,
+                        'chroma'
+                    );
+                } else if (state.assetType === 'backgrounds') {
+                    if (elements.overwriteOriginal.checked) {
+                        await crucibleClient.removeBackgroundFromMasterSheet(state.projectId, asset.name);
+                    }
+                    await crucibleClient.publishToMasterBackgroundSheet(
                         state.projectId,
                         saveName,
                         base64,
