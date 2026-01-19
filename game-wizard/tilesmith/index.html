@@ -63,25 +63,6 @@
             gap: 8px;
         }
 
-        .home-btn {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            width: 32px;
-            height: 32px;
-            font-size: 18px;
-            text-decoration: none;
-            background: var(--bg-surface);
-            border: 1px solid var(--stone-dark);
-            border-radius: 4px;
-            transition: all 0.2s;
-        }
-
-        .home-btn:hover {
-            background: var(--stone-dark);
-            border-color: var(--accent-green);
-        }
-
         .brand-icon {
             font-size: 20px;
         }
@@ -89,10 +70,6 @@
         .brand-text {
             font-family: 'Press Start 2P', cursive;
             font-size: 10px;
-            color: var(--stone-mid);
-        }
-
-        .brand-text span {
             color: var(--accent-green);
             text-shadow: 0 0 10px rgba(64, 208, 128, 0.5);
         }
@@ -101,51 +78,6 @@
             display: flex;
             gap: 10px;
             align-items: center;
-        }
-
-        .header-select {
-            font-family: 'JetBrains Mono', monospace;
-            font-size: 12px;
-            padding: 8px 12px;
-            background: var(--bg-surface);
-            border: 1px solid var(--stone-dark);
-            border-radius: 4px;
-            color: var(--stone-light);
-            cursor: pointer;
-            min-width: 140px;
-        }
-
-        .header-select:focus {
-            outline: none;
-            border-color: var(--accent-green);
-        }
-
-        .auth-indicator {
-            display: flex;
-            align-items: center;
-            gap: 6px;
-            padding: 6px 12px;
-            background: var(--bg-surface);
-            border: 1px solid var(--stone-dark);
-            border-radius: 4px;
-            font-size: 11px;
-            color: var(--stone-mid);
-        }
-
-        .auth-indicator.logged-in {
-            border-color: var(--accent-green);
-            color: var(--stone-light);
-        }
-
-        .auth-dot {
-            width: 8px;
-            height: 8px;
-            border-radius: 50%;
-            background: var(--stone-dark);
-        }
-
-        .auth-indicator.logged-in .auth-dot {
-            background: var(--success);
         }
 
         .save-indicator {
@@ -1185,19 +1117,11 @@
     <!-- Header -->
     <header class="header">
         <div class="brand">
-            <a href="/game-wizard/" class="home-btn" title="Back to Game Wizard">&#128302;</a>
             <span class="brand-icon">&#129513;</span>
-            <span class="brand-text">GAME WIZARD / <span>TILESMITH</span></span>
+            <span class="brand-text">TILESMITH</span>
         </div>
         <div class="header-actions">
-            <select class="header-select" id="projectSelect">
-                <option value="">-- Select Project --</option>
-            </select>
             <span class="save-indicator" id="saveIndicator"></span>
-            <div class="auth-indicator" id="authIndicator">
-                <span class="auth-dot"></span>
-                <span class="auth-text">...</span>
-            </div>
         </div>
     </header>
 
@@ -1653,9 +1577,7 @@
         // DOM ELEMENTS
         // ==========================================
         const elements = {
-            projectSelect: document.getElementById('projectSelect'),
             saveIndicator: document.getElementById('saveIndicator'),
-            authIndicator: document.getElementById('authIndicator'),
             mainCanvas: document.getElementById('mainCanvas'),
             gridCanvas: document.getElementById('gridCanvas'),
             canvasWrapper: document.getElementById('canvasWrapper'),
@@ -1724,7 +1646,6 @@
 
             await crucibleClient.init();
             state.user = await crucibleClient.getUser();
-            updateAuthIndicator();
 
             renderTileSelector();
             initializeCanvas();
@@ -1733,15 +1654,10 @@
             selectColor(state.currentColor); // Initialize color info display
             setupEventListeners();
 
-            if (state.user) {
-                await loadProjects();
-            }
-
             // Sync with persistent header project selection
             if (!state.projectId && window.gwPersistentHeader) {
                 const saved = window.gwPersistentHeader.getSelectedProject();
                 if (saved?.projectId && state.user) {
-                    elements.projectSelect.value = saved.projectId;
                     await selectProject(saved.projectId);
                 }
             }
@@ -1750,7 +1666,6 @@
             window.addEventListener('gw:projectChange', async (e) => {
                 const { projectId } = e.detail;
                 if (projectId && projectId !== state.projectId) {
-                    elements.projectSelect.value = projectId;
                     await selectProject(projectId);
                 }
             });
@@ -2025,20 +1940,6 @@
         function updateSaveButtons() {
             const isMultiTile = state.gridCols > 1 || state.gridRows > 1;
             elements.saveGroupBtn.style.display = isMultiTile ? 'block' : 'none';
-        }
-
-        function updateAuthIndicator() {
-            const indicator = elements.authIndicator;
-            const textEl = indicator.querySelector('.auth-text');
-
-            if (state.user) {
-                indicator.classList.add('logged-in');
-                const name = state.user.user_metadata?.display_name || state.user.email?.split('@')[0] || 'User';
-                textEl.textContent = name;
-            } else {
-                indicator.classList.remove('logged-in');
-                textEl.textContent = 'Guest';
-            }
         }
 
         // ==========================================
@@ -2940,28 +2841,6 @@
         // ==========================================
         // PROJECTS & TILES
         // ==========================================
-        async function loadProjects() {
-            try {
-                const projects = await crucibleClient.getProjects();
-
-                elements.projectSelect.innerHTML = '<option value="">-- Select Project --</option>';
-                projects.forEach(p => {
-                    const opt = document.createElement('option');
-                    opt.value = p.id;
-                    opt.textContent = p.name;
-                    elements.projectSelect.appendChild(opt);
-                });
-
-                const lastProject = localStorage.getItem('tilesmith_project');
-                if (lastProject && projects.find(p => p.id === lastProject)) {
-                    elements.projectSelect.value = lastProject;
-                    await selectProject(lastProject);
-                }
-            } catch (err) {
-                console.error('Failed to load projects:', err);
-                showToast('Failed to load projects', true);
-            }
-        }
 
         // Migrate legacy tiles from tiles table to master sheet
         async function migrateLegacyTiles(projectId) {
@@ -4539,17 +4418,6 @@
         // EVENT LISTENERS
         // ==========================================
         function setupEventListeners() {
-            // Project select
-            elements.projectSelect.addEventListener('change', (e) => {
-                const projectId = e.target.value;
-                const projectName = e.target.options[e.target.selectedIndex]?.text || '';
-                selectProject(projectId);
-                // Sync to persistent header
-                if (window.gwPersistentHeader) {
-                    window.gwPersistentHeader.setProject(projectId, projectName);
-                }
-            });
-
             // Canvas mouse events
             elements.mainCanvas.addEventListener('mousedown', handleMouseDown);
             elements.mainCanvas.addEventListener('mousemove', handleMouseMove);
