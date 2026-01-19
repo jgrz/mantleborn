@@ -1590,7 +1590,7 @@
                             <canvas id="backgroundCanvas"></canvas>
                         </div>
                         <div class="background-layers" id="backgroundLayers">
-                            <div class="no-layers-message">No background layers. Click "+ Add Layer" to upload an image.<br><br>Recommended: 768x432px (32x18 tiles at 24px)</div>
+                            <div class="no-layers-message" id="noLayersMessage">No background layers. Click "+ Add Layer" to upload an image.</div>
                         </div>
                     </div>
                 </div>
@@ -2526,6 +2526,13 @@
             if (elements.tileSizeDisplay) {
                 elements.tileSizeDisplay.textContent = state.tileSize;
             }
+            // Update recommended background size in no-layers message
+            const noLayersMsg = document.getElementById('noLayersMessage');
+            if (noLayersMsg) {
+                const recWidth = state.gridWidth * state.tileSize;
+                const recHeight = state.gridHeight * state.tileSize;
+                noLayersMsg.innerHTML = `No background layers. Click "+ Add Layer" to upload an image.<br><br>Recommended: ${recWidth}×${recHeight}px (${state.gridWidth}×${state.gridHeight} tiles at ${state.tileSize}px)`;
+            }
         }
 
         function updateStats() {
@@ -3441,7 +3448,7 @@
 
         function renderBackgroundLayers() {
             if (state.backgrounds.length === 0) {
-                elements.backgroundLayers.innerHTML = '<div class="no-layers-message">No background layers. Click "+ Add Layer" to upload an image.<br><br>Recommended: 768x432px (32x18 tiles at 24px)</div>';
+                elements.backgroundLayers.innerHTML = '<div class="no-layers-message" id="noLayersMessage">No background layers. Click "+ Add Layer" to upload an image.</div>';
                 return;
             }
 
@@ -3547,9 +3554,9 @@
             const canvas = elements.backgroundCanvas;
             const ctx = canvas.getContext('2d');
 
-            // Size canvas to level dimensions
-            const levelWidth = state.gridWidth * 24;
-            const levelHeight = state.gridHeight * 24;
+            // Size canvas to level dimensions (use project tile size)
+            const levelWidth = state.gridWidth * state.tileSize;
+            const levelHeight = state.gridHeight * state.tileSize;
             canvas.width = levelWidth;
             canvas.height = levelHeight;
 
