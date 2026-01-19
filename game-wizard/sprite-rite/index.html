@@ -4638,12 +4638,20 @@
             tempCtx.drawImage(state.image, x, y, w, h, 0, 0, w, h);
             const base64 = tempCanvas.toDataURL('image/png').split(',')[1];
 
+            // API requires minimum 32x32
+            const outputWidth = Math.max(32, w);
+            const outputHeight = Math.max(32, h);
+
             const options = {
-                width: w,
-                height: h,
+                width: outputWidth,
+                height: outputHeight,
                 outline: 'single color outline',
                 view: 'low top-down',
-                init_image: base64
+                // init_image must be an object with type and base64
+                init_image: {
+                    type: 'base64',
+                    base64: base64
+                }
             };
 
             showToast('Queuing variant generation...', 'info');
