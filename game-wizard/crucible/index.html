@@ -1858,7 +1858,7 @@
                 // Check if we have a saved project context
                 const ctx = crucible.getContext();
                 if (ctx.projectId) {
-                    elements.projectSelect.value = ctx.projectId;
+                    if (elements.projectSelect) elements.projectSelect.value = ctx.projectId;
                     await selectProject(ctx.projectId);
                 }
             } catch (err) {
@@ -1868,6 +1868,7 @@
         }
 
         function renderProjectDropdown() {
+            if (!elements.projectSelect) return;
             elements.projectSelect.innerHTML = '<option value="">Select Project...</option>';
             for (const project of state.projects) {
                 const opt = document.createElement('option');
@@ -1996,7 +1997,7 @@
 
                 state.projects.unshift(project);
                 renderProjectDropdown();
-                elements.projectSelect.value = project.id;
+                if (elements.projectSelect) elements.projectSelect.value = project.id;
                 await selectProject(project.id);
 
                 hideModal(elements.newProjectModal);
@@ -2299,15 +2300,18 @@
         // EVENT LISTENERS
         // =============================================
 
-        elements.projectSelect.addEventListener('change', (e) => {
-            const projectId = e.target.value;
-            const projectName = e.target.options[e.target.selectedIndex]?.text || '';
-            selectProject(projectId);
-            // Sync to persistent header
-            if (window.gwPersistentHeader) {
-                window.gwPersistentHeader.setProject(projectId, projectName);
-            }
-        });
+        // Project select listener (if local dropdown exists)
+        if (elements.projectSelect) {
+            elements.projectSelect.addEventListener('change', (e) => {
+                const projectId = e.target.value;
+                const projectName = e.target.options[e.target.selectedIndex]?.text || '';
+                selectProject(projectId);
+                // Sync to persistent header
+                if (window.gwPersistentHeader) {
+                    window.gwPersistentHeader.setProject(projectId, projectName);
+                }
+            });
+        }
 
         // Wizard state
         const wizardState = {
@@ -2694,8 +2698,10 @@
                 `;
 
                 // Update project dropdown
-                const opt = elements.projectSelect.querySelector(`option[value="${state.currentProject.id}"]`);
-                if (opt) opt.textContent = state.currentProject.name;
+                if (elements.projectSelect) {
+                    const opt = elements.projectSelect.querySelector(`option[value="${state.currentProject.id}"]`);
+                    if (opt) opt.textContent = state.currentProject.name;
+                }
 
                 hideModal(elements.projectSettingsModal);
                 showToast('Settings saved!', 'success');
@@ -2731,7 +2737,7 @@
             if (!state.currentProject && window.gwPersistentHeader) {
                 const saved = window.gwPersistentHeader.getSelectedProject();
                 if (saved?.projectId) {
-                    elements.projectSelect.value = saved.projectId;
+                    if (elements.projectSelect) elements.projectSelect.value = saved.projectId;
                     await selectProject(saved.projectId);
                 }
             }
@@ -2740,7 +2746,7 @@
             window.addEventListener('gw:projectChange', async (e) => {
                 const { projectId } = e.detail;
                 if (projectId && projectId !== state.currentProject?.id) {
-                    elements.projectSelect.value = projectId;
+                    if (elements.projectSelect) elements.projectSelect.value = projectId;
                     await selectProject(projectId);
                 }
             });
