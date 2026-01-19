@@ -345,6 +345,13 @@
             --cart-pattern: repeating-linear-gradient(45deg, transparent 0px, transparent 8px, rgba(168, 85, 247, 0.1) 8px, rgba(168, 85, 247, 0.1) 16px);
         }
 
+        .cartridge--chroma {
+            --cart-color: #4a2a5a;
+            --cart-accent: #c084fc;
+            --cart-glow: rgba(192, 132, 252, 0.5);
+            --cart-pattern: radial-gradient(circle at 50% 50%, rgba(192, 132, 252, 0.2) 0%, transparent 50%), radial-gradient(circle at 30% 70%, rgba(168, 85, 247, 0.15) 0%, transparent 40%);
+        }
+
         /* Coming soon overlay */
         .cartridge--coming-soon {
             pointer-events: none;
@@ -653,6 +660,31 @@
                         <div class="cart-tagline">Craft Your Terrain</div>
                         <div class="cart-desc">
                             Pixel-based tile creation with AI-assisted design. Draw tiles, manage palettes, and export to spritesheets.
+                        </div>
+                    </div>
+                    <div class="cart-label-light"></div>
+                </div>
+                <div class="cart-pins">
+                    <div class="cart-pin"></div>
+                    <div class="cart-pin"></div>
+                    <div class="cart-pin"></div>
+                    <div class="cart-pin"></div>
+                    <div class="cart-pin"></div>
+                </div>
+            </div>
+        </a>
+
+        <!-- Chroma -->
+        <a href="chroma/" class="cartridge cartridge--chroma" data-requires-project>
+            <div class="cartridge-body">
+                <div class="cart-label">
+                    <div class="cart-rating">DEV</div>
+                    <div class="cart-label-content">
+                        <div class="cart-icon">&#127912;</div>
+                        <div class="cart-title">CHROMA</div>
+                        <div class="cart-tagline">Master Your Palette</div>
+                        <div class="cart-desc">
+                            Apply palette restrictions to your assets. Quantize colors, add dithering, and unify your art style.
                         </div>
                     </div>
                     <div class="cart-label-light"></div>

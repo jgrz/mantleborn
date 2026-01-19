@@ -1,0 +1,1791 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chroma | Game Wizard</title>
+    <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+    <style>
+        /* ============================================
+           CHROMA - Palette Restriction Tool
+           ============================================ */
+
+        :root {
+            /* Backgrounds */
+            --bg-deep: #0d0d14;
+            --bg-mid: #1a1a2e;
+            --bg-surface: #252542;
+
+            /* Accents - violet/purple */
+            --accent-violet: #a855f7;
+            --accent-violet-glow: #c084fc;
+            --accent-dark: #6b21a8;
+
+            /* Stone/neutral tones */
+            --stone-dark: #3a3a5c;
+            --stone-mid: #6a6a8e;
+            --stone-light: #9a9abe;
+            --stone-bright: #d0d0e8;
+
+            /* Status colors */
+            --success: #4ade80;
+            --error: #f87171;
+            --warning: #fbbf24;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'JetBrains Mono', monospace;
+            background: var(--bg-deep);
+            color: var(--stone-light);
+            min-height: 100vh;
+            overflow: hidden;
+        }
+
+        /* Header */
+        .header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 12px 20px;
+            background: var(--bg-mid);
+            border-bottom: 1px solid var(--stone-dark);
+        }
+
+        .brand {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .brand-icon {
+            font-size: 20px;
+        }
+
+        .brand-text {
+            font-family: 'Press Start 2P', cursive;
+            font-size: 10px;
+            color: var(--accent-violet);
+            text-shadow: 0 0 10px rgba(168, 85, 247, 0.5);
+        }
+
+        .header-actions {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+
+        .save-indicator {
+            font-size: 10px;
+            color: var(--stone-mid);
+            min-width: 60px;
+            text-align: right;
+        }
+
+        .save-indicator.saving { color: var(--warning); }
+        .save-indicator.saved { color: var(--success); }
+
+        /* Buttons */
+        .btn {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 12px;
+            padding: 8px 16px;
+            border: 1px solid var(--stone-dark);
+            border-radius: 4px;
+            background: var(--bg-surface);
+            color: var(--stone-light);
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .btn:hover {
+            background: var(--stone-dark);
+            border-color: var(--stone-mid);
+        }
+
+        .btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .btn-primary {
+            background: var(--accent-violet);
+            border-color: var(--accent-violet);
+            color: white;
+            font-weight: 600;
+        }
+
+        .btn-primary:hover {
+            background: var(--accent-violet-glow);
+            border-color: var(--accent-violet-glow);
+        }
+
+        .btn-small {
+            padding: 4px 8px;
+            font-size: 10px;
+        }
+
+        /* Main Layout */
+        .main {
+            display: grid;
+            grid-template-columns: 240px 300px 1fr;
+            height: calc(100vh - 103px); /* 50px persistent header + 53px page header */
+            gap: 1px;
+            background: var(--stone-dark);
+        }
+
+        /* Panels */
+        .panel {
+            background: var(--bg-mid);
+            padding: 16px;
+            overflow-y: auto;
+        }
+
+        .section-header {
+            font-family: 'Press Start 2P', cursive;
+            font-size: 8px;
+            color: var(--stone-bright);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 8px;
+        }
+
+        /* Asset Browser Panel */
+        .asset-tabs {
+            display: flex;
+            gap: 4px;
+            margin-bottom: 12px;
+        }
+
+        .asset-tab {
+            flex: 1;
+            padding: 8px;
+            font-family: 'Press Start 2P', cursive;
+            font-size: 7px;
+            background: var(--bg-surface);
+            border: 2px solid var(--stone-dark);
+            border-radius: 4px;
+            color: var(--stone-mid);
+            cursor: pointer;
+            transition: all 0.15s;
+            text-align: center;
+        }
+
+        .asset-tab:hover {
+            border-color: var(--stone-mid);
+            color: var(--stone-light);
+        }
+
+        .asset-tab.active {
+            background: var(--accent-dark);
+            border-color: var(--accent-violet);
+            color: var(--accent-violet);
+        }
+
+        .asset-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(56px, 1fr));
+            gap: 8px;
+            max-height: calc(100vh - 350px);
+            overflow-y: auto;
+        }
+
+        .asset-item {
+            aspect-ratio: 1;
+            background: var(--bg-surface);
+            border: 2px solid var(--stone-dark);
+            border-radius: 4px;
+            cursor: pointer;
+            overflow: hidden;
+            position: relative;
+            transition: all 0.15s;
+        }
+
+        .asset-item:hover {
+            border-color: var(--stone-mid);
+        }
+
+        .asset-item.selected {
+            border-color: var(--accent-violet);
+            box-shadow: 0 0 8px rgba(168, 85, 247, 0.3);
+        }
+
+        .asset-item img,
+        .asset-item canvas {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+            image-rendering: pixelated;
+        }
+
+        .asset-item .asset-name {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            padding: 2px 4px;
+            background: rgba(0, 0, 0, 0.8);
+            font-size: 6px;
+            color: var(--stone-light);
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .asset-info {
+            margin-top: 12px;
+            padding-top: 12px;
+            border-top: 1px solid var(--stone-dark);
+            font-size: 11px;
+            color: var(--stone-mid);
+        }
+
+        .asset-empty {
+            padding: 32px 16px;
+            text-align: center;
+            color: var(--stone-mid);
+            font-size: 11px;
+        }
+
+        /* Palette Settings Panel */
+        .form-group {
+            margin-bottom: 12px;
+        }
+
+        .form-label {
+            display: block;
+            font-size: 10px;
+            color: var(--stone-mid);
+            margin-bottom: 4px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .form-input {
+            width: 100%;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 11px;
+            padding: 8px;
+            background: var(--bg-surface);
+            border: 1px solid var(--stone-dark);
+            border-radius: 4px;
+            color: var(--stone-light);
+        }
+
+        .form-input:focus {
+            outline: none;
+            border-color: var(--accent-violet);
+        }
+
+        textarea.form-input {
+            resize: vertical;
+            min-height: 80px;
+        }
+
+        .palette-source-option {
+            display: none;
+        }
+
+        .palette-source-option.visible {
+            display: block;
+        }
+
+        .extract-controls {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin: 8px 0;
+        }
+
+        .extract-controls input[type="range"] {
+            flex: 1;
+            accent-color: var(--accent-violet);
+        }
+
+        .extract-controls span {
+            min-width: 24px;
+            text-align: center;
+            font-size: 11px;
+        }
+
+        /* Palette Display */
+        .palette-display {
+            background: var(--bg-deep);
+            border: 1px solid var(--stone-dark);
+            border-radius: 4px;
+            padding: 12px;
+            margin-top: 12px;
+        }
+
+        .palette-grid {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 4px;
+            margin-bottom: 8px;
+            min-height: 32px;
+        }
+
+        .palette-swatch {
+            width: 24px;
+            height: 24px;
+            border: 1px solid var(--stone-dark);
+            border-radius: 2px;
+            cursor: pointer;
+            transition: transform 0.15s;
+        }
+
+        .palette-swatch:hover {
+            transform: scale(1.15);
+            z-index: 1;
+        }
+
+        .palette-swatch.selected {
+            border-color: var(--stone-bright);
+            box-shadow: 0 0 0 2px var(--bg-deep), 0 0 0 3px var(--accent-violet);
+        }
+
+        .palette-info {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 10px;
+            color: var(--stone-mid);
+        }
+
+        /* Quantization Options */
+        .dither-warning {
+            padding: 8px;
+            background: rgba(251, 191, 36, 0.1);
+            border: 1px solid var(--warning);
+            border-radius: 4px;
+            font-size: 10px;
+            color: var(--warning);
+            margin-top: 8px;
+            display: none;
+        }
+
+        .dither-warning.visible {
+            display: block;
+        }
+
+        .apply-section {
+            margin-top: auto;
+            padding-top: 16px;
+        }
+
+        .apply-btn {
+            width: 100%;
+        }
+
+        /* Preview Panel */
+        .preview-panel {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .preview-toggle {
+            display: flex;
+            gap: 4px;
+            margin-bottom: 12px;
+        }
+
+        .preview-area {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            min-height: 0;
+        }
+
+        .preview-empty {
+            flex: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--stone-mid);
+            font-size: 12px;
+            background: var(--bg-surface);
+            border-radius: 4px;
+        }
+
+        .preview-side {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 16px;
+            flex: 1;
+        }
+
+        .preview-box {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .preview-label {
+            font-size: 9px;
+            color: var(--stone-mid);
+            text-transform: uppercase;
+            margin-bottom: 8px;
+        }
+
+        .preview-canvas-wrapper {
+            flex: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: repeating-conic-gradient(
+                var(--bg-surface) 0% 25%,
+                var(--bg-mid) 0% 50%
+            ) 50% / 16px 16px;
+            border: 1px solid var(--stone-dark);
+            border-radius: 4px;
+            padding: 16px;
+            min-height: 200px;
+        }
+
+        .preview-canvas-wrapper canvas {
+            max-width: 100%;
+            max-height: 300px;
+            image-rendering: pixelated;
+        }
+
+        .preview-toggle-view {
+            display: none;
+            flex-direction: column;
+            align-items: center;
+            gap: 12px;
+            flex: 1;
+        }
+
+        .preview-toggle-view.active {
+            display: flex;
+        }
+
+        .preview-toggle-view .preview-canvas-wrapper {
+            width: 100%;
+        }
+
+        /* Touch-up Mode */
+        .touchup-section {
+            margin-top: 16px;
+            padding-top: 16px;
+            border-top: 1px solid var(--stone-dark);
+            display: none;
+        }
+
+        .touchup-section.visible {
+            display: block;
+        }
+
+        .touchup-info {
+            font-size: 10px;
+            color: var(--stone-mid);
+            margin-bottom: 8px;
+        }
+
+        .touchup-canvas-wrapper {
+            background: repeating-conic-gradient(
+                var(--bg-surface) 0% 25%,
+                var(--bg-mid) 0% 50%
+            ) 50% / 8px 8px;
+            border: 1px solid var(--stone-dark);
+            border-radius: 4px;
+            padding: 8px;
+            display: flex;
+            justify-content: center;
+        }
+
+        .touchup-canvas-wrapper canvas {
+            image-rendering: pixelated;
+            cursor: crosshair;
+            max-width: 100%;
+        }
+
+        .touchup-palette {
+            display: flex;
+            gap: 4px;
+            margin-top: 8px;
+            flex-wrap: wrap;
+        }
+
+        .touchup-swatch {
+            width: 20px;
+            height: 20px;
+            border: 2px solid transparent;
+            border-radius: 2px;
+            cursor: pointer;
+        }
+
+        .touchup-swatch.active {
+            border-color: var(--stone-bright);
+        }
+
+        /* Output Options */
+        .output-section {
+            margin-top: 16px;
+            padding-top: 16px;
+            border-top: 1px solid var(--stone-dark);
+        }
+
+        .checkbox-group {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .checkbox-label {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 11px;
+            color: var(--stone-light);
+            cursor: pointer;
+        }
+
+        .checkbox-label input {
+            accent-color: var(--accent-violet);
+        }
+
+        .save-actions {
+            display: flex;
+            gap: 8px;
+            margin-top: 12px;
+        }
+
+        .save-actions .btn {
+            flex: 1;
+        }
+
+        /* Toast */
+        .toast {
+            position: fixed;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%) translateY(100px);
+            padding: 12px 24px;
+            background: var(--bg-surface);
+            border: 1px solid var(--stone-dark);
+            border-radius: 4px;
+            font-size: 12px;
+            color: var(--stone-light);
+            opacity: 0;
+            transition: all 0.3s;
+            z-index: 2000;
+        }
+
+        .toast.visible {
+            transform: translateX(-50%) translateY(0);
+            opacity: 1;
+        }
+
+        .toast.success {
+            border-color: var(--success);
+            color: var(--success);
+        }
+
+        .toast.error {
+            border-color: var(--error);
+            color: var(--error);
+        }
+    </style>
+</head>
+<body>
+    <!-- Header -->
+    <header class="header">
+        <div class="brand">
+            <span class="brand-icon">&#127912;</span>
+            <span class="brand-text">CHROMA</span>
+        </div>
+        <div class="header-actions">
+            <span class="save-indicator" id="saveIndicator"></span>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="main">
+        <!-- Left Panel - Asset Browser -->
+        <div class="panel asset-panel">
+            <div class="section-header">Assets</div>
+            <div class="asset-tabs">
+                <button class="asset-tab active" data-type="tiles">Tiles</button>
+                <button class="asset-tab" data-type="sprites">Sprites</button>
+            </div>
+            <div class="asset-grid" id="assetGrid">
+                <!-- Populated by JS -->
+            </div>
+            <div class="asset-info" id="assetInfo">
+                <span id="selectedCount">0 selected</span>
+            </div>
+        </div>
+
+        <!-- Middle Panel - Palette Settings -->
+        <div class="panel settings-panel">
+            <div class="section-header">Palette</div>
+
+            <div class="form-group">
+                <label class="form-label">Source</label>
+                <select class="form-input" id="paletteSource">
+                    <option value="preset">Preset Palette</option>
+                    <option value="custom">Custom (Hex Codes)</option>
+                    <option value="extract">Extract from Asset</option>
+                    <option value="project">Project Palette</option>
+                </select>
+            </div>
+
+            <!-- Preset Palette Option -->
+            <div class="palette-source-option visible" id="presetOption">
+                <div class="form-group">
+                    <label class="form-label">Preset</label>
+                    <select class="form-input" id="presetSelect">
+                        <option value="gameboy">Game Boy (4 colors)</option>
+                        <option value="cga">CGA (16 colors)</option>
+                        <option value="nes">NES (54 colors)</option>
+                        <option value="pico8">PICO-8 (16 colors)</option>
+                        <option value="lospec16">Lospec 16</option>
+                        <option value="endesga32">ENDESGA 32</option>
+                    </select>
+                </div>
+            </div>
+
+            <!-- Custom Palette Option -->
+            <div class="palette-source-option" id="customOption">
+                <div class="form-group">
+                    <label class="form-label">Hex Colors (one per line)</label>
+                    <textarea class="form-input" id="customHex" placeholder="#9bbc0f&#10;#8bac0f&#10;#306230&#10;#0f380f"></textarea>
+                    <button class="btn btn-small" id="parseCustomBtn" style="margin-top: 8px;">Parse Colors</button>
+                </div>
+            </div>
+
+            <!-- Extract Palette Option -->
+            <div class="palette-source-option" id="extractOption">
+                <div class="form-group">
+                    <label class="form-label">Extract from selected asset</label>
+                    <div class="extract-controls">
+                        <label class="form-label" style="margin: 0;">Colors:</label>
+                        <input type="range" id="extractCount" min="2" max="16" value="8">
+                        <span id="extractCountLabel">8</span>
+                    </div>
+                    <button class="btn btn-small" id="extractBtn">Extract Palette</button>
+                </div>
+            </div>
+
+            <!-- Project Palette Option -->
+            <div class="palette-source-option" id="projectOption">
+                <div class="form-group">
+                    <label class="form-label">Saved Palettes</label>
+                    <select class="form-input" id="projectPalette">
+                        <option value="">-- No saved palettes --</option>
+                    </select>
+                </div>
+            </div>
+
+            <!-- Palette Display -->
+            <div class="palette-display">
+                <div class="palette-grid" id="paletteGrid">
+                    <!-- Swatches populated by JS -->
+                </div>
+                <div class="palette-info">
+                    <span id="paletteCount">0 colors</span>
+                    <button class="btn btn-small" id="savePaletteBtn">Save to Project</button>
+                </div>
+            </div>
+
+            <!-- Quantization -->
+            <div class="section-header" style="margin-top: 24px;">Quantization</div>
+            <div class="form-group">
+                <label class="form-label">Dithering</label>
+                <select class="form-input" id="dithering">
+                    <option value="none">None (Nearest Color)</option>
+                    <option value="ordered">Ordered (Bayer Matrix)</option>
+                    <option value="floyd">Floyd-Steinberg</option>
+                </select>
+            </div>
+            <div class="dither-warning" id="ditherWarning">
+                Dithering on small assets may appear noisy. Consider using "None" for assets 32x32 or smaller.
+            </div>
+
+            <div class="apply-section">
+                <button class="btn btn-primary apply-btn" id="applyBtn" disabled>
+                    Apply to Selected
+                </button>
+            </div>
+        </div>
+
+        <!-- Right Panel - Preview -->
+        <div class="panel preview-panel">
+            <div class="section-header">
+                <span>Preview</span>
+                <div class="preview-toggle">
+                    <button class="asset-tab active" data-view="side">Side by Side</button>
+                    <button class="asset-tab" data-view="toggle">Toggle</button>
+                </div>
+            </div>
+
+            <div class="preview-area" id="previewArea">
+                <div class="preview-empty" id="previewEmpty">
+                    Select an asset and apply palette to preview
+                </div>
+
+                <div class="preview-side" id="previewSide" style="display: none;">
+                    <div class="preview-box">
+                        <div class="preview-label">Original</div>
+                        <div class="preview-canvas-wrapper">
+                            <canvas id="originalCanvas"></canvas>
+                        </div>
+                    </div>
+                    <div class="preview-box">
+                        <div class="preview-label">Quantized</div>
+                        <div class="preview-canvas-wrapper">
+                            <canvas id="quantizedCanvas"></canvas>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="preview-toggle-view" id="previewToggleView">
+                    <div class="preview-canvas-wrapper">
+                        <canvas id="toggleCanvas"></canvas>
+                    </div>
+                    <button class="btn" id="toggleBtn">Show Quantized</button>
+                </div>
+            </div>
+
+            <!-- Touch-up Mode -->
+            <div class="touchup-section" id="touchupSection">
+                <div class="section-header">Touch-up Mode</div>
+                <div class="touchup-info">Click pixels to paint with selected color</div>
+                <div class="touchup-canvas-wrapper">
+                    <canvas id="touchupCanvas"></canvas>
+                </div>
+                <div class="touchup-palette" id="touchupPalette">
+                    <!-- Swatches populated by JS -->
+                </div>
+            </div>
+
+            <!-- Output Options -->
+            <div class="output-section">
+                <div class="section-header">Output</div>
+                <div class="checkbox-group">
+                    <label class="checkbox-label">
+                        <input type="checkbox" id="overwriteOriginal">
+                        Overwrite original asset
+                    </label>
+                    <label class="checkbox-label">
+                        <input type="checkbox" id="batchAll">
+                        Apply to all selected assets
+                    </label>
+                </div>
+                <div class="save-actions">
+                    <button class="btn" id="downloadBtn" disabled>Download PNG</button>
+                    <button class="btn btn-primary" id="saveBtn" disabled>Save to Project</button>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Toast -->
+    <div class="toast" id="toast"></div>
+
+    <script src="../shared/supabase-client.js"></script>
+    <script src="../shared/persistent-header.js"></script>
+    <script src="../shared/project-gate.js"></script>
+    <script src="../shared/master-sheet.js"></script>
+    <script>
+        /* ============================================
+           CHROMA - JavaScript
+           ============================================ */
+
+        // ==========================================
+        // PALETTE PRESETS
+        // ==========================================
+        const PALETTES = {
+            gameboy: ['#9bbc0f', '#8bac0f', '#306230', '#0f380f'],
+            cga: [
+                '#000000', '#0000aa', '#00aa00', '#00aaaa',
+                '#aa0000', '#aa00aa', '#aa5500', '#aaaaaa',
+                '#555555', '#5555ff', '#55ff55', '#55ffff',
+                '#ff5555', '#ff55ff', '#ffff55', '#ffffff'
+            ],
+            nes: [
+                '#7c7c7c', '#0000fc', '#0000bc', '#4428bc', '#940084', '#a80020', '#a81000', '#881400',
+                '#503000', '#007800', '#006800', '#005800', '#004058', '#000000', '#000000', '#000000',
+                '#bcbcbc', '#0078f8', '#0058f8', '#6844fc', '#d800cc', '#e40058', '#f83800', '#e45c10',
+                '#ac7c00', '#00b800', '#00a800', '#00a844', '#008888', '#000000', '#000000', '#000000',
+                '#f8f8f8', '#3cbcfc', '#6888fc', '#9878f8', '#f878f8', '#f85898', '#f87858', '#fca044',
+                '#f8b800', '#b8f818', '#58d854', '#58f898', '#00e8d8', '#787878', '#000000', '#000000',
+                '#fcfcfc', '#a4e4fc', '#b8b8f8', '#d8b8f8', '#f8b8f8', '#f8a4c0', '#f0d0b0', '#fce0a8',
+                '#f8d878', '#d8f878', '#b8f8b8', '#b8f8d8', '#00fcfc', '#d8d8d8', '#000000', '#000000'
+            ],
+            pico8: [
+                '#000000', '#1d2b53', '#7e2553', '#008751',
+                '#ab5236', '#5f574f', '#c2c3c7', '#fff1e8',
+                '#ff004d', '#ffa300', '#ffec27', '#00e436',
+                '#29adff', '#83769c', '#ff77a8', '#ffccaa'
+            ],
+            lospec16: [
+                '#140c1c', '#442434', '#30346d', '#4e4a4e',
+                '#854c30', '#346524', '#d04648', '#757161',
+                '#597dce', '#d27d2c', '#8595a1', '#6daa2c',
+                '#d2aa99', '#6dc2ca', '#dad45e', '#deeed6'
+            ],
+            endesga32: [
+                '#be4a2f', '#d77643', '#ead4aa', '#e4a672', '#b86f50', '#733e39', '#3e2731', '#a22633',
+                '#e43b44', '#f77622', '#feae34', '#fee761', '#63c74d', '#3e8948', '#265c42', '#193c3e',
+                '#124e89', '#0099db', '#2ce8f5', '#ffffff', '#c0cbdc', '#8b9bb4', '#5a6988', '#3a4466',
+                '#262b44', '#181425', '#ff0044', '#68386c', '#b55088', '#f6757a', '#e8b796', '#c28569'
+            ]
+        };
+
+        // ==========================================
+        // STATE
+        // ==========================================
+        const state = {
+            assets: [],
+            selectedAssets: [],
+            assetType: 'tiles',
+            palette: [],
+            paletteSource: 'preset',
+            quantizedData: null,
+            originalData: null,
+            previewAsset: null,
+            previewView: 'side',
+            showingOriginal: true,
+            touchupData: null,
+            touchupColor: null,
+            projectId: null
+        };
+
+        // ==========================================
+        // ELEMENTS
+        // ==========================================
+        const elements = {
+            assetGrid: document.getElementById('assetGrid'),
+            selectedCount: document.getElementById('selectedCount'),
+            paletteSource: document.getElementById('paletteSource'),
+            presetOption: document.getElementById('presetOption'),
+            presetSelect: document.getElementById('presetSelect'),
+            customOption: document.getElementById('customOption'),
+            customHex: document.getElementById('customHex'),
+            parseCustomBtn: document.getElementById('parseCustomBtn'),
+            extractOption: document.getElementById('extractOption'),
+            extractCount: document.getElementById('extractCount'),
+            extractCountLabel: document.getElementById('extractCountLabel'),
+            extractBtn: document.getElementById('extractBtn'),
+            projectOption: document.getElementById('projectOption'),
+            projectPalette: document.getElementById('projectPalette'),
+            paletteGrid: document.getElementById('paletteGrid'),
+            paletteCount: document.getElementById('paletteCount'),
+            savePaletteBtn: document.getElementById('savePaletteBtn'),
+            dithering: document.getElementById('dithering'),
+            ditherWarning: document.getElementById('ditherWarning'),
+            applyBtn: document.getElementById('applyBtn'),
+            previewEmpty: document.getElementById('previewEmpty'),
+            previewSide: document.getElementById('previewSide'),
+            previewToggleView: document.getElementById('previewToggleView'),
+            originalCanvas: document.getElementById('originalCanvas'),
+            quantizedCanvas: document.getElementById('quantizedCanvas'),
+            toggleCanvas: document.getElementById('toggleCanvas'),
+            toggleBtn: document.getElementById('toggleBtn'),
+            touchupSection: document.getElementById('touchupSection'),
+            touchupCanvas: document.getElementById('touchupCanvas'),
+            touchupPalette: document.getElementById('touchupPalette'),
+            overwriteOriginal: document.getElementById('overwriteOriginal'),
+            batchAll: document.getElementById('batchAll'),
+            downloadBtn: document.getElementById('downloadBtn'),
+            saveBtn: document.getElementById('saveBtn'),
+            saveIndicator: document.getElementById('saveIndicator'),
+            toast: document.getElementById('toast')
+        };
+
+        // ==========================================
+        // INITIALIZATION
+        // ==========================================
+        async function init() {
+            // Listen for project changes
+            window.addEventListener('gw:projectChange', async (e) => {
+                state.projectId = e.detail.projectId;
+                if (state.projectId) {
+                    await loadAssets();
+                }
+            });
+
+            // Check if project is already selected
+            const saved = gwPersistentHeader?.getSelectedProject();
+            if (saved?.projectId) {
+                state.projectId = saved.projectId;
+                await loadAssets();
+            }
+
+            // Load initial palette
+            loadPalette();
+
+            // Setup event listeners
+            setupEventListeners();
+        }
+
+        // ==========================================
+        // ASSET LOADING
+        // ==========================================
+        async function loadAssets() {
+            if (!state.projectId) return;
+
+            elements.assetGrid.innerHTML = '<div class="asset-empty">Loading...</div>';
+
+            try {
+                if (state.assetType === 'tiles') {
+                    // Load from master tile sheet
+                    const masterSheet = await MasterSheet.load(state.projectId, 'tiles');
+                    state.assets = masterSheet?.tiles || [];
+                } else {
+                    // Load from master sprite sheet
+                    const masterSheet = await MasterSheet.load(state.projectId, 'sprites');
+                    state.assets = masterSheet?.sprites || [];
+                }
+
+                renderAssetGrid();
+            } catch (error) {
+                console.error('Failed to load assets:', error);
+                elements.assetGrid.innerHTML = '<div class="asset-empty">Failed to load assets</div>';
+            }
+        }
+
+        function renderAssetGrid() {
+            if (state.assets.length === 0) {
+                elements.assetGrid.innerHTML = `<div class="asset-empty">No ${state.assetType} found.<br>Create some in ${state.assetType === 'tiles' ? 'Tilesmith' : 'Sprite-Rite'} first.</div>`;
+                return;
+            }
+
+            elements.assetGrid.innerHTML = '';
+            state.assets.forEach((asset, index) => {
+                const item = document.createElement('div');
+                item.className = 'asset-item';
+                item.dataset.index = index;
+
+                if (state.selectedAssets.includes(index)) {
+                    item.classList.add('selected');
+                }
+
+                // Create canvas for the asset
+                const canvas = document.createElement('canvas');
+                const ctx = canvas.getContext('2d');
+
+                if (asset.imageData) {
+                    canvas.width = asset.width || asset.imageData.width;
+                    canvas.height = asset.height || asset.imageData.height;
+
+                    // Convert base64 to ImageData if needed
+                    if (typeof asset.imageData === 'string') {
+                        const img = new Image();
+                        img.onload = () => {
+                            ctx.drawImage(img, 0, 0);
+                        };
+                        img.src = asset.imageData;
+                    } else {
+                        ctx.putImageData(asset.imageData, 0, 0);
+                    }
+                }
+
+                const name = document.createElement('div');
+                name.className = 'asset-name';
+                name.textContent = asset.name || `${state.assetType.slice(0, -1)}_${index}`;
+
+                item.appendChild(canvas);
+                item.appendChild(name);
+                elements.assetGrid.appendChild(item);
+            });
+
+            updateSelectionInfo();
+        }
+
+        // ==========================================
+        // PALETTE MANAGEMENT
+        // ==========================================
+        function loadPalette() {
+            const source = elements.paletteSource.value;
+            state.paletteSource = source;
+
+            // Show correct option panel
+            document.querySelectorAll('.palette-source-option').forEach(el => {
+                el.classList.remove('visible');
+            });
+
+            if (source === 'preset') {
+                elements.presetOption.classList.add('visible');
+                state.palette = [...PALETTES[elements.presetSelect.value]];
+            } else if (source === 'custom') {
+                elements.customOption.classList.add('visible');
+            } else if (source === 'extract') {
+                elements.extractOption.classList.add('visible');
+            } else if (source === 'project') {
+                elements.projectOption.classList.add('visible');
+            }
+
+            renderPaletteGrid();
+            updateApplyButton();
+        }
+
+        function parseCustomPalette() {
+            const text = elements.customHex.value;
+            const hexRegex = /#?([0-9a-fA-F]{6}|[0-9a-fA-F]{3})/g;
+            const matches = text.match(hexRegex) || [];
+
+            state.palette = matches.map(hex => {
+                if (!hex.startsWith('#')) hex = '#' + hex;
+                if (hex.length === 4) {
+                    // Expand 3-char hex to 6-char
+                    hex = '#' + hex[1] + hex[1] + hex[2] + hex[2] + hex[3] + hex[3];
+                }
+                return hex.toLowerCase();
+            });
+
+            renderPaletteGrid();
+            updateApplyButton();
+            showToast(`Parsed ${state.palette.length} colors`);
+        }
+
+        async function extractPalette() {
+            if (state.selectedAssets.length === 0) {
+                showToast('Select an asset first', 'error');
+                return;
+            }
+
+            const assetIndex = state.selectedAssets[0];
+            const asset = state.assets[assetIndex];
+
+            if (!asset || !asset.imageData) {
+                showToast('Asset has no image data', 'error');
+                return;
+            }
+
+            const colorCount = parseInt(elements.extractCount.value);
+
+            // Get image data
+            const canvas = document.createElement('canvas');
+            const ctx = canvas.getContext('2d');
+
+            if (typeof asset.imageData === 'string') {
+                const img = new Image();
+                await new Promise((resolve, reject) => {
+                    img.onload = resolve;
+                    img.onerror = reject;
+                    img.src = asset.imageData;
+                });
+                canvas.width = img.width;
+                canvas.height = img.height;
+                ctx.drawImage(img, 0, 0);
+            } else {
+                canvas.width = asset.imageData.width;
+                canvas.height = asset.imageData.height;
+                ctx.putImageData(asset.imageData, 0, 0);
+            }
+
+            const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+            state.palette = extractColorsKMeans(imageData, colorCount);
+
+            renderPaletteGrid();
+            updateApplyButton();
+            showToast(`Extracted ${state.palette.length} colors`);
+        }
+
+        function renderPaletteGrid() {
+            elements.paletteGrid.innerHTML = '';
+
+            state.palette.forEach((color, index) => {
+                const swatch = document.createElement('div');
+                swatch.className = 'palette-swatch';
+                swatch.style.backgroundColor = color;
+                swatch.title = color;
+                swatch.dataset.index = index;
+                elements.paletteGrid.appendChild(swatch);
+            });
+
+            elements.paletteCount.textContent = `${state.palette.length} colors`;
+        }
+
+        // ==========================================
+        // K-MEANS COLOR EXTRACTION
+        // ==========================================
+        function extractColorsKMeans(imageData, k) {
+            const pixels = [];
+            const data = imageData.data;
+
+            // Collect non-transparent pixels
+            for (let i = 0; i < data.length; i += 4) {
+                if (data[i + 3] > 128) { // Skip transparent
+                    pixels.push([data[i], data[i + 1], data[i + 2]]);
+                }
+            }
+
+            if (pixels.length === 0) return [];
+            if (pixels.length <= k) {
+                return pixels.map(p => rgbToHex(p[0], p[1], p[2]));
+            }
+
+            // Initialize centroids randomly
+            let centroids = [];
+            const usedIndices = new Set();
+            while (centroids.length < k) {
+                const idx = Math.floor(Math.random() * pixels.length);
+                if (!usedIndices.has(idx)) {
+                    usedIndices.add(idx);
+                    centroids.push([...pixels[idx]]);
+                }
+            }
+
+            // K-means iterations
+            for (let iter = 0; iter < 20; iter++) {
+                const clusters = Array.from({ length: k }, () => []);
+
+                // Assign pixels to nearest centroid
+                for (const pixel of pixels) {
+                    let minDist = Infinity;
+                    let minIdx = 0;
+                    for (let i = 0; i < centroids.length; i++) {
+                        const dist = colorDistance(pixel, centroids[i]);
+                        if (dist < minDist) {
+                            minDist = dist;
+                            minIdx = i;
+                        }
+                    }
+                    clusters[minIdx].push(pixel);
+                }
+
+                // Update centroids
+                let changed = false;
+                for (let i = 0; i < k; i++) {
+                    if (clusters[i].length === 0) continue;
+                    const newCentroid = [0, 0, 0];
+                    for (const pixel of clusters[i]) {
+                        newCentroid[0] += pixel[0];
+                        newCentroid[1] += pixel[1];
+                        newCentroid[2] += pixel[2];
+                    }
+                    newCentroid[0] = Math.round(newCentroid[0] / clusters[i].length);
+                    newCentroid[1] = Math.round(newCentroid[1] / clusters[i].length);
+                    newCentroid[2] = Math.round(newCentroid[2] / clusters[i].length);
+
+                    if (centroids[i][0] !== newCentroid[0] ||
+                        centroids[i][1] !== newCentroid[1] ||
+                        centroids[i][2] !== newCentroid[2]) {
+                        changed = true;
+                        centroids[i] = newCentroid;
+                    }
+                }
+
+                if (!changed) break;
+            }
+
+            // Sort by luminance and return as hex
+            centroids.sort((a, b) => {
+                const lumA = 0.299 * a[0] + 0.587 * a[1] + 0.114 * a[2];
+                const lumB = 0.299 * b[0] + 0.587 * b[1] + 0.114 * b[2];
+                return lumB - lumA;
+            });
+
+            return centroids.map(c => rgbToHex(c[0], c[1], c[2]));
+        }
+
+        // Perceptually-weighted color distance
+        function colorDistance(c1, c2) {
+            const rMean = (c1[0] + c2[0]) / 2;
+            const dr = c1[0] - c2[0];
+            const dg = c1[1] - c2[1];
+            const db = c1[2] - c2[2];
+            return Math.sqrt(
+                (2 + rMean / 256) * dr * dr +
+                4 * dg * dg +
+                (2 + (255 - rMean) / 256) * db * db
+            );
+        }
+
+        // ==========================================
+        // QUANTIZATION
+        // ==========================================
+        async function applyQuantization() {
+            if (state.selectedAssets.length === 0 || state.palette.length === 0) {
+                return;
+            }
+
+            const assetIndex = state.selectedAssets[0];
+            const asset = state.assets[assetIndex];
+
+            if (!asset || !asset.imageData) {
+                showToast('Asset has no image data', 'error');
+                return;
+            }
+
+            // Get original image data
+            const canvas = document.createElement('canvas');
+            const ctx = canvas.getContext('2d');
+
+            if (typeof asset.imageData === 'string') {
+                const img = new Image();
+                await new Promise((resolve, reject) => {
+                    img.onload = resolve;
+                    img.onerror = reject;
+                    img.src = asset.imageData;
+                });
+                canvas.width = img.width;
+                canvas.height = img.height;
+                ctx.drawImage(img, 0, 0);
+            } else {
+                canvas.width = asset.imageData.width;
+                canvas.height = asset.imageData.height;
+                ctx.putImageData(asset.imageData, 0, 0);
+            }
+
+            const originalData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+            state.originalData = new ImageData(
+                new Uint8ClampedArray(originalData.data),
+                originalData.width,
+                originalData.height
+            );
+
+            // Convert palette to RGB
+            const paletteRgb = state.palette.map(hex => hexToRgb(hex));
+
+            // Apply quantization
+            const dithering = elements.dithering.value;
+            let quantizedData;
+
+            if (dithering === 'none') {
+                quantizedData = quantizeNearest(originalData, paletteRgb);
+            } else if (dithering === 'ordered') {
+                quantizedData = quantizeOrdered(originalData, paletteRgb);
+            } else if (dithering === 'floyd') {
+                quantizedData = quantizeFloydSteinberg(originalData, paletteRgb);
+            }
+
+            state.quantizedData = quantizedData;
+            state.previewAsset = asset;
+
+            // Check for dither warning
+            const isSmall = canvas.width <= 32 && canvas.height <= 32;
+            elements.ditherWarning.classList.toggle('visible', isSmall && dithering !== 'none');
+
+            // Show preview
+            renderPreview();
+
+            // Enable save buttons
+            elements.downloadBtn.disabled = false;
+            elements.saveBtn.disabled = false;
+
+            // Show touch-up for small assets
+            if (isSmall) {
+                setupTouchup();
+            }
+        }
+
+        function quantizeNearest(imageData, palette) {
+            const result = new ImageData(
+                new Uint8ClampedArray(imageData.data),
+                imageData.width,
+                imageData.height
+            );
+            const data = result.data;
+
+            for (let i = 0; i < data.length; i += 4) {
+                if (data[i + 3] < 128) continue; // Skip transparent
+
+                const r = data[i];
+                const g = data[i + 1];
+                const b = data[i + 2];
+
+                const nearest = findNearestColor([r, g, b], palette);
+                data[i] = nearest[0];
+                data[i + 1] = nearest[1];
+                data[i + 2] = nearest[2];
+            }
+
+            return result;
+        }
+
+        function quantizeOrdered(imageData, palette) {
+            const result = new ImageData(
+                new Uint8ClampedArray(imageData.data),
+                imageData.width,
+                imageData.height
+            );
+            const data = result.data;
+            const width = imageData.width;
+
+            // Bayer 4x4 matrix
+            const bayer = [
+                [0, 8, 2, 10],
+                [12, 4, 14, 6],
+                [3, 11, 1, 9],
+                [15, 7, 13, 5]
+            ];
+
+            for (let y = 0; y < imageData.height; y++) {
+                for (let x = 0; x < width; x++) {
+                    const i = (y * width + x) * 4;
+                    if (data[i + 3] < 128) continue;
+
+                    const threshold = (bayer[y % 4][x % 4] / 16 - 0.5) * 64;
+
+                    const r = Math.max(0, Math.min(255, data[i] + threshold));
+                    const g = Math.max(0, Math.min(255, data[i + 1] + threshold));
+                    const b = Math.max(0, Math.min(255, data[i + 2] + threshold));
+
+                    const nearest = findNearestColor([r, g, b], palette);
+                    data[i] = nearest[0];
+                    data[i + 1] = nearest[1];
+                    data[i + 2] = nearest[2];
+                }
+            }
+
+            return result;
+        }
+
+        function quantizeFloydSteinberg(imageData, palette) {
+            const result = new ImageData(
+                new Uint8ClampedArray(imageData.data),
+                imageData.width,
+                imageData.height
+            );
+            const data = result.data;
+            const width = imageData.width;
+            const height = imageData.height;
+
+            // Working copy for error diffusion
+            const pixels = [];
+            for (let i = 0; i < data.length; i += 4) {
+                pixels.push([data[i], data[i + 1], data[i + 2], data[i + 3]]);
+            }
+
+            for (let y = 0; y < height; y++) {
+                for (let x = 0; x < width; x++) {
+                    const idx = y * width + x;
+                    const pixel = pixels[idx];
+
+                    if (pixel[3] < 128) continue;
+
+                    const oldR = pixel[0];
+                    const oldG = pixel[1];
+                    const oldB = pixel[2];
+
+                    const nearest = findNearestColor([oldR, oldG, oldB], palette);
+
+                    pixel[0] = nearest[0];
+                    pixel[1] = nearest[1];
+                    pixel[2] = nearest[2];
+
+                    const errR = oldR - nearest[0];
+                    const errG = oldG - nearest[1];
+                    const errB = oldB - nearest[2];
+
+                    // Distribute error
+                    const distribute = (dx, dy, factor) => {
+                        const nx = x + dx;
+                        const ny = y + dy;
+                        if (nx >= 0 && nx < width && ny >= 0 && ny < height) {
+                            const nidx = ny * width + nx;
+                            if (pixels[nidx][3] >= 128) {
+                                pixels[nidx][0] = Math.max(0, Math.min(255, pixels[nidx][0] + errR * factor));
+                                pixels[nidx][1] = Math.max(0, Math.min(255, pixels[nidx][1] + errG * factor));
+                                pixels[nidx][2] = Math.max(0, Math.min(255, pixels[nidx][2] + errB * factor));
+                            }
+                        }
+                    };
+
+                    distribute(1, 0, 7 / 16);
+                    distribute(-1, 1, 3 / 16);
+                    distribute(0, 1, 5 / 16);
+                    distribute(1, 1, 1 / 16);
+                }
+            }
+
+            // Copy back to result
+            for (let i = 0; i < pixels.length; i++) {
+                data[i * 4] = pixels[i][0];
+                data[i * 4 + 1] = pixels[i][1];
+                data[i * 4 + 2] = pixels[i][2];
+            }
+
+            return result;
+        }
+
+        function findNearestColor(rgb, palette) {
+            let minDist = Infinity;
+            let nearest = palette[0];
+
+            for (const color of palette) {
+                const dist = colorDistance(rgb, color);
+                if (dist < minDist) {
+                    minDist = dist;
+                    nearest = color;
+                }
+            }
+
+            return nearest;
+        }
+
+        // ==========================================
+        // PREVIEW
+        // ==========================================
+        function renderPreview() {
+            if (!state.originalData || !state.quantizedData) return;
+
+            // Hide empty message
+            elements.previewEmpty.style.display = 'none';
+
+            // Determine which view to show
+            if (state.previewView === 'side') {
+                elements.previewSide.style.display = 'grid';
+                elements.previewToggleView.classList.remove('active');
+
+                // Render original
+                elements.originalCanvas.width = state.originalData.width;
+                elements.originalCanvas.height = state.originalData.height;
+                elements.originalCanvas.getContext('2d').putImageData(state.originalData, 0, 0);
+
+                // Render quantized
+                elements.quantizedCanvas.width = state.quantizedData.width;
+                elements.quantizedCanvas.height = state.quantizedData.height;
+                elements.quantizedCanvas.getContext('2d').putImageData(state.quantizedData, 0, 0);
+            } else {
+                elements.previewSide.style.display = 'none';
+                elements.previewToggleView.classList.add('active');
+
+                const data = state.showingOriginal ? state.originalData : state.quantizedData;
+                elements.toggleCanvas.width = data.width;
+                elements.toggleCanvas.height = data.height;
+                elements.toggleCanvas.getContext('2d').putImageData(data, 0, 0);
+
+                elements.toggleBtn.textContent = state.showingOriginal ? 'Show Quantized' : 'Show Original';
+            }
+        }
+
+        // ==========================================
+        // TOUCH-UP MODE
+        // ==========================================
+        function setupTouchup() {
+            if (!state.quantizedData) return;
+
+            // Copy quantized data for touch-up
+            state.touchupData = new ImageData(
+                new Uint8ClampedArray(state.quantizedData.data),
+                state.quantizedData.width,
+                state.quantizedData.height
+            );
+
+            elements.touchupSection.classList.add('visible');
+
+            // Setup canvas
+            const scale = Math.min(8, Math.floor(200 / Math.max(state.touchupData.width, state.touchupData.height)));
+            elements.touchupCanvas.width = state.touchupData.width * scale;
+            elements.touchupCanvas.height = state.touchupData.height * scale;
+            elements.touchupCanvas.dataset.scale = scale;
+
+            renderTouchup();
+
+            // Setup palette swatches
+            elements.touchupPalette.innerHTML = '';
+            state.palette.forEach((color, i) => {
+                const swatch = document.createElement('div');
+                swatch.className = 'touchup-swatch';
+                swatch.style.backgroundColor = color;
+                swatch.dataset.color = color;
+                if (i === 0) {
+                    swatch.classList.add('active');
+                    state.touchupColor = hexToRgb(color);
+                }
+                elements.touchupPalette.appendChild(swatch);
+            });
+        }
+
+        function renderTouchup() {
+            if (!state.touchupData) return;
+
+            const ctx = elements.touchupCanvas.getContext('2d');
+            const scale = parseInt(elements.touchupCanvas.dataset.scale);
+
+            ctx.imageSmoothingEnabled = false;
+
+            // Create temp canvas with image data
+            const temp = document.createElement('canvas');
+            temp.width = state.touchupData.width;
+            temp.height = state.touchupData.height;
+            temp.getContext('2d').putImageData(state.touchupData, 0, 0);
+
+            // Draw scaled
+            ctx.drawImage(temp, 0, 0, temp.width * scale, temp.height * scale);
+        }
+
+        function handleTouchupClick(e) {
+            if (!state.touchupData || !state.touchupColor) return;
+
+            const rect = elements.touchupCanvas.getBoundingClientRect();
+            const scale = parseInt(elements.touchupCanvas.dataset.scale);
+            const x = Math.floor((e.clientX - rect.left) / scale);
+            const y = Math.floor((e.clientY - rect.top) / scale);
+
+            if (x < 0 || x >= state.touchupData.width || y < 0 || y >= state.touchupData.height) return;
+
+            const idx = (y * state.touchupData.width + x) * 4;
+
+            // Only modify non-transparent pixels
+            if (state.touchupData.data[idx + 3] < 128) return;
+
+            state.touchupData.data[idx] = state.touchupColor[0];
+            state.touchupData.data[idx + 1] = state.touchupColor[1];
+            state.touchupData.data[idx + 2] = state.touchupColor[2];
+
+            renderTouchup();
+
+            // Update quantized preview
+            state.quantizedData = new ImageData(
+                new Uint8ClampedArray(state.touchupData.data),
+                state.touchupData.width,
+                state.touchupData.height
+            );
+            renderPreview();
+        }
+
+        // ==========================================
+        // SAVE & EXPORT
+        // ==========================================
+        function downloadPng() {
+            if (!state.quantizedData) return;
+
+            const canvas = document.createElement('canvas');
+            canvas.width = state.quantizedData.width;
+            canvas.height = state.quantizedData.height;
+            canvas.getContext('2d').putImageData(state.quantizedData, 0, 0);
+
+            const link = document.createElement('a');
+            link.download = `${state.previewAsset?.name || 'quantized'}_chroma.png`;
+            link.href = canvas.toDataURL('image/png');
+            link.click();
+
+            showToast('Downloaded PNG');
+        }
+
+        async function saveToProject() {
+            if (!state.quantizedData || !state.projectId) return;
+
+            elements.saveIndicator.textContent = 'Saving...';
+            elements.saveIndicator.className = 'save-indicator saving';
+
+            try {
+                // Convert to base64
+                const canvas = document.createElement('canvas');
+                canvas.width = state.quantizedData.width;
+                canvas.height = state.quantizedData.height;
+                canvas.getContext('2d').putImageData(state.quantizedData, 0, 0);
+                const base64 = canvas.toDataURL('image/png');
+
+                // Get current asset
+                const assetIndex = state.selectedAssets[0];
+                const asset = state.assets[assetIndex];
+
+                if (elements.overwriteOriginal.checked) {
+                    // Update existing asset
+                    asset.imageData = base64;
+                } else {
+                    // Create new asset with _chroma suffix
+                    const newAsset = {
+                        ...asset,
+                        name: `${asset.name || 'asset'}_chroma`,
+                        imageData: base64
+                    };
+                    state.assets.push(newAsset);
+                }
+
+                // Save to master sheet
+                if (state.assetType === 'tiles') {
+                    await MasterSheet.save(state.projectId, 'tiles', { tiles: state.assets });
+                } else {
+                    await MasterSheet.save(state.projectId, 'sprites', { sprites: state.assets });
+                }
+
+                elements.saveIndicator.textContent = 'Saved';
+                elements.saveIndicator.className = 'save-indicator saved';
+                showToast('Saved to project', 'success');
+
+                // Reload assets
+                await loadAssets();
+            } catch (error) {
+                console.error('Failed to save:', error);
+                elements.saveIndicator.textContent = 'Error';
+                elements.saveIndicator.className = 'save-indicator';
+                showToast('Failed to save', 'error');
+            }
+        }
+
+        // ==========================================
+        // UTILITIES
+        // ==========================================
+        function hexToRgb(hex) {
+            const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+            return result ? [
+                parseInt(result[1], 16),
+                parseInt(result[2], 16),
+                parseInt(result[3], 16)
+            ] : [0, 0, 0];
+        }
+
+        function rgbToHex(r, g, b) {
+            return '#' + [r, g, b].map(x => {
+                const hex = Math.round(x).toString(16);
+                return hex.length === 1 ? '0' + hex : hex;
+            }).join('');
+        }
+
+        function showToast(message, type = '') {
+            elements.toast.textContent = message;
+            elements.toast.className = 'toast visible' + (type ? ' ' + type : '');
+            setTimeout(() => {
+                elements.toast.classList.remove('visible');
+            }, 2000);
+        }
+
+        function updateSelectionInfo() {
+            elements.selectedCount.textContent = `${state.selectedAssets.length} selected`;
+            updateApplyButton();
+        }
+
+        function updateApplyButton() {
+            elements.applyBtn.disabled = state.selectedAssets.length === 0 || state.palette.length === 0;
+        }
+
+        // ==========================================
+        // EVENT LISTENERS
+        // ==========================================
+        function setupEventListeners() {
+            // Asset type tabs
+            document.querySelectorAll('.asset-tab[data-type]').forEach(tab => {
+                tab.addEventListener('click', () => {
+                    document.querySelectorAll('.asset-tab[data-type]').forEach(t => t.classList.remove('active'));
+                    tab.classList.add('active');
+                    state.assetType = tab.dataset.type;
+                    state.selectedAssets = [];
+                    loadAssets();
+                });
+            });
+
+            // Asset selection
+            elements.assetGrid.addEventListener('click', (e) => {
+                const item = e.target.closest('.asset-item');
+                if (!item) return;
+
+                const index = parseInt(item.dataset.index);
+
+                if (e.ctrlKey || e.metaKey) {
+                    // Multi-select
+                    const pos = state.selectedAssets.indexOf(index);
+                    if (pos >= 0) {
+                        state.selectedAssets.splice(pos, 1);
+                        item.classList.remove('selected');
+                    } else {
+                        state.selectedAssets.push(index);
+                        item.classList.add('selected');
+                    }
+                } else {
+                    // Single select
+                    document.querySelectorAll('.asset-item').forEach(i => i.classList.remove('selected'));
+                    state.selectedAssets = [index];
+                    item.classList.add('selected');
+                }
+
+                updateSelectionInfo();
+            });
+
+            // Palette source
+            elements.paletteSource.addEventListener('change', loadPalette);
+            elements.presetSelect.addEventListener('change', () => {
+                state.palette = [...PALETTES[elements.presetSelect.value]];
+                renderPaletteGrid();
+                updateApplyButton();
+            });
+
+            // Custom palette
+            elements.parseCustomBtn.addEventListener('click', parseCustomPalette);
+
+            // Extract palette
+            elements.extractCount.addEventListener('input', () => {
+                elements.extractCountLabel.textContent = elements.extractCount.value;
+            });
+            elements.extractBtn.addEventListener('click', extractPalette);
+
+            // Apply button
+            elements.applyBtn.addEventListener('click', applyQuantization);
+
+            // Preview toggle
+            document.querySelectorAll('.preview-toggle .asset-tab').forEach(tab => {
+                tab.addEventListener('click', () => {
+                    document.querySelectorAll('.preview-toggle .asset-tab').forEach(t => t.classList.remove('active'));
+                    tab.classList.add('active');
+                    state.previewView = tab.dataset.view;
+                    renderPreview();
+                });
+            });
+
+            elements.toggleBtn.addEventListener('click', () => {
+                state.showingOriginal = !state.showingOriginal;
+                renderPreview();
+            });
+
+            // Touch-up
+            elements.touchupCanvas.addEventListener('click', handleTouchupClick);
+            elements.touchupPalette.addEventListener('click', (e) => {
+                const swatch = e.target.closest('.touchup-swatch');
+                if (!swatch) return;
+                document.querySelectorAll('.touchup-swatch').forEach(s => s.classList.remove('active'));
+                swatch.classList.add('active');
+                state.touchupColor = hexToRgb(swatch.dataset.color);
+            });
+
+            // Save actions
+            elements.downloadBtn.addEventListener('click', downloadPng);
+            elements.saveBtn.addEventListener('click', saveToProject);
+        }
+
+        // ==========================================
+        // Initialize
+        // ==========================================
+        init();
+    </script>
+
+    <!-- Help Drawer -->
+    <script src="../shared/help-drawer.js"></script>
+    <script>
+        // Initialize help drawer with Chroma docs
+        HelpDrawer.init({
+            toolId: 'chroma',
+            toolName: 'Chroma',
+            toolIcon: '&#127912;',
+            accentColor: '#a855f7',
+            docs: {
+                overview: `Chroma is a palette restriction tool for applying color palettes to your pixel art assets.`,
+                sections: [
+                    {
+                        title: 'Asset Selection',
+                        content: `Select tiles or sprites from your project to apply palette restrictions. Use Ctrl/Cmd+click to select multiple assets.`
+                    },
+                    {
+                        title: 'Palette Sources',
+                        content: `• **Preset**: Choose from classic palettes like Game Boy, NES, PICO-8\n• **Custom**: Enter hex codes manually\n• **Extract**: Automatically extract colors from an asset\n• **Project**: Use saved project palettes`
+                    },
+                    {
+                        title: 'Quantization',
+                        content: `• **None**: Maps each pixel to nearest palette color\n• **Ordered (Bayer)**: Uses pattern dithering for gradients\n• **Floyd-Steinberg**: Error diffusion for smooth gradients`
+                    },
+                    {
+                        title: 'Touch-up Mode',
+                        content: `For small assets (32x32 or smaller), you can manually paint pixels with palette colors to fix any unwanted quantization artifacts.`
+                    }
+                ]
+            }
+        });
+    </script>
+</body>
+</html>
