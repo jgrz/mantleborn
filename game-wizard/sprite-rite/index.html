@@ -4636,7 +4636,8 @@
             tempCanvas.height = h;
             const tempCtx = tempCanvas.getContext('2d');
             tempCtx.drawImage(state.image, x, y, w, h, 0, 0, w, h);
-            const base64 = tempCanvas.toDataURL('image/png').split(',')[1];
+            // API expects full data URL format
+            const dataUrl = tempCanvas.toDataURL('image/png');
 
             // API requires minimum 32x32
             const outputWidth = Math.max(32, w);
@@ -4647,10 +4648,11 @@
                 height: outputHeight,
                 outline: 'single color outline',
                 view: 'low top-down',
-                // init_image must be an object with type and base64
-                init_image: {
+                // background_image for map objects (not init_image)
+                background_image: {
                     type: 'base64',
-                    base64: base64
+                    base64: dataUrl,
+                    format: 'png'
                 }
             };
 
@@ -4660,7 +4662,7 @@
             try {
                 const client = new PixelLabClient();
                 client.init(crucibleClient);
-                console.log('Calling createMapObject for variant with:', { description, width: w, height: h, hasInitImage: !!base64 });
+                console.log('Calling createMapObject for variant with:', { description, width: w, height: h, hasBackgroundImage: true });
                 const result = await client.createMapObject({ description, ...options });
                 console.log('Variant createMapObject result:', result);
 
