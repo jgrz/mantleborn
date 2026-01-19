@@ -4636,8 +4636,9 @@
             tempCanvas.height = h;
             const tempCtx = tempCanvas.getContext('2d');
             tempCtx.drawImage(state.image, x, y, w, h, 0, 0, w, h);
-            // API expects full data URL format
+            // Get raw base64 without the data URL prefix
             const dataUrl = tempCanvas.toDataURL('image/png');
+            const base64Data = dataUrl.split(',')[1];
 
             // API requires minimum 32x32
             const outputWidth = Math.max(32, w);
@@ -4650,7 +4651,7 @@
                 // Bitforge supports init_image for generating variants
                 init_image: {
                     type: 'base64',
-                    base64: dataUrl,
+                    base64: base64Data,
                     format: 'png'
                 },
                 no_background: true
