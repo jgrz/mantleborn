@@ -62,7 +62,10 @@ class PixelLabClient {
         const data = await response.json();
 
         if (!response.ok) {
-            throw new Error(data.error || `Request failed: ${response.status}`);
+            const errorMsg = data.error || data.message || `Request failed: ${response.status}`;
+            const details = data.details ? ` - ${JSON.stringify(data.details)}` : '';
+            console.error('PixelLab error details:', data);
+            throw new Error(errorMsg + details);
         }
 
         return data;

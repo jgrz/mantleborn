@@ -1,0 +1,2 @@
+[functions.pixellab-proxy]
+verify_jwt = false
