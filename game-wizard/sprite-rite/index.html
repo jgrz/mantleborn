@@ -804,33 +804,6 @@
             font-weight: bold;
         }
 
-        /* Auth indicator */
-        .auth-indicator {
-            display: flex;
-            align-items: center;
-            gap: 6px;
-            font-size: 11px;
-            color: var(--stone-mid);
-            padding: 4px 8px;
-            background: var(--bg-deep);
-            border-radius: 4px;
-        }
-
-        .auth-indicator.logged-in {
-            color: var(--accent-ember);
-        }
-
-        .auth-dot {
-            width: 6px;
-            height: 6px;
-            border-radius: 50%;
-            background: var(--stone-mid);
-        }
-
-        .auth-indicator.logged-in .auth-dot {
-            background: var(--accent-ember);
-        }
-
         /* Cloud save indicator */
         .save-indicator {
             font-size: 10px;
@@ -1483,12 +1456,6 @@
         </div>
         <div class="header-actions">
             <div class="selector-group">
-                <span class="selector-label">Project</span>
-                <select class="sprite-select" id="projectSelect">
-                    <option value="">-- Select Project --</option>
-                </select>
-            </div>
-            <div class="selector-group">
                 <span class="selector-label">Sheet</span>
                 <select class="sprite-select" id="spriteSheetSelect" disabled>
                     <option value="">-- Select Sheet --</option>
@@ -1515,10 +1482,6 @@
                 </div>
             </div>
             <span class="save-indicator" id="saveIndicator"></span>
-            <div class="auth-indicator" id="authIndicator">
-                <span class="auth-dot"></span>
-                <span>...</span>
-            </div>
         </div>
     </header>
 
@@ -1993,8 +1956,7 @@
         // DOM Elements
         // ==========================================
         const elements = {
-            // Project & Sprite sheet selection
-            projectSelect: document.getElementById('projectSelect'),
+            // Sprite sheet selection
             spriteSheetSelect: document.getElementById('spriteSheetSelect'),
             uploadInput: document.getElementById('uploadInput'),
             uploadBtn: document.getElementById('uploadBtn'),
@@ -2002,7 +1964,6 @@
             importInput: document.getElementById('importInput'),
             importJsonBtn: document.getElementById('importJsonBtn'),
             saveIndicator: document.getElementById('saveIndicator'),
-            authIndicator: document.getElementById('authIndicator'),
 
             // Canvas elements
             canvasWrapper: document.getElementById('canvasWrapper'),
@@ -2317,44 +2278,35 @@
 
             // Check auth state
             state.user = await crucibleClient.getUser();
-            updateAuthIndicator();
 
             // Listen for auth changes
             crucibleClient.onAuthStateChange((event, session) => {
                 state.user = session?.user || null;
-                updateAuthIndicator();
-                if (state.user) {
-                    loadProjects();
-                }
             });
-
-            // Load projects if logged in
-            if (state.user) {
-                await loadProjects();
-            }
 
             // Check URL params for context
             const params = new URLSearchParams(window.location.search);
             const projectId = params.get('project');
             if (projectId && state.user) {
-                elements.projectSelect.value = projectId;
                 await selectProject(projectId);
+                // Sync to persistent header
+                if (window.gwPersistentHeader) {
+                    window.gwPersistentHeader.setProject(projectId, '');
+                }
             }
 
             // Sync with persistent header project selection
             if (!state.projectId && window.gwPersistentHeader) {
                 const saved = window.gwPersistentHeader.getSelectedProject();
                 if (saved?.projectId && state.user) {
-                    elements.projectSelect.value = saved.projectId;
                     await selectProject(saved.projectId);
                 }
             }
 
             // Listen for project changes from persistent header
             window.addEventListener('gw:projectChange', async (e) => {
-                const { projectId, projectName } = e.detail;
+                const { projectId } = e.detail;
                 if (projectId && projectId !== state.projectId) {
-                    elements.projectSelect.value = projectId;
                     await selectProject(projectId);
                 }
             });
@@ -2366,23 +2318,6 @@
             updateToolButtonStates();
         }
 
-        function updateAuthIndicator() {
-            if (state.user) {
-                const name = state.user.user_metadata?.display_name || state.user.email?.split('@')[0] || 'User';
-                elements.authIndicator.innerHTML = `
-                    <span class="auth-dot"></span>
-                    <span>${name}</span>
-                `;
-                elements.authIndicator.classList.add('logged-in');
-            } else {
-                elements.authIndicator.innerHTML = `
-                    <span class="auth-dot"></span>
-                    <span>Guest</span>
-                `;
-                elements.authIndicator.classList.remove('logged-in');
-            }
-        }
-
         function updateSaveIndicator(status) {
             elements.saveIndicator.className = 'save-indicator ' + status;
             elements.saveIndicator.textContent = status === 'saving' ? 'Saving...' :
@@ -2392,29 +2327,6 @@
         // ==========================================
         // Project & Spritesheet Loading
         // ==========================================
-        async function loadProjects() {
-            if (!state.user) {
-                elements.projectSelect.innerHTML = '<option value="">-- Login to access projects --</option>';
-                elements.projectSelect.disabled = true;
-                return;
-            }
-
-            try {
-                const projects = await crucibleClient.getProjects();
-                elements.projectSelect.innerHTML = '<option value="">-- Select Project --</option>';
-                projects.forEach(project => {
-                    const option = document.createElement('option');
-                    option.value = project.id;
-                    option.textContent = project.name;
-                    elements.projectSelect.appendChild(option);
-                });
-                elements.projectSelect.disabled = false;
-            } catch (error) {
-                console.error('Failed to load projects:', error);
-                showToast('Failed to load projects', 'error');
-            }
-        }
-
         async function selectProject(projectId) {
             state.projectId = projectId;
             state.spritesheetId = null;
@@ -4101,17 +4013,6 @@
         // ==========================================
         // Event Listeners
         // ==========================================
-
-        // Project selection
-        elements.projectSelect.addEventListener('change', (e) => {
-            const projectId = e.target.value;
-            const projectName = e.target.options[e.target.selectedIndex]?.text || '';
-            selectProject(projectId);
-            // Sync to persistent header
-            if (window.gwPersistentHeader) {
-                window.gwPersistentHeader.setProject(projectId, projectName);
-            }
-        });
 
         // Sprite sheet selection
         elements.spriteSheetSelect.addEventListener('change', (e) => {
