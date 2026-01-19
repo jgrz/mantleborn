@@ -1273,12 +1273,16 @@
 
                     <div class="form-row">
                         <div class="form-group">
-                            <label class="form-label">Sprite Size</label>
+                            <label class="form-label">Sprite Size (in tiles)</label>
                             <select class="form-select" id="genSize">
-                                <option value="16">16x16</option>
-                                <option value="24" selected>24x24</option>
-                                <option value="32">32x32</option>
+                                <option value="1x1" selected>1×1 tile</option>
+                                <option value="1x2">1×2 tiles</option>
+                                <option value="2x1">2×1 tiles</option>
+                                <option value="2x2">2×2 tiles</option>
+                                <option value="2x3">2×3 tiles</option>
+                                <option value="3x3">3×3 tiles</option>
                             </select>
+                            <div class="form-hint" id="genSizeHint">= 16×16 pixels</div>
                         </div>
                         <div class="form-group">
                             <label class="form-label">Art Style</label>
@@ -1345,10 +1349,11 @@
                                 <div class="form-group">
                                     <label class="form-label">Size</label>
                                     <select class="form-select" id="plSize">
-                                        <option value="32">32x32</option>
-                                        <option value="48" selected>48x48</option>
-                                        <option value="64">64x64</option>
+                                        <option value="32">32×32</option>
+                                        <option value="48" selected>48×48</option>
+                                        <option value="64">64×64</option>
                                     </select>
+                                    <div class="form-hint" id="plSizeHint">= 3×3 tiles</div>
                                 </div>
                             </div>
                             <div class="form-row">
@@ -1471,7 +1476,10 @@
             // PixelLab integration
             selectedEngine: 'claude',
             skeletonEditor: null,
-            generationQueue: null
+            generationQueue: null,
+
+            // Project settings
+            tileSize: 16  // Loaded from project settings
         };
 
         // Animation presets by perspective
@@ -1546,6 +1554,7 @@
             acceptPreview: document.getElementById('acceptPreview'),
             genPrompt: document.getElementById('genPrompt'),
             genSize: document.getElementById('genSize'),
+            genSizeHint: document.getElementById('genSizeHint'),
             genStyle: document.getElementById('genStyle'),
             genPerspective: document.getElementById('genPerspective'),
             genPalette: document.getElementById('genPalette'),
@@ -1579,6 +1588,7 @@
             plNegative: document.getElementById('plNegative'),
             plDirections: document.getElementById('plDirections'),
             plSize: document.getElementById('plSize'),
+            plSizeHint: document.getElementById('plSizeHint'),
             plOutline: document.getElementById('plOutline'),
             plShading: document.getElementById('plShading'),
             plSkeletonContainer: document.getElementById('plSkeletonContainer'),
@@ -2571,6 +2581,40 @@
         // ==========================================
         // AI Character Generation
         // ==========================================
+
+        // Helper to calculate pixel dimensions from tile format (e.g. "2x3")
+        function parseTileSize(tileValue) {
+            const [cols, rows] = tileValue.split('x').map(Number);
+            return {
+                cols: cols || 1,
+                rows: rows || 1,
+                width: (cols || 1) * state.tileSize,
+                height: (rows || 1) * state.tileSize
+            };
+        }
+
+        // Update the ClaudeAI size hint based on current selection
+        function updateGenSizeHint() {
+            const { width, height } = parseTileSize(elements.genSize.value);
+            if (elements.genSizeHint) {
+                elements.genSizeHint.textContent = `= ${width}×${height} pixels`;
+            }
+        }
+
+        // Update the PixelLab size hint to show tile context
+        function updatePlSizeHint() {
+            const pixelSize = parseInt(elements.plSize.value);
+            const tiles = pixelSize / state.tileSize;
+            const tilesRounded = Math.round(tiles * 10) / 10; // Round to 1 decimal
+            if (elements.plSizeHint) {
+                if (Number.isInteger(tiles)) {
+                    elements.plSizeHint.textContent = `= ${tiles}×${tiles} tiles`;
+                } else {
+                    elements.plSizeHint.textContent = `≈ ${tilesRounded}×${tilesRounded} tiles`;
+                }
+            }
+        }
+
         async function openGenerateModal() {
             elements.generateModal.classList.add('active');
             elements.generateForm.style.display = 'block';
@@ -2583,6 +2627,9 @@
                     const settings = await crucibleClient.getProjectSettings(state.projectId);
                     const style = settings.artStyle || {};
                     const charDefaults = settings.characterDefaults || {};
+
+                    // Load tile size from project settings
+                    state.tileSize = settings.tileDefaults?.size || 16;
 
                     // Map outline values (project uses short form, modal uses long form)
                     if (style.outline) {
@@ -2604,7 +2651,7 @@
                         const plShading = document.getElementById('plShading');
                         if (plShading) plShading.value = shadingMap[style.shading] || style.shading;
                     }
-                    // Character size
+                    // PixelLab: Set size based on charDefaults.size if available
                     if (charDefaults.size) {
                         const plSize = document.getElementById('plSize');
                         if (plSize) plSize.value = String(charDefaults.size);
@@ -2628,6 +2675,10 @@
                     console.warn('Could not load project settings:', err);
                 }
             }
+
+            // Update size hints based on current tile size
+            updateGenSizeHint();
+            updatePlSizeHint();
 
             elements.genPrompt.focus();
         }
@@ -2672,11 +2723,14 @@
             try {
                 const crucible = await getCrucible();
 
+                // Parse tile dimensions (e.g. "2x3" -> {width: 32, height: 48} for 16px tiles)
+                const tileDims = parseTileSize(elements.genSize.value);
+
                 // Prepare request for IDLE ONLY
                 const request = {
                     prompt: prompt,
-                    width: parseInt(elements.genSize.value),
-                    height: parseInt(elements.genSize.value),
+                    width: tileDims.width,
+                    height: tileDims.height,
                     artStyle: elements.genStyle.value,
                     perspective: elements.genPerspective.value,
                     paletteSize: parseInt(elements.genPalette.value),
@@ -3046,6 +3100,10 @@
             elements.generateModal.addEventListener('click', (e) => {
                 if (e.target === elements.generateModal) closeGenerateModal();
             });
+
+            // Size dropdown change listeners to update hints
+            elements.genSize.addEventListener('change', updateGenSizeHint);
+            elements.plSize.addEventListener('change', updatePlSizeHint);
 
             elements.characterName.addEventListener('input', () => {
                 if (!elements.characterIdentifier.value ||
