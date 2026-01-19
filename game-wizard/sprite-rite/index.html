@@ -4491,28 +4491,37 @@
             const imageUrl = job.resultUrl || job.result_url;
 
             try {
-                showToast('Importing generated asset...', 'info');
+                showToast('Downloading generated asset...', 'info');
 
-                // Fetch the image
+                // Fetch the image as blob
                 const response = await fetch(imageUrl);
                 const blob = await response.blob();
 
-                // Create image from blob
-                const img = new Image();
-                const url = URL.createObjectURL(blob);
+                // Create filename from job info
+                const name = job.prompt || job.type || 'generated';
+                const filename = `${name.replace(/[^a-z0-9]/gi, '_')}_${job.type}`;
 
-                img.onload = () => {
-                    URL.revokeObjectURL(url);
-                    loadImageIntoEditor(img, `generated_${job.type}_${Date.now()}.png`);
-                    showToast('Asset imported! Select sprites and save them.', 'success');
-                };
+                // Create a File object from the blob
+                const file = new File([blob], `${filename}.png`, { type: 'image/png' });
 
-                img.onerror = () => {
-                    URL.revokeObjectURL(url);
-                    showToast('Failed to load generated image', 'error');
-                };
+                // Upload as a spritesheet
+                showToast('Saving to sprite sheets...');
+                const sheet = await crucibleClient.uploadSpritesheet(state.projectId, file, {
+                    name: filename,
+                    category: 'ai_generated'
+                });
 
-                img.src = url;
+                // Add to dropdown and select
+                const option = document.createElement('option');
+                option.value = sheet.id;
+                option.textContent = sheet.name;
+                option.dataset.url = sheet.publicUrl;
+                elements.spriteSheetSelect.appendChild(option);
+                elements.spriteSheetSelect.value = sheet.id;
+
+                // Load it
+                await selectSpritesheet(sheet.id);
+                showToast(`${job.type === 'map_object' ? 'Map object' : 'Asset'} imported and saved to "${sheet.name}"!`, 'success');
             } catch (error) {
                 console.error('Import error:', error);
                 showToast('Failed to import asset: ' + error.message, 'error');
