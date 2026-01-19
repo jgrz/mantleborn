@@ -2498,14 +2498,19 @@ class CrucibleClient {
     async generateTileSpec(request) {
         if (!this.client) throw new Error('Crucible not initialized');
 
+        // Get user session for authentication
+        const { data: { session } } = await this.client.auth.getSession();
+        const token = session?.access_token || SUPABASE_ANON_KEY;
+
         // Call the edge function
         const response = await fetch(
             `${SUPABASE_URL}/functions/v1/generate-tile-spec`,
             {
                 method: 'POST',
                 headers: {
-                    'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
-                    'Content-Type': 'application/json'
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json',
+                    'apikey': SUPABASE_ANON_KEY
                 },
                 body: JSON.stringify(request)
             }
@@ -2585,14 +2590,19 @@ class CrucibleClient {
     async generateCharacterSprites(request) {
         if (!this.client) throw new Error('Crucible not initialized');
 
+        // Get user session for authentication
+        const { data: { session } } = await this.client.auth.getSession();
+        const token = session?.access_token || SUPABASE_ANON_KEY;
+
         // Call the edge function
         const response = await fetch(
             `${SUPABASE_URL}/functions/v1/generate-character-sprites`,
             {
                 method: 'POST',
                 headers: {
-                    'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
-                    'Content-Type': 'application/json'
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json',
+                    'apikey': SUPABASE_ANON_KEY
                 },
                 body: JSON.stringify(request)
             }
