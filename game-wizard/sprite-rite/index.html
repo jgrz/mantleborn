@@ -4384,7 +4384,9 @@
             try {
                 const client = new PixelLabClient();
                 client.init(crucibleClient);
+                console.log('Calling createCharacter with:', { description, ...options });
                 const result = await client.createCharacter({ description, ...options });
+                console.log('createCharacter result:', result);
 
                 if (result.jobId) {
                     // Save to database and add to queue
@@ -4403,6 +4405,9 @@
                 } else if (result.characterId) {
                     // Immediate result (rare)
                     showToast('Character generated!', 'success');
+                } else {
+                    console.error('Unexpected result - no jobId or characterId:', result);
+                    showToast('Generation returned unexpected response', 'error');
                 }
             } catch (error) {
                 console.error('Character generation error:', error);
