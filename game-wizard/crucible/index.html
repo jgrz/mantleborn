@@ -1761,6 +1761,7 @@
 
     <!-- Load Supabase Client -->
     <script src="../shared/supabase-client.js"></script>
+    <script src="../shared/persistent-header.js"></script>
     <script src="../shared/notifications.js"></script>
     <script src="../shared/help-drawer.js"></script>
     <script src="../shared/docs/crucible-docs.js"></script>
@@ -2311,7 +2312,13 @@
         // =============================================
 
         elements.projectSelect.addEventListener('change', (e) => {
-            selectProject(e.target.value);
+            const projectId = e.target.value;
+            const projectName = e.target.options[e.target.selectedIndex]?.text || '';
+            selectProject(projectId);
+            // Sync to persistent header
+            if (window.gwPersistentHeader) {
+                window.gwPersistentHeader.setProject(projectId, projectName);
+            }
         });
 
         // Wizard state
@@ -2740,6 +2747,24 @@
             }
 
             await loadProjects();
+
+            // Sync with persistent header project selection
+            if (!state.currentProject && window.gwPersistentHeader) {
+                const saved = window.gwPersistentHeader.getSelectedProject();
+                if (saved?.projectId) {
+                    elements.projectSelect.value = saved.projectId;
+                    await selectProject(saved.projectId);
+                }
+            }
+
+            // Listen for project changes from persistent header
+            window.addEventListener('gw:projectChange', async (e) => {
+                const { projectId } = e.detail;
+                if (projectId && projectId !== state.currentProject?.id) {
+                    elements.projectSelect.value = projectId;
+                    await selectProject(projectId);
+                }
+            });
         }
 
         function updateAuthIndicator(user) {

@@ -1532,6 +1532,7 @@
     <div class="generation-queue-panel" id="generationQueuePanel"></div>
 
     <script src="../shared/supabase-client.js"></script>
+    <script src="../shared/persistent-header.js"></script>
     <script src="../shared/project-gate.js"></script>
     <script src="../shared/master-sheet.js"></script>
     <script src="../shared/pixellab-client.js"></script>
@@ -1735,6 +1736,24 @@
             if (state.user) {
                 await loadProjects();
             }
+
+            // Sync with persistent header project selection
+            if (!state.projectId && window.gwPersistentHeader) {
+                const saved = window.gwPersistentHeader.getSelectedProject();
+                if (saved?.projectId && state.user) {
+                    elements.projectSelect.value = saved.projectId;
+                    await selectProject(saved.projectId);
+                }
+            }
+
+            // Listen for project changes from persistent header
+            window.addEventListener('gw:projectChange', async (e) => {
+                const { projectId } = e.detail;
+                if (projectId && projectId !== state.projectId) {
+                    elements.projectSelect.value = projectId;
+                    await selectProject(projectId);
+                }
+            });
 
             // Initialize generation queue for cross-tool visibility
             initGenerationQueue();
@@ -4522,7 +4541,13 @@
         function setupEventListeners() {
             // Project select
             elements.projectSelect.addEventListener('change', (e) => {
-                selectProject(e.target.value);
+                const projectId = e.target.value;
+                const projectName = e.target.options[e.target.selectedIndex]?.text || '';
+                selectProject(projectId);
+                // Sync to persistent header
+                if (window.gwPersistentHeader) {
+                    window.gwPersistentHeader.setProject(projectId, projectName);
+                }
             });
 
             // Canvas mouse events
