@@ -525,8 +525,8 @@ class GenerationQueue {
             if (job.status === 'completed' && oldStatus !== 'completed') {
                 console.log('Job completed, status.result:', status.result, 'status.raw:', status.raw);
 
-                // For map_object, the API doesn't have a GET endpoint - use job result directly
-                if (job.type === 'map_object') {
+                // For map_object and variants, the API doesn't have a GET endpoint - use job result directly
+                if (job.type === 'map_object' || job.type === 'map_object_variant') {
                     // The result is in status.raw.data, with image in last_response
                     const rawData = status.raw?.data || {};
                     const lastResponse = rawData.last_response || {};

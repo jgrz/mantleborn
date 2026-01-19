@@ -157,6 +157,28 @@
             box-shadow: 0 0 15px rgba(224, 112, 32, 0.4);
         }
 
+        .btn-variant {
+            background: #f0b429;
+            border-color: #f0b429;
+            color: #1a1a2e;
+            font-weight: 600;
+            width: 100%;
+            margin-top: 8px;
+        }
+
+        .btn-variant:hover {
+            background: #f7c948;
+            border-color: #f7c948;
+            box-shadow: 0 0 15px rgba(240, 180, 41, 0.4);
+        }
+
+        .btn-variant:disabled {
+            background: #6b5a2a;
+            border-color: #6b5a2a;
+            color: #888;
+            cursor: not-allowed;
+        }
+
         .btn-secondary {
             background: var(--mystic-glow);
             border-color: var(--mystic-glow);
@@ -1019,6 +1041,38 @@
             font-size: 11px;
         }
 
+        /* Generate Variant Section */
+        .generate-variant-section {
+            background: linear-gradient(180deg, rgba(240, 180, 41, 0.1) 0%, transparent 100%);
+        }
+
+        .generate-variant-section .sidebar-header {
+            color: #f0b429;
+        }
+
+        .variant-description {
+            width: 100%;
+            min-height: 60px;
+            padding: 10px;
+            background: var(--bg-deep);
+            border: 1px solid var(--stone-dark);
+            border-radius: 4px;
+            color: var(--stone-bright);
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 12px;
+            resize: vertical;
+        }
+
+        .variant-description:focus {
+            outline: none;
+            border-color: #f0b429;
+            box-shadow: 0 0 5px rgba(240, 180, 41, 0.3);
+        }
+
+        .variant-description::placeholder {
+            color: var(--stone-mid);
+        }
+
         /* Saved sprite indicator in list */
         .sprite-item.saved-to-master .sprite-name::after {
             content: ' ✓';
@@ -1620,6 +1674,22 @@
                     </div>
                 </div>
             </div>
+
+            <!-- Generate Variant Section -->
+            <div class="sidebar-section generate-variant-section" id="generateVariantSection" style="display: none;">
+                <div class="sidebar-header">
+                    Generate Variant
+                </div>
+                <div class="sidebar-content" style="padding: 12px 16px;">
+                    <textarea
+                        class="variant-description"
+                        id="variantDescription"
+                        placeholder="Describe how it's different..."
+                        rows="3"
+                    ></textarea>
+                    <button class="btn btn-variant" id="generateVariantBtn">Generate Variant</button>
+                </div>
+            </div>
         </aside>
     </main>
 
@@ -1941,6 +2011,7 @@
             // AI Generation
             skeletonEditor: null,   // SkeletonEditor instance
             generationQueue: null,  // GenerationQueue instance
+            aiVariantRegions: [],   // Regions marked as AI-generated variants
 
             // Speed Mode (keyboard workflow)
             speedMode: false,
@@ -2006,6 +2077,11 @@
             masterSheetPreviewCanvas: document.getElementById('masterSheetPreviewCanvas'),
             masterSheetEmpty: document.getElementById('masterSheetEmpty'),
             copyMasterJson: document.getElementById('copyMasterJson'),
+
+            // Generate Variant
+            generateVariantSection: document.getElementById('generateVariantSection'),
+            variantDescription: document.getElementById('variantDescription'),
+            generateVariantBtn: document.getElementById('generateVariantBtn'),
 
             // Toast & Dialog
             toast: document.getElementById('toast'),
@@ -2432,6 +2508,7 @@
             state.islandMap = null;
             state.toolMode = null;
             state.masterSheetSprites = [];
+            state.aiVariantRegions = [];
             hideCreatePanel();
 
             elements.dropZone.style.display = 'flex';
@@ -2715,6 +2792,33 @@
 
                 corners.forEach(corner => {
                     ctx.selection.fillRect(corner.x, corner.y, handleSize, handleSize);
+                });
+            }
+
+            // Draw AI Var chips for variant regions
+            if (state.aiVariantRegions && state.aiVariantRegions.length > 0) {
+                state.aiVariantRegions.forEach(region => {
+                    const chipX = region.x * state.zoom;
+                    const chipY = (region.y + region.h) * state.zoom + 4; // Below the region
+
+                    // Draw chip background
+                    const chipWidth = 42;
+                    const chipHeight = 16;
+                    const chipRadius = 8;
+
+                    ctx.selection.fillStyle = '#8b5cf6'; // Purple
+                    ctx.selection.beginPath();
+                    ctx.selection.roundRect(chipX, chipY, chipWidth, chipHeight, chipRadius);
+                    ctx.selection.fill();
+
+                    // Draw chip text
+                    ctx.selection.fillStyle = '#ffffff';
+                    ctx.selection.font = 'bold 9px sans-serif';
+                    ctx.selection.textAlign = 'center';
+                    ctx.selection.textBaseline = 'middle';
+                    ctx.selection.fillText('AI Var', chipX + chipWidth / 2, chipY + chipHeight / 2);
+                    ctx.selection.textAlign = 'left';
+                    ctx.selection.textBaseline = 'alphabetic';
                 });
             }
         }
@@ -3328,6 +3432,10 @@
             elements.renameSprite.style.display = 'none';
             // Update tool button states
             updateToolButtonStates();
+            // Show variant section when there's a selection
+            if (elements.generateVariantSection) {
+                elements.generateVariantSection.style.display = 'block';
+            }
         }
 
         function hideCreatePanel() {
@@ -3346,6 +3454,11 @@
             elements.renameSprite.style.display = 'none';
             // Update tool button states
             updateToolButtonStates();
+            // Hide variant section when no selection
+            if (elements.generateVariantSection) {
+                elements.generateVariantSection.style.display = 'none';
+                elements.variantDescription.value = '';
+            }
             // Clear master sheet highlight
             drawMasterSheetHighlight();
         }
@@ -4238,6 +4351,11 @@
                 if (e.target === elements.mapObjectModal) closeMapObjectModal();
             });
             elements.submitMapObjectGen.addEventListener('click', submitMapObjectGeneration);
+
+            // Generate Variant button
+            if (elements.generateVariantBtn) {
+                elements.generateVariantBtn.addEventListener('click', submitVariantGeneration);
+            }
         }
 
         async function openCharacterModal() {
@@ -4489,12 +4607,91 @@
             }
         }
 
+        async function submitVariantGeneration() {
+            const description = elements.variantDescription.value.trim();
+            if (!description) {
+                showToast('Please describe how the variant is different', 'error');
+                return;
+            }
+
+            if (!state.selection) {
+                showToast('Please select a sprite area first', 'error');
+                return;
+            }
+
+            if (!state.projectId) {
+                showToast('Please select a project first', 'error');
+                return;
+            }
+
+            if (typeof PixelLabClient === 'undefined') {
+                showToast('PixelLab client not available', 'error');
+                return;
+            }
+
+            // Extract selected area as base64
+            const { x, y, w, h } = state.selection;
+            const tempCanvas = document.createElement('canvas');
+            tempCanvas.width = w;
+            tempCanvas.height = h;
+            const tempCtx = tempCanvas.getContext('2d');
+            tempCtx.drawImage(state.image, x, y, w, h, 0, 0, w, h);
+            const base64 = tempCanvas.toDataURL('image/png').split(',')[1];
+
+            const options = {
+                width: w,
+                height: h,
+                outline: 'single color outline',
+                view: 'low top-down',
+                init_image: base64
+            };
+
+            showToast('Queuing variant generation...', 'info');
+            elements.generateVariantBtn.disabled = true;
+
+            try {
+                const client = new PixelLabClient();
+                client.init(crucibleClient);
+                console.log('Calling createMapObject for variant with:', { description, width: w, height: h, hasInitImage: !!base64 });
+                const result = await client.createMapObject({ description, ...options });
+                console.log('Variant createMapObject result:', result);
+
+                if (result.jobId) {
+                    if (state.generationQueue) {
+                        await state.generationQueue.addJob({
+                            jobId: result.jobId,
+                            assetId: result.objectId,
+                            type: 'map_object_variant',
+                            prompt: description,
+                            parameters: options,
+                            // Track source sheet for variant import
+                            sourceSheetId: state.spritesheetId
+                        });
+                        state.generationQueue.show();
+                    }
+                    showToast('Variant generation queued!', 'success');
+                    elements.variantDescription.value = '';
+                }
+            } catch (error) {
+                console.error('Variant generation error:', error);
+                showToast('Generation failed: ' + error.message, 'error');
+            } finally {
+                elements.generateVariantBtn.disabled = false;
+            }
+        }
+
         async function handleGeneratedAsset(job) {
             // Called when a generation is complete and user clicks Import
 
             // Check if this is a character with rotation URLs
             if (job.resultData?.rotation_urls) {
                 await importCharacterRotations(job);
+                return;
+            }
+
+            // Check if this is a variant - needs special handling to add to source sheet
+            if (job.type === 'map_object_variant') {
+                await importVariantToSheet(job);
                 return;
             }
 
@@ -4575,6 +4772,111 @@
             } catch (error) {
                 console.error('Import error:', error);
                 showToast('Failed to import asset: ' + error.message, 'error');
+            }
+        }
+
+        async function importVariantToSheet(job) {
+            // Import an AI variant to the source spritesheet
+            const sourceSheetId = job.sourceSheetId || job.parameters?.sourceSheetId;
+
+            if (!sourceSheetId) {
+                showToast('Source sheet not found, importing as new sheet', 'warning');
+                // Fall back to regular import
+                job.type = 'map_object';
+                return handleGeneratedAsset(job);
+            }
+
+            // Get blob from job result
+            let blob = null;
+            if (job.resultData?.image?.type === 'base64' && job.resultData?.image?.base64) {
+                const base64 = job.resultData.image.base64;
+                const format = job.resultData.image.format || 'png';
+                const byteString = atob(base64);
+                const ab = new ArrayBuffer(byteString.length);
+                const ia = new Uint8Array(ab);
+                for (let i = 0; i < byteString.length; i++) {
+                    ia[i] = byteString.charCodeAt(i);
+                }
+                blob = new Blob([ab], { type: `image/${format}` });
+            } else if (job.resultUrl) {
+                const response = await fetch(job.resultUrl);
+                blob = await response.blob();
+            }
+
+            if (!blob) {
+                showToast('No variant image data available', 'error');
+                return;
+            }
+
+            try {
+                showToast('Adding variant to sheet...', 'info');
+
+                // Load variant as image
+                const variantImg = await new Promise((resolve, reject) => {
+                    const img = new Image();
+                    img.onload = () => resolve(img);
+                    img.onerror = reject;
+                    img.src = URL.createObjectURL(blob);
+                });
+
+                // Check if we're on the source sheet
+                if (state.spritesheetId !== sourceSheetId) {
+                    // Switch to source sheet first
+                    await selectSpritesheet(sourceSheetId);
+                }
+
+                // Create expanded canvas with variant appended to the right
+                const newWidth = state.image.width + variantImg.width + 8; // 8px gap
+                const newHeight = Math.max(state.image.height, variantImg.height);
+
+                const expandedCanvas = document.createElement('canvas');
+                expandedCanvas.width = newWidth;
+                expandedCanvas.height = newHeight;
+                const ectx = expandedCanvas.getContext('2d');
+
+                // Draw original sheet
+                ectx.drawImage(state.image, 0, 0);
+
+                // Draw variant on the right
+                const variantX = state.image.width + 8;
+                ectx.drawImage(variantImg, variantX, 0);
+
+                // Convert to blob
+                const newBlob = await new Promise(resolve => {
+                    expandedCanvas.toBlob(resolve, 'image/png');
+                });
+
+                // Get current sheet info
+                const sheetOption = elements.spriteSheetSelect.querySelector(`option[value="${sourceSheetId}"]`);
+                const sheetName = sheetOption?.textContent || 'sheet';
+
+                // Upload as updated spritesheet
+                const file = new File([newBlob], `${sheetName}.png`, { type: 'image/png' });
+                const updatedSheet = await crucibleClient.uploadSpritesheet(state.projectId, file, {
+                    name: sheetName,
+                    category: 'ai_generated',
+                    replaceId: sourceSheetId
+                });
+
+                // Reload the sheet to show updated image
+                await selectSpritesheet(sourceSheetId);
+
+                // Mark the variant region for AI Var chip (store in state for rendering)
+                if (!state.aiVariantRegions) state.aiVariantRegions = [];
+                state.aiVariantRegions.push({
+                    x: variantX,
+                    y: 0,
+                    w: variantImg.width,
+                    h: variantImg.height,
+                    prompt: job.prompt
+                });
+
+                showToast('Variant added to sheet!', 'success');
+                render(); // Re-render to show AI Var chip
+
+            } catch (error) {
+                console.error('Variant import error:', error);
+                showToast('Failed to import variant: ' + error.message, 'error');
             }
         }
 

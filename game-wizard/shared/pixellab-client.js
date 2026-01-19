@@ -356,6 +356,7 @@ class PixelLabClient {
             outline,
             shading,
             negative_prompt,
+            init_image,
             style = {}
         } = options;
 
@@ -371,6 +372,11 @@ class PixelLabClient {
 
         if (negative_prompt) {
             body.negative_prompt = negative_prompt;
+        }
+
+        // init_image for generating variants based on existing sprite
+        if (init_image) {
+            body.init_image = init_image;
         }
 
         const result = await this._request('create-map-object', 'POST', body);
