@@ -923,63 +923,6 @@
             flex: 1;
         }
 
-        /* AI Assistant */
-        .ai-section {
-            flex: 1;
-            display: flex;
-            flex-direction: column;
-            min-height: 200px;
-        }
-
-        .ai-generate-btn {
-            width: 100%;
-            margin-bottom: 12px;
-        }
-
-        .ai-spec-preview {
-            flex: 1;
-            background: var(--bg-deep);
-            border: 1px solid var(--stone-dark);
-            border-radius: 4px;
-            padding: 12px;
-            overflow-y: auto;
-            font-size: 11px;
-            line-height: 1.5;
-            min-height: 0;
-        }
-
-        .ai-spec-preview.empty {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            color: var(--stone-mid);
-            text-align: center;
-        }
-
-        .ai-spec-name {
-            color: var(--accent-green);
-            font-weight: 600;
-            margin-bottom: 8px;
-        }
-
-        .ai-spec-colors {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 4px;
-            margin: 8px 0;
-        }
-
-        .ai-spec-color {
-            width: 20px;
-            height: 20px;
-            border-radius: 2px;
-            border: 1px solid var(--stone-dark);
-        }
-
-        .ai-spec-apply {
-            margin-top: 8px;
-        }
-
         /* Export */
         .export-actions {
             display: flex;
@@ -1311,17 +1254,6 @@
                         <option value="path">Path</option>
                         <option value="decoration">Decoration</option>
                     </select>
-                </div>
-            </div>
-
-            <!-- AI Assistant Preview -->
-            <div class="panel-section ai-section">
-                <div class="section-header">AI Generator</div>
-                <div class="ai-spec-preview empty" id="aiSpecPreview">
-                    <div>
-                        <div style="font-size: 24px; margin-bottom: 8px;">&#129302;</div>
-                        Use the toolbar button to generate AI pixel art
-                    </div>
                 </div>
             </div>
 
