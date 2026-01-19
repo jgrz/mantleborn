@@ -1304,6 +1304,42 @@
             display: block;
         }
 
+        /* Floating Queue Button */
+        .view-queue-btn {
+            position: fixed;
+            bottom: 20px;
+            right: 350px;
+            padding: 10px 16px;
+            background: var(--bg-surface);
+            border: 1px solid var(--stone-dark);
+            border-radius: 6px;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 11px;
+            color: var(--stone-light);
+            cursor: pointer;
+            z-index: 10000;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .view-queue-btn:hover {
+            border-color: var(--accent-ember);
+            color: var(--accent-ember);
+        }
+
+        .view-queue-btn.has-jobs {
+            border-color: var(--accent-ember);
+        }
+
+        .queue-count {
+            background: var(--accent-ember);
+            color: white;
+            padding: 2px 6px;
+            border-radius: 10px;
+            font-size: 10px;
+        }
+
         /* Speed Mode Settings */
         .settings-btn {
             background: transparent;
@@ -1855,6 +1891,11 @@
     <!-- Generation Queue Panel -->
     <div class="generation-queue-panel" id="generationQueuePanel"></div>
 
+    <!-- Floating Queue Button -->
+    <button class="view-queue-btn" id="floatingQueueBtn">
+        <span>&#128203;</span> Queue <span class="queue-count" id="queueCount">0</span>
+    </button>
+
     <script src="../shared/supabase-client.js"></script>
     <script src="../shared/persistent-header.js"></script>
     <script src="../shared/project-gate.js"></script>
@@ -2038,7 +2079,9 @@
             submitMapObjectGen: document.getElementById('submitMapObjectGen'),
 
             // Generation Queue
-            generationQueuePanel: document.getElementById('generationQueuePanel')
+            generationQueuePanel: document.getElementById('generationQueuePanel'),
+            floatingQueueBtn: document.getElementById('floatingQueueBtn'),
+            queueCount: document.getElementById('queueCount')
         };
 
         // ==========================================
@@ -4102,13 +4145,27 @@
             if (typeof GenerationQueue !== 'undefined' && elements.generationQueuePanel) {
                 state.generationQueue = new GenerationQueue({
                     onImport: handleGeneratedAsset,
-                    onError: (error) => showToast(error, 'error')
+                    onError: (error) => showToast(error, 'error'),
+                    onJobsChange: updateQueueCount
                 });
                 state.generationQueue.createUI(elements.generationQueuePanel);
             }
 
             // Setup event listeners
             setupAIEventListeners();
+        }
+
+        function updateQueueCount() {
+            if (!state.generationQueue) return;
+            const pending = state.generationQueue.jobs.filter(j =>
+                j.status === 'pending' || j.status === 'processing' || j.status === 'completed'
+            ).length;
+            if (elements.queueCount) {
+                elements.queueCount.textContent = pending;
+            }
+            if (elements.floatingQueueBtn) {
+                elements.floatingQueueBtn.classList.toggle('has-jobs', pending > 0);
+            }
         }
 
         function setupAIEventListeners() {
@@ -4140,6 +4197,15 @@
                     state.generationQueue.toggle();
                 }
             });
+
+            // Floating queue button
+            if (elements.floatingQueueBtn) {
+                elements.floatingQueueBtn.addEventListener('click', () => {
+                    if (state.generationQueue) {
+                        state.generationQueue.toggle();
+                    }
+                });
+            }
 
             // Character modal
             elements.closeCharacterModal.addEventListener('click', closeCharacterModal);
