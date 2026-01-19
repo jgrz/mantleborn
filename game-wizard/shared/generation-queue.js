@@ -527,11 +527,18 @@ class GenerationQueue {
 
                 // For map_object, the API doesn't have a GET endpoint - use job result directly
                 if (job.type === 'map_object') {
-                    // The result should contain image data or URL
-                    const result = status.result || status.raw?.data?.last_response || {};
+                    // The result is in status.raw.data for map objects
+                    const result = status.raw?.data || status.result || {};
                     job.resultData = result;
-                    job.resultUrl = result.image || result.download_url || result.url;
-                    console.log('Map object result data:', job.resultData, 'URL:', job.resultUrl);
+
+                    // Handle base64 image data - convert to data URL
+                    if (result.image?.type === 'base64' && result.image?.base64) {
+                        const format = result.image.format || 'png';
+                        job.resultUrl = `data:image/${format};base64,${result.image.base64}`;
+                    } else {
+                        job.resultUrl = result.download_url || result.url;
+                    }
+                    console.log('Map object result data:', job.resultData, 'URL type:', job.resultUrl?.substring(0, 50));
                 } else if (job.assetId) {
                     // For other types, fetch the asset via dedicated endpoint
                     try {

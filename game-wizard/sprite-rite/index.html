@@ -4483,20 +4483,45 @@
                 return;
             }
 
+            // Check for base64 image data directly in resultData
+            let imageUrl = job.resultUrl || job.result_url;
+            let blob = null;
+
+            // Handle base64 data from resultData.image
+            if (job.resultData?.image?.type === 'base64' && job.resultData?.image?.base64) {
+                const base64 = job.resultData.image.base64;
+                const format = job.resultData.image.format || 'png';
+                // Convert base64 to blob
+                const byteString = atob(base64);
+                const ab = new ArrayBuffer(byteString.length);
+                const ia = new Uint8Array(ab);
+                for (let i = 0; i < byteString.length; i++) {
+                    ia[i] = byteString.charCodeAt(i);
+                }
+                blob = new Blob([ab], { type: `image/${format}` });
+                console.log('Created blob from base64 data, size:', blob.size);
+            }
+
             // Single image import (map objects, tiles, etc.)
-            if (!job.resultUrl && !job.result_url) {
+            if (!blob && !imageUrl) {
                 showToast('No result URL available', 'error');
                 return;
             }
 
-            const imageUrl = job.resultUrl || job.result_url;
-
             try {
-                showToast('Downloading generated asset...', 'info');
+                showToast('Importing generated asset...', 'info');
 
-                // Fetch the image as blob
-                const response = await fetch(imageUrl);
-                const blob = await response.blob();
+                // If we don't have a blob yet, fetch the image
+                if (!blob) {
+                    // Handle data URL
+                    if (imageUrl.startsWith('data:')) {
+                        const response = await fetch(imageUrl);
+                        blob = await response.blob();
+                    } else {
+                        const response = await fetch(imageUrl);
+                        blob = await response.blob();
+                    }
+                }
 
                 // Create filename from job info
                 const name = job.prompt || job.type || 'generated';
