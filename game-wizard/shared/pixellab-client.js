@@ -353,6 +353,9 @@ class PixelLabClient {
             width = 32,
             height = 32,
             view = 'high top-down',
+            outline,
+            shading,
+            negative_prompt,
             style = {}
         } = options;
 
@@ -362,10 +365,14 @@ class PixelLabClient {
             width,
             height,
             view,
-            outline: style.outline || 'single color outline',
-            shading: style.shading || 'medium shading',
+            outline: outline || style.outline || 'single color outline',
+            shading: shading || style.shading || 'medium shading',
             detail: style.detail || 'medium detail'
         };
+
+        if (negative_prompt) {
+            body.negative_prompt = negative_prompt;
+        }
 
         const result = await this._request('create-map-object', 'POST', body);
 

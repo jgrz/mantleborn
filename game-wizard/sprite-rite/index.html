@@ -4452,7 +4452,9 @@
             try {
                 const client = new PixelLabClient();
                 client.init(crucibleClient);
+                console.log('Calling createMapObject with:', { description, ...options });
                 const result = await client.createMapObject({ description, ...options });
+                console.log('createMapObject result:', result);
 
                 if (result.jobId) {
                     if (state.generationQueue) {
