@@ -1755,6 +1755,8 @@
     <script src="../shared/notifications.js"></script>
     <script src="../shared/help-drawer.js"></script>
     <script src="../shared/docs/crucible-docs.js"></script>
+    <script src="../shared/route-utils.js"></script>
+    <script src="../shared/cross-tab-sync.js"></script>
 
     <script>
         /* ============================================
@@ -2088,6 +2090,11 @@
                     parseInt(elements.newLevelHeight.value)
                 );
 
+                // Notify other tabs about the new level
+                if (window.crossTabSync) {
+                    crossTabSync.notifyLevelCreated(state.currentProject.id, level.id, level.slug, level.name);
+                }
+
                 state.levels.push(level);
                 renderLevelsList();
                 await selectLevel(level.id);
@@ -2103,11 +2110,24 @@
         }
 
         async function deleteLevel(levelId) {
-            if (!confirm('Delete this level? This cannot be undone.')) return;
-
             try {
                 const crucible = await getCrucible();
+
+                // Check if level is locked by another user
+                const lockStatus = await crucible.getLevelLockStatus(levelId);
+                if (lockStatus.isLocked && !lockStatus.isOurs) {
+                    showToast('Cannot delete: Level is being edited in another session', 'error');
+                    return;
+                }
+
+                if (!confirm('Delete this level? This cannot be undone.')) return;
+
                 await crucible.deleteLevel(levelId);
+
+                // Notify other tabs about deletion
+                if (window.crossTabSync) {
+                    crossTabSync.notifyLevelDeleted(state.currentProject.id, levelId);
+                }
 
                 state.levels = state.levels.filter(l => l.id !== levelId);
                 renderLevelsList();
@@ -2152,11 +2172,10 @@
             elements.levelTitle.textContent = level.name;
             elements.levelSubtitle.textContent = `${level.width}x${level.height} tiles • ${level.level_type}`;
 
-            // Update tool links
-            const baseUrl = `/game-wizard/level-forge/?project=${state.currentProject.id}&level=${level.slug}`;
-            document.getElementById('openLevelForgeGrid').href = baseUrl + '&tab=grid';
-            document.getElementById('openLevelForgeBg').href = baseUrl + '&tab=background';
-            document.getElementById('openLevelForgeTiles').href = baseUrl + '&tab=tiles';
+            // Update tool links using centralized route builder
+            document.getElementById('openLevelForgeGrid').href = gwRoutes.levelForgeGrid(state.currentProject.id, level.slug);
+            document.getElementById('openLevelForgeBg').href = gwRoutes.levelForgeBackground(state.currentProject.id, level.slug);
+            document.getElementById('openLevelForgeTiles').href = gwRoutes.levelForgeTiles(state.currentProject.id, level.slug);
 
             // Grid Status
             const totalTiles = level.width * level.height;
@@ -2715,6 +2734,70 @@
         }
 
         // =============================================
+        // CROSS-TAB SYNC
+        // =============================================
+
+        function initCrossTabSync() {
+            if (!window.crossTabSync) return;
+
+            // Listen for level updates from Level Forge
+            crossTabSync.on('level_updated', async (payload) => {
+                if (state.currentProject?.id === payload.projectId) {
+                    // Refresh the current level if it's the one that was updated
+                    if (state.currentLevel?.id === payload.levelId) {
+                        await selectLevel(payload.levelId);
+                        showToast('Level updated from Level Forge', 'info');
+                    }
+                    // Also refresh the levels list to update status indicators
+                    await loadLevels(state.currentProject.id);
+                }
+            });
+
+            // Listen for level deletions
+            crossTabSync.on('level_deleted', async (payload) => {
+                if (state.currentProject?.id === payload.projectId) {
+                    // Remove from local state
+                    state.levels = state.levels.filter(l => l.id !== payload.levelId);
+                    renderLevelsList();
+
+                    // If the deleted level was selected, clear selection
+                    if (state.currentLevel?.id === payload.levelId) {
+                        state.currentLevel = null;
+                        state.levelData = null;
+                        if (state.levels.length > 0) {
+                            await selectLevel(state.levels[0].id);
+                        } else {
+                            showEmptyState();
+                        }
+                        showToast('Current level was deleted', 'warning');
+                    }
+                }
+            });
+
+            // Listen for level creations
+            crossTabSync.on('level_created', async (payload) => {
+                if (state.currentProject?.id === payload.projectId) {
+                    await loadLevels(state.currentProject.id);
+                    showToast(`Level "${payload.levelName}" created`, 'info');
+                }
+            });
+
+            // Listen for lock notifications
+            crossTabSync.on('level_locked', (payload) => {
+                if (state.currentProject?.id === payload.projectId) {
+                    // Could update UI to show lock indicator
+                    console.log(`Level ${payload.levelId} locked by ${payload.lockedBy}`);
+                }
+            });
+
+            crossTabSync.on('level_unlocked', (payload) => {
+                if (state.currentProject?.id === payload.projectId) {
+                    console.log(`Level ${payload.levelId} unlocked`);
+                }
+            });
+        }
+
+        // =============================================
         // INITIALIZATION
         // =============================================
 
@@ -2730,6 +2813,9 @@
             if (typeof initNotifications === 'function') {
                 await initNotifications('#headerActions');
             }
+
+            // Initialize cross-tab sync
+            initCrossTabSync();
 
             await loadProjects();
 

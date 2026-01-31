@@ -2941,6 +2941,385 @@ class CrucibleClient {
 }
 
 // =============================================
+    // LEVEL LOCKING
+    // =============================================
+
+    /**
+     * Generate a unique session ID for this browser tab
+     * @returns {string} Session ID
+     */
+    getSessionId() {
+        if (!this._sessionId) {
+            this._sessionId = `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+        }
+        return this._sessionId;
+    }
+
+    /**
+     * Acquire a lock on a level for editing
+     * @param {string} levelId - Level UUID
+     * @returns {Object} { acquired: boolean, lockInfo: object }
+     */
+    async acquireLevelLock(levelId) {
+        if (!this.client) throw new Error('Crucible not initialized');
+
+        const user = await this.getUser();
+        if (!user) throw new Error('Must be logged in to lock a level');
+
+        const sessionId = this.getSessionId();
+        const now = new Date().toISOString();
+
+        // First, check if level is already locked
+        const { data: level, error: fetchError } = await this.client
+            .from('levels')
+            .select('locked_by, locked_at, lock_session_id')
+            .eq('id', levelId)
+            .single();
+
+        if (fetchError) throw fetchError;
+
+        // If already locked by another user/session
+        if (level.locked_by && level.lock_session_id !== sessionId) {
+            // Check if lock has expired (60 minutes)
+            const lockTime = new Date(level.locked_at);
+            const expiry = 60 * 60 * 1000; // 60 minutes
+            if (Date.now() - lockTime.getTime() < expiry) {
+                return {
+                    acquired: false,
+                    lockInfo: {
+                        lockedBy: level.locked_by,
+                        lockedAt: level.locked_at,
+                        sessionId: level.lock_session_id
+                    }
+                };
+            }
+            // Lock expired, we can take it
+        }
+
+        // Acquire the lock
+        const { data, error } = await this.client
+            .from('levels')
+            .update({
+                locked_by: user.id,
+                locked_at: now,
+                lock_session_id: sessionId
+            })
+            .eq('id', levelId)
+            .select('locked_by, locked_at, lock_session_id')
+            .single();
+
+        if (error) throw error;
+
+        return {
+            acquired: true,
+            lockInfo: {
+                lockedBy: data.locked_by,
+                lockedAt: data.locked_at,
+                sessionId: data.lock_session_id
+            }
+        };
+    }
+
+    /**
+     * Release a lock on a level
+     * @param {string} levelId - Level UUID
+     * @returns {boolean} Success
+     */
+    async releaseLevelLock(levelId) {
+        if (!this.client) throw new Error('Crucible not initialized');
+
+        const sessionId = this.getSessionId();
+
+        // Only release if we hold the lock
+        const { error } = await this.client
+            .from('levels')
+            .update({
+                locked_by: null,
+                locked_at: null,
+                lock_session_id: null
+            })
+            .eq('id', levelId)
+            .eq('lock_session_id', sessionId);
+
+        if (error) throw error;
+        return true;
+    }
+
+    /**
+     * Refresh the lock timestamp (heartbeat)
+     * @param {string} levelId - Level UUID
+     * @returns {boolean} Success
+     */
+    async refreshLevelLock(levelId) {
+        if (!this.client) throw new Error('Crucible not initialized');
+
+        const sessionId = this.getSessionId();
+        const now = new Date().toISOString();
+
+        // Only refresh if we hold the lock
+        const { data, error } = await this.client
+            .from('levels')
+            .update({ locked_at: now })
+            .eq('id', levelId)
+            .eq('lock_session_id', sessionId)
+            .select('locked_at')
+            .single();
+
+        if (error && error.code !== 'PGRST116') throw error;
+        return !!data;
+    }
+
+    /**
+     * Get lock status for a level
+     * @param {string} levelId - Level UUID
+     * @returns {Object} Lock status info
+     */
+    async getLevelLockStatus(levelId) {
+        if (!this.client) throw new Error('Crucible not initialized');
+
+        const { data, error } = await this.client
+            .from('levels')
+            .select('locked_by, locked_at, lock_session_id')
+            .eq('id', levelId)
+            .single();
+
+        if (error) throw error;
+
+        const sessionId = this.getSessionId();
+        const isLocked = !!data.locked_by;
+        const isOurs = data.lock_session_id === sessionId;
+
+        // Check if lock has expired
+        let isExpired = false;
+        if (isLocked) {
+            const lockTime = new Date(data.locked_at);
+            const expiry = 60 * 60 * 1000; // 60 minutes
+            isExpired = Date.now() - lockTime.getTime() >= expiry;
+        }
+
+        return {
+            isLocked: isLocked && !isExpired,
+            isOurs,
+            isExpired,
+            lockedBy: data.locked_by,
+            lockedAt: data.locked_at,
+            sessionId: data.lock_session_id
+        };
+    }
+
+    /**
+     * Create a transaction for atomic level saves with rollback capability
+     * @param {string} levelId - Level UUID
+     * @returns {LevelTransaction} Transaction object
+     */
+    createLevelTransaction(levelId) {
+        return new LevelTransaction(this, levelId);
+    }
+}
+
+// =============================================
+// LEVEL TRANSACTION CLASS
+// =============================================
+// Provides backup and rollback capability for level saves
+
+class LevelTransaction {
+    constructor(crucibleClient, levelId) {
+        this.client = crucibleClient;
+        this.levelId = levelId;
+        this.backup = null;
+        this.completedSaves = [];
+        this.status = 'pending'; // pending, in_progress, committed, rolled_back, failed
+        this.error = null;
+    }
+
+    /**
+     * Create a backup of all level data before making changes
+     * @returns {Object} Backup data
+     */
+    async createBackup() {
+        if (this.status !== 'pending') {
+            throw new Error(`Cannot create backup: transaction status is ${this.status}`);
+        }
+
+        try {
+            const [gridData, backgroundLayers, tileData, spawns, exits] = await Promise.all([
+                this.client.getGridData(this.levelId),
+                this.client.getBackgroundLayers(this.levelId),
+                this.client.getTileData(this.levelId),
+                this.client.getSpawns(this.levelId),
+                this.client.getExits(this.levelId)
+            ]);
+
+            this.backup = {
+                gridData,
+                backgroundLayers,
+                tileData,
+                spawns,
+                exits,
+                timestamp: Date.now()
+            };
+
+            this.status = 'in_progress';
+            return this.backup;
+        } catch (e) {
+            this.status = 'failed';
+            this.error = e;
+            throw e;
+        }
+    }
+
+    /**
+     * Record a successful save operation
+     * @param {string} saveType - Type of save (grid, backgrounds, tiles, spawns, exits)
+     */
+    recordSuccess(saveType) {
+        this.completedSaves.push({
+            type: saveType,
+            timestamp: Date.now()
+        });
+    }
+
+    /**
+     * Mark transaction as committed (all saves successful)
+     */
+    commit() {
+        this.status = 'committed';
+        this.backup = null; // Clear backup to free memory
+    }
+
+    /**
+     * Rollback to the backup state
+     * @returns {Object} Rollback result
+     */
+    async rollback() {
+        if (!this.backup) {
+            throw new Error('No backup available for rollback');
+        }
+
+        if (this.status === 'rolled_back') {
+            throw new Error('Transaction already rolled back');
+        }
+
+        const rollbackErrors = [];
+        const rollbackSuccess = [];
+
+        // Rollback in reverse order of typical saves
+        try {
+            // Rollback exits
+            if (this.backup.exits !== undefined) {
+                try {
+                    const exitData = (this.backup.exits || []).map(e => ({
+                        x: e.grid_x,
+                        y: e.grid_y,
+                        name: e.name,
+                        direction: e.direction,
+                        type: e.exit_type,
+                        targetLevelId: e.target_level_id,
+                        targetSpawnName: e.target_spawn_name,
+                        configured: e.configured
+                    }));
+                    await this.client.saveExits(this.levelId, exitData);
+                    rollbackSuccess.push('exits');
+                } catch (e) {
+                    rollbackErrors.push({ type: 'exits', error: e.message });
+                }
+            }
+
+            // Rollback spawns
+            if (this.backup.spawns !== undefined) {
+                try {
+                    const spawnData = (this.backup.spawns || []).map(s => ({
+                        x: s.grid_x,
+                        y: s.grid_y,
+                        name: s.name,
+                        direction: s.direction,
+                        isPrimary: s.is_primary
+                    }));
+                    await this.client.saveSpawns(this.levelId, spawnData);
+                    rollbackSuccess.push('spawns');
+                } catch (e) {
+                    rollbackErrors.push({ type: 'spawns', error: e.message });
+                }
+            }
+
+            // Rollback tile data
+            if (this.backup.tileData !== undefined) {
+                try {
+                    await this.client.saveTileData(
+                        this.levelId,
+                        this.backup.tileData?.tile_data || []
+                    );
+                    rollbackSuccess.push('tiles');
+                } catch (e) {
+                    rollbackErrors.push({ type: 'tiles', error: e.message });
+                }
+            }
+
+            // Rollback background layers
+            if (this.backup.backgroundLayers !== undefined) {
+                try {
+                    const bgData = (this.backup.backgroundLayers || []).map(bg => ({
+                        name: bg.layer_name,
+                        imageSrc: bg.image_path,
+                        depth: bg.depth,
+                        scrollRate: bg.scroll_rate,
+                        offsetX: bg.offset_x,
+                        offsetY: bg.offset_y,
+                        scale: bg.scale,
+                        visible: bg.visible
+                    }));
+                    await this.client.saveBackgroundLayers(this.levelId, bgData);
+                    rollbackSuccess.push('backgrounds');
+                } catch (e) {
+                    rollbackErrors.push({ type: 'backgrounds', error: e.message });
+                }
+            }
+
+            // Rollback grid data
+            if (this.backup.gridData !== undefined) {
+                try {
+                    const gd = this.backup.gridData;
+                    await this.client.saveGridData(
+                        this.levelId,
+                        gd?.grid_data || [],
+                        gd?.spawn_point || null,
+                        gd?.walkable || [],
+                        gd?.obstructions || [],
+                        gd?.physics_config || null
+                    );
+                    rollbackSuccess.push('grid');
+                } catch (e) {
+                    rollbackErrors.push({ type: 'grid', error: e.message });
+                }
+            }
+        } catch (e) {
+            rollbackErrors.push({ type: 'general', error: e.message });
+        }
+
+        this.status = 'rolled_back';
+
+        return {
+            success: rollbackErrors.length === 0,
+            restored: rollbackSuccess,
+            errors: rollbackErrors
+        };
+    }
+
+    /**
+     * Get transaction status summary
+     * @returns {Object} Status info
+     */
+    getStatus() {
+        return {
+            status: this.status,
+            hasBackup: !!this.backup,
+            completedSaves: [...this.completedSaves],
+            error: this.error?.message || null
+        };
+    }
+}
+
+// =============================================
 // SINGLETON INSTANCE
 // =============================================
 const crucibleClient = new CrucibleClient();

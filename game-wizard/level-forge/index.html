@@ -2001,6 +2001,20 @@
         </div>
     </div>
 
+    <!-- Validation Warning Modal -->
+    <div class="modal-overlay" id="validationModal">
+        <div class="modal">
+            <div class="modal-header">Level Validation</div>
+            <div id="validationContent" style="margin-bottom: 16px;">
+                <div id="validationIssues" style="max-height: 200px; overflow-y: auto;"></div>
+            </div>
+            <div class="modal-actions">
+                <button class="btn" id="cancelValidationBtn">Cancel</button>
+                <button class="btn btn-primary" id="proceedAnywayBtn">Proceed Anyway</button>
+            </div>
+        </div>
+    </div>
+
     <!-- Toast -->
     <div class="toast" id="toast"></div>
 
@@ -2016,6 +2030,8 @@
     <script src="../shared/generation-queue.js"></script>
     <script src="../shared/help-drawer.js"></script>
     <script src="../shared/docs/level-forge-docs.js"></script>
+    <script src="../shared/route-utils.js"></script>
+    <script src="../shared/cross-tab-sync.js"></script>
 
     <script>
         /* ============================================
@@ -4901,11 +4917,88 @@
             }
         }
 
+        // ==========================================
+        // Level Validation
+        // ==========================================
+        function validateLevelData(levelData) {
+            const issues = [];
+
+            // Errors (block save)
+            if (!elements.levelName.value.trim()) {
+                issues.push({ severity: 'error', message: 'Level must have a name' });
+            }
+
+            // Warnings (allow save with confirmation)
+            if (!levelData.spawns || levelData.spawns.length === 0) {
+                issues.push({ severity: 'warning', message: 'No spawn points defined - players won\'t have a starting position' });
+            }
+
+            if (!levelData.visualTiles || levelData.visualTiles.length === 0) {
+                issues.push({ severity: 'warning', message: 'No visual tiles placed - level will appear empty' });
+            }
+
+            const totalTiles = state.gridWidth * state.gridHeight;
+            const definedTiles = (levelData.walkable?.length || 0) + (levelData.obstructions?.length || 0);
+            if (definedTiles === 0) {
+                issues.push({ severity: 'warning', message: 'Grid not defined - no collision data' });
+            } else if (definedTiles < totalTiles * 0.1) {
+                issues.push({ severity: 'info', message: `Only ${Math.round(definedTiles / totalTiles * 100)}% of grid defined` });
+            }
+
+            // Info
+            const unconfiguredExits = (levelData.exits || []).filter(e => !e.configured);
+            if (unconfiguredExits.length > 0) {
+                issues.push({ severity: 'info', message: `${unconfiguredExits.length} exit(s) not linked to destination` });
+            }
+
+            const hasErrors = issues.some(i => i.severity === 'error');
+            const hasWarnings = issues.some(i => i.severity === 'warning');
+
+            return { isValid: !hasErrors, hasWarnings, issues };
+        }
+
+        function showValidationDialog(issues) {
+            return new Promise((resolve) => {
+                const validationModal = document.getElementById('validationModal');
+                const validationIssues = document.getElementById('validationIssues');
+                const proceedBtn = document.getElementById('proceedAnywayBtn');
+                const cancelBtn = document.getElementById('cancelValidationBtn');
+
+                // Render issues
+                validationIssues.innerHTML = issues.map(issue => {
+                    const icon = issue.severity === 'error' ? '&#10060;' :
+                                 issue.severity === 'warning' ? '&#9888;&#65039;' : '&#8505;&#65039;';
+                    const color = issue.severity === 'error' ? 'var(--accent-magma)' :
+                                  issue.severity === 'warning' ? 'var(--accent-ember)' : 'var(--stone-mid)';
+                    return `<div style="display: flex; align-items: flex-start; gap: 8px; margin-bottom: 8px; padding: 8px; background: var(--bg-surface); border-radius: 4px;">
+                        <span style="color: ${color}; font-size: 14px;">${icon}</span>
+                        <span style="font-size: 11px; color: var(--stone-light);">${issue.message}</span>
+                    </div>`;
+                }).join('');
+
+                const cleanup = () => {
+                    validationModal.classList.remove('active');
+                    proceedBtn.removeEventListener('click', onProceed);
+                    cancelBtn.removeEventListener('click', onCancel);
+                };
+
+                const onProceed = () => { cleanup(); resolve(true); };
+                const onCancel = () => { cleanup(); resolve(false); };
+
+                proceedBtn.addEventListener('click', onProceed);
+                cancelBtn.addEventListener('click', onCancel);
+
+                validationModal.classList.add('active');
+            });
+        }
+
+        // ==========================================
+        // Send to Crucible with Transaction Support
+        // ==========================================
         async function sendToCrucible() {
             if (!selectedProject || !selectedCrucibleLevel) return;
 
             crucibleElements.confirmBtn.disabled = true;
-            crucibleElements.status.textContent = 'Sending data...';
 
             try {
                 const crucible = await getCrucible();
@@ -4914,47 +5007,117 @@
                 // Generate level data (reuse existing function)
                 const levelData = generateLevelData();
 
-                // Save grid data
-                await crucible.saveGridData(
-                    levelId,
-                    levelData.grid,
-                    levelData.spawn,
-                    levelData.walkable,
-                    levelData.obstructions,
-                    levelData.physics
-                );
-
-                // Save background layers
-                const bgLayers = state.backgrounds.map(layer => ({
-                    name: layer.name,
-                    imageSrc: layer.imageSrc,
-                    depth: layer.depth,
-                    scrollRate: layer.scrollRate,
-                    offsetX: layer.offsetX,
-                    offsetY: layer.offsetY,
-                    scale: layer.scale,
-                    visible: layer.visible
-                }));
-                await crucible.saveBackgroundLayers(levelId, bgLayers);
-
-                // Save visual tiles
-                await crucible.saveTileData(levelId, levelData.visualTiles);
-
-                // Save spawns
-                if (levelData.spawns && levelData.spawns.length > 0) {
-                    await crucible.saveSpawns(levelId, levelData.spawns);
+                // Validate before sending
+                const validation = validateLevelData(levelData);
+                if (!validation.isValid) {
+                    // Show errors - cannot proceed
+                    await showValidationDialog(validation.issues);
+                    crucibleElements.status.textContent = 'Fix errors before sending';
+                    crucibleElements.confirmBtn.disabled = false;
+                    return;
                 }
 
-                // Save exits (includes both exits and returns)
-                if (levelData.exits && levelData.exits.length > 0) {
-                    await crucible.saveExits(levelId, levelData.exits);
+                if (validation.hasWarnings) {
+                    // Show warnings - user can choose to proceed
+                    const proceed = await showValidationDialog(validation.issues);
+                    if (!proceed) {
+                        crucibleElements.status.textContent = 'Cancelled';
+                        crucibleElements.confirmBtn.disabled = false;
+                        return;
+                    }
                 }
 
-                // Update context
-                crucible.setContext(selectedProject.id, levelId, selectedCrucibleLevel.slug);
+                // Create transaction for rollback capability
+                const transaction = crucible.createLevelTransaction(levelId);
 
-                crucibleElements.modal.classList.remove('active');
-                showToast('Level data sent to Crucible!');
+                crucibleElements.status.textContent = 'Creating backup...';
+                await transaction.createBackup();
+
+                try {
+                    // Save grid data
+                    crucibleElements.status.textContent = 'Saving grid data...';
+                    await crucible.saveGridData(
+                        levelId,
+                        levelData.grid,
+                        levelData.spawn,
+                        levelData.walkable,
+                        levelData.obstructions,
+                        levelData.physics
+                    );
+                    transaction.recordSuccess('grid');
+
+                    // Save background layers
+                    crucibleElements.status.textContent = 'Saving backgrounds...';
+                    const bgLayers = state.backgrounds.map(layer => ({
+                        name: layer.name,
+                        imageSrc: layer.imageSrc,
+                        depth: layer.depth,
+                        scrollRate: layer.scrollRate,
+                        offsetX: layer.offsetX,
+                        offsetY: layer.offsetY,
+                        scale: layer.scale,
+                        visible: layer.visible
+                    }));
+                    await crucible.saveBackgroundLayers(levelId, bgLayers);
+                    transaction.recordSuccess('backgrounds');
+
+                    // Save visual tiles
+                    crucibleElements.status.textContent = 'Saving tiles...';
+                    await crucible.saveTileData(levelId, levelData.visualTiles);
+                    transaction.recordSuccess('tiles');
+
+                    // Save spawns
+                    crucibleElements.status.textContent = 'Saving spawns...';
+                    if (levelData.spawns && levelData.spawns.length > 0) {
+                        await crucible.saveSpawns(levelId, levelData.spawns);
+                    }
+                    transaction.recordSuccess('spawns');
+
+                    // Save exits (includes both exits and returns)
+                    crucibleElements.status.textContent = 'Saving exits...';
+                    if (levelData.exits && levelData.exits.length > 0) {
+                        await crucible.saveExits(levelId, levelData.exits);
+                    }
+                    transaction.recordSuccess('exits');
+
+                    // Commit transaction
+                    transaction.commit();
+
+                    // Update context
+                    crucible.setContext(selectedProject.id, levelId, selectedCrucibleLevel.slug);
+
+                    // Notify other tabs
+                    if (window.crossTabSync) {
+                        crossTabSync.notifyLevelUpdated(selectedProject.id, levelId, selectedCrucibleLevel.slug, {
+                            source: 'level-forge',
+                            savedAt: new Date().toISOString()
+                        });
+                    }
+
+                    crucibleElements.modal.classList.remove('active');
+                    showToast('Level data sent to Crucible!');
+
+                } catch (saveError) {
+                    // Save failed - attempt rollback
+                    console.error('Save failed, attempting rollback:', saveError);
+                    crucibleElements.status.textContent = 'Error - rolling back...';
+
+                    try {
+                        const rollbackResult = await transaction.rollback();
+                        if (rollbackResult.success) {
+                            crucibleElements.status.textContent = `Failed: ${saveError.message}. Changes reverted.`;
+                            showToast('Save failed - changes reverted', 'error');
+                        } else {
+                            crucibleElements.status.textContent = `Failed: ${saveError.message}. Rollback incomplete.`;
+                            console.error('Rollback errors:', rollbackResult.errors);
+                        }
+                    } catch (rollbackError) {
+                        console.error('Rollback failed:', rollbackError);
+                        crucibleElements.status.textContent = `Failed: ${saveError.message}. Rollback failed.`;
+                    }
+
+                    crucibleElements.confirmBtn.disabled = false;
+                }
             } catch (err) {
                 console.error('Failed to send to Crucible:', err);
                 crucibleElements.status.textContent = 'Failed: ' + err.message;
@@ -4983,6 +5146,90 @@
         });
 
         // ==========================================
+        // Level Locking Support
+        // ==========================================
+        let currentLevelLock = null;
+        let lockHeartbeatInterval = null;
+
+        async function acquireLock(levelId) {
+            if (!levelId) return { acquired: true }; // No level, no lock needed
+
+            try {
+                const crucible = await getCrucible();
+                const result = await crucible.acquireLevelLock(levelId);
+
+                if (result.acquired) {
+                    currentLevelLock = { levelId, ...result.lockInfo };
+
+                    // Start heartbeat (every 5 minutes)
+                    if (lockHeartbeatInterval) clearInterval(lockHeartbeatInterval);
+                    lockHeartbeatInterval = setInterval(async () => {
+                        try {
+                            await crucible.refreshLevelLock(levelId);
+                        } catch (e) {
+                            console.warn('Lock heartbeat failed:', e);
+                        }
+                    }, 5 * 60 * 1000);
+
+                    // Notify other tabs
+                    if (window.crossTabSync) {
+                        crossTabSync.notifyLevelLocked(selectedProject?.id, levelId, currentLevelLock.lockedBy, currentLevelLock.sessionId);
+                    }
+                }
+
+                return result;
+            } catch (e) {
+                console.error('Failed to acquire lock:', e);
+                return { acquired: false, error: e.message };
+            }
+        }
+
+        async function releaseLock() {
+            if (!currentLevelLock) return;
+
+            try {
+                const crucible = await getCrucible();
+                await crucible.releaseLevelLock(currentLevelLock.levelId);
+
+                // Notify other tabs
+                if (window.crossTabSync) {
+                    crossTabSync.notifyLevelUnlocked(selectedProject?.id, currentLevelLock.levelId);
+                }
+            } catch (e) {
+                console.warn('Failed to release lock:', e);
+            }
+
+            if (lockHeartbeatInterval) {
+                clearInterval(lockHeartbeatInterval);
+                lockHeartbeatInterval = null;
+            }
+            currentLevelLock = null;
+        }
+
+        // ==========================================
+        // Cross-Tab Sync Listeners
+        // ==========================================
+        function initCrossTabSync() {
+            if (!window.crossTabSync) return;
+
+            // Listen for level deletions
+            crossTabSync.on('level_deleted', (payload) => {
+                if (selectedCrucibleLevel?.id === payload.levelId) {
+                    selectedCrucibleLevel = null;
+                    showToast('Current level was deleted in another tab');
+                }
+            });
+
+            // Listen for tile sheet updates
+            crossTabSync.on('tile_sheet_updated', async (payload) => {
+                if (selectedProject?.id === payload.projectId) {
+                    await loadMasterSheet(payload.projectId);
+                    showToast('Tile sheet updated');
+                }
+            });
+        }
+
+        // ==========================================
         // Initialize
         // ==========================================
         (async function() {
@@ -5004,6 +5251,7 @@
             renderLevelCanvas();
             loadSpriteIndex();
             initGenerationQueue();
+            initCrossTabSync();
 
             // Sync with persistent header project selection
             if (window.gwPersistentHeader) {
@@ -5019,6 +5267,11 @@
                 if (projectId && projectId !== selectedProject?.id) {
                     await selectProject(projectId);
                 }
+            });
+
+            // Release lock when page unloads
+            window.addEventListener('beforeunload', () => {
+                releaseLock();
             });
         })();
 
