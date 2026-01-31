@@ -1975,9 +1975,22 @@
             </div>
             <div class="form-group">
                 <label class="form-label">Level</label>
-                <select class="form-input" id="crucibleLevelSelect" disabled>
-                    <option value="">Select a level...</option>
-                </select>
+                <div style="display: flex; gap: 8px; align-items: center;">
+                    <select class="form-input" id="crucibleLevelSelect" style="flex: 1;" disabled>
+                        <option value="">Select a level...</option>
+                    </select>
+                    <button class="btn" id="createLevelInCrucibleBtn" title="Create new level">+ New</button>
+                </div>
+            </div>
+            <div id="newLevelFields" style="display: none; margin-bottom: 12px; padding: 12px; background: var(--bg-surface); border-radius: 4px;">
+                <div class="form-group" style="margin-bottom: 8px;">
+                    <label class="form-label">Level Name</label>
+                    <input type="text" class="form-input" id="newCrucibleLevelName" placeholder="Enter level name">
+                </div>
+                <div style="display: flex; gap: 8px;">
+                    <button class="btn btn-primary" id="confirmCreateLevelBtn" style="flex: 1;">Create & Select</button>
+                    <button class="btn" id="cancelCreateLevelBtn">Cancel</button>
+                </div>
             </div>
             <div class="crucible-status" id="crucibleStatus" style="margin-bottom: 16px; font-size: 11px; color: var(--stone-mid);"></div>
             <div class="modal-actions">
@@ -4867,7 +4880,13 @@
             levelSelect: document.getElementById('crucibleLevelSelect'),
             status: document.getElementById('crucibleStatus'),
             confirmBtn: document.getElementById('confirmCrucibleBtn'),
-            cancelBtn: document.getElementById('cancelCrucibleBtn')
+            cancelBtn: document.getElementById('cancelCrucibleBtn'),
+            // New level creation elements
+            createLevelBtn: document.getElementById('createLevelInCrucibleBtn'),
+            newLevelFields: document.getElementById('newLevelFields'),
+            newLevelName: document.getElementById('newCrucibleLevelName'),
+            confirmCreateBtn: document.getElementById('confirmCreateLevelBtn'),
+            cancelCreateBtn: document.getElementById('cancelCreateLevelBtn')
         };
 
         let crucibleLevels = [];
@@ -4883,37 +4902,105 @@
             crucibleElements.projectName.textContent = selectedProject.name;
             crucibleElements.status.textContent = 'Loading levels...';
             crucibleElements.confirmBtn.disabled = true;
+            crucibleElements.newLevelFields.style.display = 'none';
+
+            // Pre-fill new level name from Level Forge's level name
+            const currentLevelName = elements.levelName.value.trim();
+            crucibleElements.newLevelName.value = currentLevelName || '';
 
             try {
                 const crucible = await getCrucible();
                 crucibleLevels = await crucible.getLevels(selectedProject.id);
 
                 if (crucibleLevels.length === 0) {
-                    crucibleElements.levelSelect.innerHTML = '<option value="">No levels - create one in Crucible first</option>';
+                    crucibleElements.levelSelect.innerHTML = '<option value="">No levels yet</option>';
                     crucibleElements.levelSelect.disabled = true;
-                    crucibleElements.status.textContent = 'Create a level in Crucible first.';
-                    return;
-                }
+                    crucibleElements.status.textContent = 'Create a new level to save your work.';
+                } else {
+                    crucibleElements.levelSelect.disabled = false;
+                    crucibleElements.levelSelect.innerHTML = '<option value="">Select a level...</option>' +
+                        crucibleLevels.map(l => `<option value="${l.id}">${l.name} (${l.width}x${l.height})</option>`).join('');
 
-                crucibleElements.levelSelect.disabled = false;
-                crucibleElements.levelSelect.innerHTML = '<option value="">Select a level...</option>' +
-                    crucibleLevels.map(l => `<option value="${l.id}">${l.name} (${l.width}x${l.height})</option>`).join('');
-
-                // Check for saved context
-                const ctx = crucible.getContext();
-                if (ctx.projectId === selectedProject.id && ctx.levelSlug) {
-                    const level = crucibleLevels.find(l => l.slug === ctx.levelSlug);
-                    if (level) {
-                        crucibleElements.levelSelect.value = level.id;
-                        selectedCrucibleLevel = level;
-                        crucibleElements.confirmBtn.disabled = false;
+                    // Check for saved context
+                    const ctx = crucible.getContext();
+                    if (ctx.projectId === selectedProject.id && ctx.levelSlug) {
+                        const level = crucibleLevels.find(l => l.slug === ctx.levelSlug);
+                        if (level) {
+                            crucibleElements.levelSelect.value = level.id;
+                            selectedCrucibleLevel = level;
+                            crucibleElements.confirmBtn.disabled = false;
+                        }
                     }
-                }
 
-                crucibleElements.status.textContent = '';
+                    crucibleElements.status.textContent = '';
+                }
             } catch (err) {
                 console.error('Failed to load Crucible data:', err);
                 crucibleElements.status.textContent = 'Failed to load: ' + err.message;
+            }
+        }
+
+        function showNewLevelFields() {
+            crucibleElements.newLevelFields.style.display = 'block';
+            crucibleElements.newLevelName.focus();
+            crucibleElements.status.textContent = `Will create ${state.gridWidth}x${state.gridHeight} ${state.levelType} level`;
+        }
+
+        function hideNewLevelFields() {
+            crucibleElements.newLevelFields.style.display = 'none';
+            crucibleElements.status.textContent = '';
+        }
+
+        async function createNewLevelInCrucible() {
+            const levelName = crucibleElements.newLevelName.value.trim();
+            if (!levelName) {
+                crucibleElements.status.textContent = 'Please enter a level name';
+                return;
+            }
+
+            crucibleElements.confirmCreateBtn.disabled = true;
+            crucibleElements.status.textContent = 'Creating level...';
+
+            try {
+                const crucible = await getCrucible();
+                const newLevel = await crucible.createLevel(
+                    selectedProject.id,
+                    levelName,
+                    state.levelType,
+                    state.gridWidth,
+                    state.gridHeight
+                );
+
+                // Notify other tabs
+                if (window.crossTabSync) {
+                    crossTabSync.notifyLevelCreated(selectedProject.id, newLevel.id, newLevel.slug, newLevel.name);
+                }
+
+                // Add to local list and select it
+                crucibleLevels.push(newLevel);
+
+                // Update dropdown
+                crucibleElements.levelSelect.disabled = false;
+                crucibleElements.levelSelect.innerHTML = '<option value="">Select a level...</option>' +
+                    crucibleLevels.map(l => `<option value="${l.id}">${l.name} (${l.width}x${l.height})</option>`).join('');
+                crucibleElements.levelSelect.value = newLevel.id;
+
+                // Select the new level
+                selectedCrucibleLevel = newLevel;
+                crucibleElements.confirmBtn.disabled = false;
+
+                // Hide create fields and show success
+                hideNewLevelFields();
+                crucibleElements.status.textContent = `Created "${levelName}" - ready to send!`;
+
+                // Also update Level Forge's level name input to match
+                elements.levelName.value = levelName;
+
+            } catch (err) {
+                console.error('Failed to create level:', err);
+                crucibleElements.status.textContent = 'Failed to create: ' + err.message;
+            } finally {
+                crucibleElements.confirmCreateBtn.disabled = false;
             }
         }
 
@@ -5131,17 +5218,32 @@
         crucibleElements.levelSelect.addEventListener('change', (e) => {
             selectedCrucibleLevel = crucibleLevels.find(l => l.id === e.target.value) || null;
             crucibleElements.confirmBtn.disabled = !selectedCrucibleLevel;
+            hideNewLevelFields();
         });
 
         crucibleElements.confirmBtn.addEventListener('click', sendToCrucible);
 
         crucibleElements.cancelBtn.addEventListener('click', () => {
             crucibleElements.modal.classList.remove('active');
+            hideNewLevelFields();
         });
 
         crucibleElements.modal.addEventListener('click', (e) => {
             if (e.target === crucibleElements.modal) {
                 crucibleElements.modal.classList.remove('active');
+                hideNewLevelFields();
+            }
+        });
+
+        // New level creation event listeners
+        crucibleElements.createLevelBtn.addEventListener('click', showNewLevelFields);
+        crucibleElements.confirmCreateBtn.addEventListener('click', createNewLevelInCrucible);
+        crucibleElements.cancelCreateBtn.addEventListener('click', hideNewLevelFields);
+
+        crucibleElements.newLevelName.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                createNewLevelInCrucible();
             }
         });
 
