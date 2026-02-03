@@ -412,6 +412,8 @@
             border-left: 1px solid var(--stone-dark);
             display: flex;
             flex-direction: column;
+            min-height: 0; /* Allow flex child to shrink for scroll */
+            overflow: hidden;
         }
 
         .sidebar-header {
@@ -1304,9 +1306,9 @@
         // Event Handlers - Portal Indicators
         // ==========================================
         function setupPortalIndicatorEvents() {
-            // Exit indicators - start connection
+            // Exit indicators - start connection or offer to disconnect
             document.querySelectorAll('.exit-indicator').forEach(indicator => {
-                indicator.addEventListener('click', (e) => {
+                indicator.addEventListener('click', async (e) => {
                     e.stopPropagation();
                     const levelId = indicator.dataset.levelId;
                     const exitId = indicator.dataset.exitId;
@@ -1314,7 +1316,26 @@
                     const configured = indicator.dataset.configured === 'true';
 
                     if (configured) {
-                        showToast('This exit is already connected', 'error');
+                        // Find the connection for this exit
+                        const connection = state.connections.find(c => c.source_exit?.id === exitId);
+                        if (connection) {
+                            const targetName = connection.target_spawn?.level?.name || 'Unknown';
+                            if (confirm(`This exit is connected to ${targetName}.\n\nDelete this connection to reconnect?`)) {
+                                await deleteConnection(connection.id);
+                            }
+                        } else {
+                            // No connection found but marked as configured - offer to reset
+                            if (confirm('This exit is marked as connected but no connection found.\n\nReset and allow reconnection?')) {
+                                try {
+                                    const crucible = await getCrucible();
+                                    await crucible.unconfigureExit(exitId);
+                                    showToast('Exit reset - you can now connect it', 'success');
+                                    await loadProject(state.projectId);
+                                } catch (err) {
+                                    showToast('Failed to reset exit', 'error');
+                                }
+                            }
+                        }
                         return;
                     }
 
