@@ -2033,6 +2033,17 @@
                 game.gridData = JSON.parse(game.gridData);
             }
 
+            // Debug: Log grid data info
+            console.log('🎮 Game Level Loaded:', {
+                levelName: levelData.name,
+                levelType: game.levelType,
+                gridRows: game.gridData.length,
+                gridCols: game.gridData[0]?.length || 0,
+                bottomRow: game.gridData[game.gridData.length - 1],
+                secondBottomRow: game.gridData[game.gridData.length - 2],
+                hasObstructions: game.gridData.flat().includes(2)
+            });
+
             // Load backgrounds
             game.backgrounds = [];
             const bgLayers = levelData.level_backgrounds || [];
@@ -2219,7 +2230,8 @@
             for (let ty = top; ty <= bottom; ty++) {
                 for (let tx = left; tx <= right; tx++) {
                     if (tx < 0 || tx >= gridWidth || ty < 0 || ty >= gridHeight) continue;
-                    if (game.gridData[ty]?.[tx] === 2) return true; // obstruction
+                    const cellValue = game.gridData[ty]?.[tx];
+                    if (cellValue === 2) return true; // obstruction
                 }
             }
             return false;
@@ -2298,6 +2310,14 @@
             const eyeY = Math.round(game.player.y) + 4;
             ctx.fillRect(Math.round(game.player.x) + 3, eyeY, 2, 2);
             ctx.fillRect(Math.round(game.player.x) + game.player.width - 5, eyeY, 2, 2);
+
+            // Debug HUD
+            ctx.fillStyle = '#fff';
+            ctx.font = '10px monospace';
+            ctx.fillText(`pos: ${Math.round(game.player.x)}, ${Math.round(game.player.y)}`, 4, 12);
+            ctx.fillText(`vel: ${Math.round(game.player.vx)}, ${Math.round(game.player.vy)}`, 4, 24);
+            ctx.fillText(`onGround: ${game.player.onGround}`, 4, 36);
+            ctx.fillText(`levelType: ${game.levelType}`, 4, 48);
         }
 
         // Game key handlers
