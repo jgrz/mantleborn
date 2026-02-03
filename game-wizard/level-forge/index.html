@@ -5282,18 +5282,14 @@
                     await crucible.saveTileData(levelId, levelData.visualTiles);
                     transaction.recordSuccess('tiles');
 
-                    // Save spawns
+                    // Save spawns (always call to delete old ones even if empty)
                     crucibleElements.status.textContent = 'Saving spawns...';
-                    if (levelData.spawns && levelData.spawns.length > 0) {
-                        await crucible.saveSpawns(levelId, levelData.spawns);
-                    }
+                    await crucible.saveSpawns(levelId, levelData.spawns || []);
                     transaction.recordSuccess('spawns');
 
-                    // Save exits (includes both exits and returns)
+                    // Save exits (always call to delete old ones even if empty)
                     crucibleElements.status.textContent = 'Saving exits...';
-                    if (levelData.exits && levelData.exits.length > 0) {
-                        await crucible.saveExits(levelId, levelData.exits);
-                    }
+                    await crucible.saveExits(levelId, levelData.exits || []);
                     transaction.recordSuccess('exits');
 
                     // Commit transaction
