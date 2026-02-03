@@ -997,8 +997,8 @@ class CrucibleClient {
             .from('levels')
             .select(`
                 *,
-                level_spawns (id),
-                level_exits (id, configured)
+                level_spawns!level_id (id),
+                level_exits!level_id (id, configured)
             `)
             .eq('project_id', projectId)
             .order('sort_order', { ascending: true });
