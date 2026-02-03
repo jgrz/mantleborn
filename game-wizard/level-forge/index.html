@@ -2628,13 +2628,13 @@
             const minY = Math.min(state.selectionStart.y, state.selectionEnd.y);
             const maxY = Math.max(state.selectionStart.y, state.selectionEnd.y);
 
-            const tileSize = 25; // 24px + 1px gap
+            const tileSize = state.tileSize;
 
             elements.selectionBox.style.display = 'block';
-            elements.selectionBox.style.left = (minX * tileSize + 2) + 'px';
-            elements.selectionBox.style.top = (minY * tileSize + 2) + 'px';
-            elements.selectionBox.style.width = ((maxX - minX + 1) * tileSize - 1) + 'px';
-            elements.selectionBox.style.height = ((maxY - minY + 1) * tileSize - 1) + 'px';
+            elements.selectionBox.style.left = (minX * tileSize) + 'px';
+            elements.selectionBox.style.top = (minY * tileSize) + 'px';
+            elements.selectionBox.style.width = ((maxX - minX + 1) * tileSize) + 'px';
+            elements.selectionBox.style.height = ((maxY - minY + 1) * tileSize) + 'px';
 
             // Highlight selected tiles
             clearTileHighlights();
