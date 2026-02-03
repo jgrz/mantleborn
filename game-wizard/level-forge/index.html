@@ -3139,8 +3139,9 @@
                 `;
             }
 
-            // Show overlay
+            // Show overlay and hide grid (transform creates stacking context issues)
             elements.demoOverlay.classList.add('active');
+            elements.gridWrapper.style.visibility = 'hidden';
 
             // Start game loop
             demo.lastTime = performance.now();
@@ -3150,6 +3151,7 @@
         function stopDemo() {
             demo.active = false;
             elements.demoOverlay.classList.remove('active');
+            elements.gridWrapper.style.visibility = 'visible';
             if (demo.animationFrame) {
                 cancelAnimationFrame(demo.animationFrame);
                 demo.animationFrame = null;
