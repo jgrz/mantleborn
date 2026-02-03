@@ -392,6 +392,68 @@ class CrucibleClient {
         return data;
     }
 
+    async setStartingSpawn(projectId, spawnId) {
+        if (!this.client) throw new Error('Crucible not initialized');
+
+        const { data, error } = await this.client
+            .from('projects')
+            .update({ starting_spawn_id: spawnId })
+            .eq('id', projectId)
+            .select()
+            .single();
+
+        if (error) throw error;
+        return data;
+    }
+
+    async clearStartingSpawn(projectId) {
+        if (!this.client) throw new Error('Crucible not initialized');
+
+        const { data, error } = await this.client
+            .from('projects')
+            .update({ starting_spawn_id: null })
+            .eq('id', projectId)
+            .select()
+            .single();
+
+        if (error) throw error;
+        return data;
+    }
+
+    async getStartingSpawn(projectId) {
+        if (!this.client) throw new Error('Crucible not initialized');
+
+        // First get the project to find the starting_spawn_id
+        const { data: project, error: projectError } = await this.client
+            .from('projects')
+            .select('starting_spawn_id')
+            .eq('id', projectId)
+            .single();
+
+        if (projectError) throw projectError;
+        if (!project?.starting_spawn_id) return null;
+
+        // Get the spawn with its level info
+        const { data: spawn, error: spawnError } = await this.client
+            .from('level_spawns')
+            .select(`
+                *,
+                level:levels!level_id (
+                    id, name, slug, width, height, level_type,
+                    level_grids (*),
+                    level_backgrounds (*),
+                    level_tiles (*),
+                    level_spawns (*),
+                    level_exits (*)
+                )
+            `)
+            .eq('id', project.starting_spawn_id)
+            .single();
+
+        if (spawnError) throw spawnError;
+        return spawn;
+    }
+
     async hasProjects() {
         if (!this.client) return false;
 
@@ -964,6 +1026,72 @@ class CrucibleClient {
             .eq('id', connectionId);
 
         if (error) throw error;
+    }
+
+    /**
+     * Get a level with all data needed for game play, including exit connections
+     */
+    async getLevelForGame(levelId) {
+        if (!this.client) throw new Error('Crucible not initialized');
+
+        const { data: level, error } = await this.client
+            .from('levels')
+            .select(`
+                *,
+                level_grids (*),
+                level_backgrounds (*),
+                level_tiles (*),
+                level_spawns (*),
+                level_exits (*)
+            `)
+            .eq('id', levelId)
+            .single();
+
+        if (error) throw error;
+
+        // Get connections for exits in this level
+        const exitIds = level.level_exits?.map(e => e.id) || [];
+        let connections = [];
+        if (exitIds.length > 0) {
+            const { data: conns } = await this.client
+                .from('level_connections')
+                .select(`
+                    *,
+                    target_spawn:level_spawns!target_spawn_id (
+                        *,
+                        level:levels!level_id (id, name, slug)
+                    )
+                `)
+                .in('source_exit_id', exitIds);
+            connections = conns || [];
+        }
+
+        // Attach connections to exits
+        level.level_exits = level.level_exits?.map(exit => ({
+            ...exit,
+            connection: connections.find(c => c.source_exit_id === exit.id) || null
+        }));
+
+        return level;
+    }
+
+    /**
+     * Get the first level for a project (for game start when no starting spawn is set)
+     */
+    async getFirstLevel(projectId) {
+        if (!this.client) throw new Error('Crucible not initialized');
+
+        const { data: levels, error } = await this.client
+            .from('levels')
+            .select('id')
+            .eq('project_id', projectId)
+            .order('sort_order', { ascending: true })
+            .limit(1);
+
+        if (error) throw error;
+        if (!levels || levels.length === 0) return null;
+
+        return this.getLevelForGame(levels[0].id);
     }
 
     // =============================================

@@ -354,6 +354,34 @@
             }
         }
 
+        /* Game Start Spawn - special styling */
+        .spawn-indicator.game-start {
+            background: #ffd700;
+            border-color: #fff;
+            box-shadow: 0 0 8px #ffd700, 0 0 16px #ffd700;
+            animation: game-start-glow 2s ease-in-out infinite;
+        }
+
+        .spawn-indicator.game-start::after {
+            content: '★';
+            position: absolute;
+            top: -18px;
+            left: 50%;
+            transform: translateX(-50%);
+            font-size: 12px;
+            color: #ffd700;
+            text-shadow: 0 0 4px #000;
+        }
+
+        @keyframes game-start-glow {
+            0%, 100% {
+                box-shadow: 0 0 8px #ffd700, 0 0 16px #ffd700;
+            }
+            50% {
+                box-shadow: 0 0 12px #ffd700, 0 0 24px #ffd700, 0 0 32px #ffd700;
+            }
+        }
+
         /* Exit Points */
         .exit-indicator {
             width: 0;
@@ -478,6 +506,49 @@
             border-left: 6px solid transparent;
             border-right: 6px solid transparent;
             border-bottom: 10px solid var(--tile-return);
+        }
+
+        .legend-game-start {
+            width: 12px;
+            height: 12px;
+            background: #ffd700;
+            border: 2px solid white;
+            border-radius: 50%;
+            box-shadow: 0 0 4px #ffd700;
+        }
+
+        .empty-state.small {
+            padding: 8px;
+        }
+
+        .empty-state.small .empty-text {
+            font-size: 10px;
+        }
+
+        .empty-state.small .empty-hint {
+            font-size: 9px;
+        }
+
+        .starting-spawn-info {
+            padding: 8px;
+            background: rgba(255, 215, 0, 0.1);
+            border: 1px solid rgba(255, 215, 0, 0.3);
+            border-radius: 4px;
+        }
+
+        .starting-spawn-info .level-name {
+            font-weight: 600;
+            color: #ffd700;
+            font-size: 11px;
+        }
+
+        .starting-spawn-info .spawn-name {
+            font-size: 10px;
+            color: var(--stone-light);
+        }
+
+        .starting-spawn-info .clear-btn {
+            margin-top: 6px;
         }
 
         .legend-unconnected {
@@ -735,7 +806,21 @@
                         <span>Return Exit</span>
                     </div>
                     <div class="legend-item">
+                        <div class="legend-game-start"></div>
+                        <span>Game Start</span>
+                    </div>
+                    <div class="legend-item">
                         <span class="legend-unconnected">Pulsing = Unconnected</span>
+                    </div>
+                </div>
+
+                <div class="section">
+                    <div class="section-header">Game Start</div>
+                    <div id="startingSpawnInfo">
+                        <div class="empty-state small">
+                            <div class="empty-text">No starting point set</div>
+                            <div class="empty-hint">Click a spawn to set it</div>
+                        </div>
                     </div>
                 </div>
 
@@ -792,6 +877,7 @@
             levelPositions: {},  // { levelId: { x, y } }
             zoom: 1,
             pan: { x: 0, y: 0 },
+            startingSpawnId: null, // The game's starting spawn point
 
             // Connection creation state
             selectedExit: null,  // { levelId, exitId, exitData }
@@ -812,6 +898,7 @@
             connectionsSvg: document.getElementById('connectionsSvg'),
             levelsContainer: document.getElementById('levelsContainer'),
             connectionsList: document.getElementById('connectionsList'),
+            startingSpawnInfo: document.getElementById('startingSpawnInfo'),
             validationResults: document.getElementById('validationResults'),
             zoomIn: document.getElementById('zoomIn'),
             zoomOut: document.getElementById('zoomOut'),
@@ -867,6 +954,7 @@
                 state.projectId = null;
                 state.levels = [];
                 state.connections = [];
+                state.startingSpawnId = null;
                 renderLevels();
                 renderConnectionsList();
                 return;
@@ -876,6 +964,10 @@
 
             try {
                 const crucible = await getCrucible();
+
+                // Load project info (including starting_spawn_id)
+                const project = await crucible.getProject(projectId);
+                state.startingSpawnId = project?.starting_spawn_id || null;
 
                 // Load all levels with their spawns and exits
                 const levelsRaw = await crucible.getLevels(projectId);
@@ -905,6 +997,7 @@
                 renderLevels();
                 renderConnectionLines();
                 renderConnectionsList();
+                renderStartingSpawnInfo();
             } catch (err) {
                 console.error('Failed to load project:', err);
                 showToast('Failed to load: ' + (err.message || err), 'error');
@@ -1001,15 +1094,16 @@
                 const y = spawn.grid_y * GRID_SCALE + GRID_SCALE / 2 - 7;
                 const isConnected = isSpawnConnected(level.id, spawn.id);
                 const isSelected = state.selectedExit && state.connectionMode;
+                const isGameStart = state.startingSpawnId === spawn.id;
 
                 indicators.push(`
-                    <div class="portal-indicator spawn-indicator ${isConnected ? '' : 'unconnected'} ${isSelected ? 'selectable' : ''}"
+                    <div class="portal-indicator spawn-indicator ${isConnected ? '' : 'unconnected'} ${isSelected ? 'selectable' : ''} ${isGameStart ? 'game-start' : ''}"
                          data-type="spawn"
                          data-level-id="${level.id}"
                          data-spawn-id="${spawn.id}"
                          data-spawn-name="${spawn.name}"
                          style="left: ${x}px; top: ${y}px;"
-                         title="${spawn.name} (${spawn.grid_x}, ${spawn.grid_y})">
+                         title="${spawn.name} (${spawn.grid_x}, ${spawn.grid_y})${isGameStart ? ' [GAME START]' : ''}">
                     </div>
                 `);
             });
@@ -1248,6 +1342,46 @@
             }).join('');
         }
 
+        function renderStartingSpawnInfo() {
+            if (!state.startingSpawnId) {
+                elements.startingSpawnInfo.innerHTML = `
+                    <div class="empty-state small">
+                        <div class="empty-text">No starting point set</div>
+                        <div class="empty-hint">Click a spawn to set it</div>
+                    </div>
+                `;
+                return;
+            }
+
+            // Find the spawn and its level
+            let spawnInfo = null;
+            for (const level of state.levels) {
+                const spawn = level.spawns.find(s => s.id === state.startingSpawnId);
+                if (spawn) {
+                    spawnInfo = { level, spawn };
+                    break;
+                }
+            }
+
+            if (!spawnInfo) {
+                elements.startingSpawnInfo.innerHTML = `
+                    <div class="empty-state small">
+                        <div class="empty-text" style="color: #ff6b6b;">Starting spawn not found</div>
+                        <div class="empty-hint">It may have been deleted</div>
+                    </div>
+                `;
+                return;
+            }
+
+            elements.startingSpawnInfo.innerHTML = `
+                <div class="starting-spawn-info">
+                    <div class="level-name">${spawnInfo.level.name}</div>
+                    <div class="spawn-name">${spawnInfo.spawn.name} (${spawnInfo.spawn.grid_x}, ${spawnInfo.spawn.grid_y})</div>
+                    <button class="btn btn-small btn-danger clear-btn" onclick="clearGameStart()">Clear</button>
+                </div>
+            `;
+        }
+
         // ==========================================
         // Event Handlers - Level Cards
         // ==========================================
@@ -1343,23 +1477,77 @@
                 });
             });
 
-            // Spawn indicators - complete connection
+            // Spawn indicators - complete connection or set as game start
             document.querySelectorAll('.spawn-indicator').forEach(indicator => {
+                // Left click - complete connection or show info
                 indicator.addEventListener('click', (e) => {
                     e.stopPropagation();
-
-                    if (!state.connectionMode) {
-                        showToast('Click an exit first to start connecting');
-                        return;
-                    }
 
                     const levelId = indicator.dataset.levelId;
                     const spawnId = indicator.dataset.spawnId;
                     const spawnName = indicator.dataset.spawnName;
 
-                    completeConnection(levelId, spawnId, spawnName);
+                    if (state.connectionMode) {
+                        completeConnection(levelId, spawnId, spawnName);
+                    } else {
+                        // Not in connection mode - offer to set as game start
+                        const isGameStart = state.startingSpawnId === spawnId;
+                        if (isGameStart) {
+                            if (confirm('This is the game starting point.\n\nClear it?')) {
+                                clearGameStart();
+                            }
+                        } else {
+                            if (confirm(`Set "${spawnName}" as the game starting point?\n\nThis is where players will begin.`)) {
+                                setGameStart(spawnId, spawnName);
+                            }
+                        }
+                    }
+                });
+
+                // Right click - set as game start
+                indicator.addEventListener('contextmenu', async (e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+
+                    const spawnId = indicator.dataset.spawnId;
+                    const spawnName = indicator.dataset.spawnName;
+                    const isGameStart = state.startingSpawnId === spawnId;
+
+                    if (isGameStart) {
+                        clearGameStart();
+                    } else {
+                        setGameStart(spawnId, spawnName);
+                    }
                 });
             });
+        }
+
+        async function setGameStart(spawnId, spawnName) {
+            try {
+                const crucible = await getCrucible();
+                await crucible.setStartingSpawn(state.projectId, spawnId);
+                state.startingSpawnId = spawnId;
+                showToast(`Game will start at "${spawnName}"`, 'success');
+                renderLevels();
+                renderStartingSpawnInfo();
+            } catch (err) {
+                console.error('Failed to set starting spawn:', err);
+                showToast('Failed to set starting point', 'error');
+            }
+        }
+
+        async function clearGameStart() {
+            try {
+                const crucible = await getCrucible();
+                await crucible.clearStartingSpawn(state.projectId);
+                state.startingSpawnId = null;
+                showToast('Starting point cleared', 'success');
+                renderLevels();
+                renderStartingSpawnInfo();
+            } catch (err) {
+                console.error('Failed to clear starting spawn:', err);
+                showToast('Failed to clear starting point', 'error');
+            }
         }
 
         // ==========================================
