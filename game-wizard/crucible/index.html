@@ -2037,11 +2037,14 @@
             console.log('🎮 Game Level Loaded:', {
                 levelName: levelData.name,
                 levelType: game.levelType,
+                levelGrids: levelData.level_grids,
+                gridInfo: gridInfo,
+                gridDataRaw: gridInfo?.grid_data,
+                gridDataType: typeof gridInfo?.grid_data,
                 gridRows: game.gridData.length,
                 gridCols: game.gridData[0]?.length || 0,
                 bottomRow: game.gridData[game.gridData.length - 1],
-                secondBottomRow: game.gridData[game.gridData.length - 2],
-                hasObstructions: game.gridData.flat().includes(2)
+                hasObstructions: Array.isArray(game.gridData) && game.gridData.length > 0 && game.gridData.flat().includes(2)
             });
 
             // Load backgrounds
