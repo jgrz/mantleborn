@@ -2115,9 +2115,16 @@
 
                 // Check if level is locked by another user
                 const lockStatus = await crucible.getLevelLockStatus(levelId);
-                if (lockStatus.isLocked && !lockStatus.isOurs) {
+
+                // Only block if locked by someone else AND not expired
+                if (lockStatus.isLocked && !lockStatus.isOurs && !lockStatus.isExpired) {
                     showToast('Cannot delete: Level is being edited in another session', 'error');
                     return;
+                }
+
+                // If lock exists but is expired, clear it
+                if (lockStatus.isLocked && lockStatus.isExpired) {
+                    await crucible.forceReleaseLevelLock(levelId);
                 }
 
                 if (!confirm('Delete this level? This cannot be undone.')) return;

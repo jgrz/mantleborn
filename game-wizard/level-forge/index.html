@@ -87,6 +87,18 @@
             text-shadow: 0 0 10px rgba(224, 112, 32, 0.5);
         }
 
+        .edit-mode-badge {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 9px;
+            padding: 3px 8px;
+            background: var(--mystic-deep);
+            border: 1px solid var(--mystic-glow);
+            color: var(--mystic-glow);
+            border-radius: 4px;
+            margin-left: 12px;
+            letter-spacing: 0.5px;
+        }
+
         .header-actions {
             display: flex;
             gap: 10px;
@@ -275,12 +287,15 @@
 
         .canvas-viewport {
             flex: 1;
+            width: 100%;
+            height: 100%;
             overflow: auto;
             display: flex;
             align-items: center;
             justify-content: center;
             background: var(--bg-deep);
             position: relative;
+            padding: 12px;
         }
 
         .grid-wrapper {
@@ -305,7 +320,7 @@
 
         .grid {
             display: grid;
-            gap: 1px;
+            /* No gap - tiles have borders, and this ensures canvas aligns with grid */
             background: transparent;
             position: relative;
             z-index: 1;
@@ -327,7 +342,9 @@
         }
 
         .tile {
-            /* Size is set dynamically by grid template */
+            /* Size matches grid cell - inherit from grid template */
+            width: 100%;
+            height: 100%;
             background: transparent;
             cursor: pointer;
             transition: background 0.15s;
@@ -340,48 +357,58 @@
         }
 
         .tile[data-state="open"] {
-            background: rgba(42, 90, 48, 0.5);
-            border-color: rgba(42, 90, 48, 0.8);
+            background: rgba(80, 200, 100, 0.25);
+            border: 2px solid rgba(100, 220, 120, 0.8);
+            box-shadow: inset 0 0 0 1px rgba(60, 180, 80, 0.4);
         }
 
         .tile[data-state="open"]:hover {
-            background: rgba(42, 90, 48, 0.7);
+            background: rgba(80, 200, 100, 0.4);
+            border-color: rgba(120, 240, 140, 1);
         }
 
         .tile[data-state="obstruction"] {
-            background: rgba(106, 42, 42, 0.5);
-            border-color: rgba(106, 42, 42, 0.8);
+            background: rgba(255, 80, 80, 0.35);
+            border: 2px solid rgba(255, 100, 100, 0.9);
+            box-shadow: inset 0 0 0 1px rgba(255, 60, 60, 0.5);
         }
 
         .tile[data-state="obstruction"]:hover {
-            background: rgba(106, 42, 42, 0.7);
+            background: rgba(255, 80, 80, 0.5);
+            border-color: rgba(255, 120, 120, 1);
         }
 
         .tile[data-state="spawn"] {
-            background: rgba(42, 74, 106, 0.5);
-            border-color: rgba(42, 74, 106, 0.8);
+            background: rgba(80, 160, 255, 0.3);
+            border: 2px solid rgba(100, 180, 255, 0.9);
+            box-shadow: inset 0 0 0 1px rgba(60, 140, 255, 0.5);
         }
 
         .tile[data-state="spawn"]:hover {
-            background: rgba(42, 74, 106, 0.7);
+            background: rgba(80, 160, 255, 0.45);
+            border-color: rgba(120, 200, 255, 1);
         }
 
         .tile[data-state="exit"] {
-            background: rgba(138, 74, 138, 0.5);
-            border-color: rgba(138, 74, 138, 0.8);
+            background: rgba(200, 100, 255, 0.3);
+            border: 2px solid rgba(220, 120, 255, 0.9);
+            box-shadow: inset 0 0 0 1px rgba(180, 80, 255, 0.5);
         }
 
         .tile[data-state="exit"]:hover {
-            background: rgba(138, 74, 138, 0.7);
+            background: rgba(200, 100, 255, 0.45);
+            border-color: rgba(240, 140, 255, 1);
         }
 
         .tile[data-state="return"] {
-            background: rgba(106, 90, 42, 0.5);
-            border-color: rgba(106, 90, 42, 0.8);
+            background: rgba(80, 220, 200, 0.3);
+            border: 2px solid rgba(100, 240, 220, 0.9);
+            box-shadow: inset 0 0 0 1px rgba(60, 200, 180, 0.5);
         }
 
         .tile[data-state="return"]:hover {
-            background: rgba(106, 90, 42, 0.7);
+            background: rgba(80, 220, 200, 0.45);
+            border-color: rgba(120, 255, 240, 1);
         }
 
         /* Direction arrows for portal tiles */
@@ -972,8 +999,8 @@
         .tab-panel {
             display: none;
             flex: 1;
-            overflow: auto;
-            padding: 20px;
+            overflow: hidden;
+            padding: 8px;
             position: absolute;
             top: 0;
             left: 0;
@@ -983,8 +1010,8 @@
 
         .tab-panel.active {
             display: flex;
-            align-items: center;
-            justify-content: center;
+            align-items: stretch;
+            justify-content: stretch;
         }
 
         /* Grid panel is the base layer - always visible when active */
@@ -1634,6 +1661,7 @@
         <div class="brand">
             <span class="brand-icon">&#128506;</span>
             <span class="brand-text">LEVEL FORGE</span>
+            <span class="edit-mode-badge" id="editModeBadge" style="display: none;">EDITING</span>
         </div>
         <div class="header-actions">
             <button class="btn btn-crucible" id="sendToCrucibleBtn" title="Send to Crucible" disabled>&#129516; Send to Crucible</button>
@@ -1807,6 +1835,17 @@
                 <div class="tile-size-info" id="tileSizeInfo" style="margin-top: 8px; font-size: 10px; color: var(--stone-mid); text-align: center;">
                     Tile Size: <span id="tileSizeDisplay">16</span>px (from project)
                 </div>
+            </div>
+
+            <!-- Load Existing Level -->
+            <div class="section tab-settings active" id="loadLevelSection">
+                <div class="section-header">Load Level</div>
+                <div class="form-group">
+                    <select class="form-input" id="levelSelect" disabled>
+                        <option value="">Select project first...</option>
+                    </select>
+                </div>
+                <div id="loadLevelStatus" style="font-size: 10px; color: var(--stone-mid); margin-top: 4px;"></div>
             </div>
 
             <!-- Level Info (Grid Tab) -->
@@ -2134,6 +2173,7 @@
         const elements = {
             // Header
             sendToCrucibleBtn: document.getElementById('sendToCrucibleBtn'),
+            editModeBadge: document.getElementById('editModeBadge'),
 
             // Grid editor
             grid: document.getElementById('grid'),
@@ -2156,6 +2196,8 @@
             newLevelBtn: document.getElementById('newLevelBtn'),
             jsonOutput: document.getElementById('jsonOutput'),
             toast: document.getElementById('toast'),
+            levelSelect: document.getElementById('levelSelect'),
+            loadLevelStatus: document.getElementById('loadLevelStatus'),
 
             // Unified toolbar
             levelToolbar: document.getElementById('levelToolbar'),
@@ -2259,9 +2301,16 @@
 
         function renderGrid() {
             elements.grid.innerHTML = '';
-            const tileSize = state.tileSize + 'px';
-            elements.grid.style.gridTemplateColumns = `repeat(${state.gridWidth}, ${tileSize})`;
-            elements.grid.style.gridTemplateRows = `repeat(${state.gridHeight}, ${tileSize})`;
+            const tileSize = state.tileSize;
+            const tileSizePx = tileSize + 'px';
+            const gridWidth = state.gridWidth * tileSize;
+            const gridHeight = state.gridHeight * tileSize;
+
+            // Explicitly set grid dimensions to match canvas
+            elements.grid.style.width = gridWidth + 'px';
+            elements.grid.style.height = gridHeight + 'px';
+            elements.grid.style.gridTemplateColumns = `repeat(${state.gridWidth}, ${tileSizePx})`;
+            elements.grid.style.gridTemplateRows = `repeat(${state.gridHeight}, ${tileSizePx})`;
 
             for (let y = 0; y < state.gridHeight; y++) {
                 for (let x = 0; x < state.gridWidth; x++) {
@@ -3032,10 +3081,44 @@
         // ==========================================
         elements.resizeGridBtn.addEventListener('click', resizeGrid);
         elements.clearGridBtn.addEventListener('click', clearGrid);
-        elements.newLevelBtn.addEventListener('click', () => {
+        elements.newLevelBtn.addEventListener('click', async () => {
             if (confirm('Create new level? Current progress will be lost.')) {
+                // Release any existing lock
+                await releaseLock();
+
+                // Reset edit mode state
+                loadedLevelId = null;
+                selectedCrucibleLevel = null;
+
+                // Clear context
+                try {
+                    const crucible = await getCrucible();
+                    crucible.clearContext();
+                } catch (e) {
+                    // Ignore errors
+                }
+
+                // Hide edit mode badge
+                if (elements.editModeBadge) {
+                    elements.editModeBadge.style.display = 'none';
+                }
+
+                // Reset level data
                 elements.levelName.value = '';
                 clearGrid();
+                state.backgrounds = [];
+                state.visualTiles = [];
+                state.spawnMetadata = {};
+                state.exitMetadata = {};
+                state.returnMetadata = {};
+                state.spawnCount = 0;
+                state.exitCount = 0;
+                state.returnCount = 0;
+
+                initVisualTiles();
+                renderBackgroundPreview();
+                renderBackgroundLayers();
+                renderTileCanvas();
             }
         });
         elements.copyJsonBtn.addEventListener('click', copyJson);
@@ -3044,6 +3127,12 @@
         elements.levelType.addEventListener('change', (e) => {
             state.levelType = e.target.value;
             updateJsonOutput();
+        });
+
+        // Level select dropdown - load existing levels
+        elements.levelSelect.addEventListener('change', (e) => {
+            const levelId = e.target.value;
+            loadLevelById(levelId);
         });
 
         // Keyboard shortcuts (editor mode only)
@@ -3399,11 +3488,13 @@
                 ctx.restore();
             });
 
-            // Draw collision tiles (as fallback/debug if no visual tiles)
+            // Draw visual tiles (if any)
             const hasVisualTiles = state.visualTiles.some(row => row.some(t => t !== null));
+            const hasBackgrounds = state.backgrounds.some(bg => bg.visible && bg.image);
 
-            if (!hasVisualTiles) {
-                // Draw collision grid colors
+            // Only show collision fallback if NO backgrounds AND no visual tiles
+            if (!hasVisualTiles && !hasBackgrounds) {
+                // Draw collision grid colors as last resort fallback
                 for (let y = 0; y < state.gridHeight; y++) {
                     for (let x = 0; x < state.gridWidth; x++) {
                         const tile = state.tiles[y][x];
@@ -3419,7 +3510,7 @@
                         ctx.fillRect(x * tileSize, y * tileSize, tileSize - 1, tileSize - 1);
                     }
                 }
-            } else {
+            } else if (hasVisualTiles) {
                 // Draw ONLY visual tiles - no collision squares for empty cells
                 for (let y = 0; y < state.gridHeight; y++) {
                     for (let x = 0; x < state.gridWidth; x++) {
@@ -3630,6 +3721,14 @@
             reader.onload = (e) => {
                 const img = new Image();
                 img.onload = () => {
+                    // Calculate scale to fit the level dimensions
+                    const levelWidth = state.gridWidth * state.tileSize;
+                    const levelHeight = state.gridHeight * state.tileSize;
+                    const scaleX = levelWidth / img.width;
+                    const scaleY = levelHeight / img.height;
+                    // Use the larger scale to ensure full coverage (cover mode)
+                    const autoScale = Math.max(scaleX, scaleY);
+
                     const layer = {
                         id: 'bg_' + Date.now(),
                         name: file.name.replace(/\.[^.]+$/, ''),
@@ -3639,7 +3738,7 @@
                         scrollRate: 1,
                         offsetX: 0,
                         offsetY: 0,
-                        scale: 1,
+                        scale: autoScale,
                         visible: true
                     };
                     state.backgrounds.push(layer);
@@ -3648,7 +3747,7 @@
                     renderBackgroundPreview();
                     updateBgLayerControls();
                     updateJsonOutput();
-                    showToast('Background layer added');
+                    showToast(`Background added (auto-scaled to ${autoScale.toFixed(2)}x)`);
                 };
                 img.src = e.target.result;
             };
@@ -3803,6 +3902,8 @@
             const canvas = elements.levelCanvas;
             const ctx = canvas.getContext('2d');
             const tileSize = state.tileSize;
+
+            // Use calculated dimensions (matches explicit grid dimensions set in renderGrid)
             const levelWidth = state.gridWidth * tileSize;
             const levelHeight = state.gridHeight * tileSize;
 
@@ -4848,6 +4949,10 @@
                 state.tileSize = 16;  // Reset to default
                 populateSpriteSheetSelect();
                 updateTileSizeDisplay();
+
+                // Clear level selector
+                elements.levelSelect.innerHTML = '<option value="">Select project first...</option>';
+                elements.levelSelect.disabled = true;
                 return;
             }
 
@@ -4871,6 +4976,18 @@
 
             // Load master sheet for this project
             await loadMasterSheet(projectId);
+
+            // Populate level selector
+            try {
+                const levels = await crucible.getLevels(projectId);
+                elements.levelSelect.disabled = false;
+                elements.levelSelect.innerHTML = '<option value="">-- New Level --</option>' +
+                    levels.map(l => `<option value="${l.id}">${l.name} (${l.width}x${l.height})</option>`).join('');
+                elements.loadLevelStatus.textContent = `${levels.length} level(s) available`;
+            } catch (err) {
+                console.warn('Could not load levels:', err);
+                elements.levelSelect.innerHTML = '<option value="">Error loading levels</option>';
+            }
         }
 
         // ==========================================
@@ -4923,18 +5040,28 @@
                     crucibleElements.levelSelect.innerHTML = '<option value="">Select a level...</option>' +
                         crucibleLevels.map(l => `<option value="${l.id}">${l.name} (${l.width}x${l.height})</option>`).join('');
 
-                    // Check for saved context
-                    const ctx = crucible.getContext();
-                    if (ctx.projectId === selectedProject.id && ctx.levelSlug) {
-                        const level = crucibleLevels.find(l => l.slug === ctx.levelSlug);
-                        if (level) {
-                            crucibleElements.levelSelect.value = level.id;
-                            selectedCrucibleLevel = level;
-                            crucibleElements.confirmBtn.disabled = false;
+                    // Check if level is already loaded from URL or saved context
+                    let preselectedLevel = null;
+
+                    // First check if we already have a selected level (from loadFromCrucible)
+                    if (selectedCrucibleLevel && crucibleLevels.find(l => l.id === selectedCrucibleLevel.id)) {
+                        preselectedLevel = selectedCrucibleLevel;
+                    } else {
+                        // Fall back to saved context
+                        const ctx = crucible.getContext();
+                        if (ctx.projectId === selectedProject.id && ctx.levelSlug) {
+                            preselectedLevel = crucibleLevels.find(l => l.slug === ctx.levelSlug);
                         }
                     }
 
-                    crucibleElements.status.textContent = '';
+                    if (preselectedLevel) {
+                        crucibleElements.levelSelect.value = preselectedLevel.id;
+                        selectedCrucibleLevel = preselectedLevel;
+                        crucibleElements.confirmBtn.disabled = false;
+                        crucibleElements.status.textContent = `Updating: ${preselectedLevel.name}`;
+                    } else {
+                        crucibleElements.status.textContent = '';
+                    }
                 }
             } catch (err) {
                 console.error('Failed to load Crucible data:', err);
@@ -5334,6 +5461,257 @@
         }
 
         // ==========================================
+        // Load Level from Crucible (for editing existing levels)
+        // ==========================================
+        let loadedLevelId = null;  // Track if we're editing an existing level
+
+        async function loadLevelById(levelId) {
+            if (!levelId) {
+                // "New Level" selected - reset to fresh state
+                await releaseLock();
+                loadedLevelId = null;
+                selectedCrucibleLevel = null;
+
+                if (elements.editModeBadge) {
+                    elements.editModeBadge.style.display = 'none';
+                }
+                elements.loadLevelStatus.textContent = 'New level mode';
+
+                // Don't clear the grid - let user keep working or use "New Level" button
+                return;
+            }
+
+            try {
+                elements.loadLevelStatus.textContent = 'Loading...';
+                const crucible = await getCrucible();
+
+                // Get level details
+                const levels = await crucible.getLevels(selectedProject.id);
+                const level = levels.find(l => l.id === levelId);
+                if (!level) {
+                    showToast('Level not found');
+                    elements.loadLevelStatus.textContent = 'Error: not found';
+                    return;
+                }
+
+                loadedLevelId = level.id;
+
+                // Try to acquire lock
+                const lockResult = await acquireLock(level.id);
+                if (!lockResult.acquired) {
+                    elements.loadLevelStatus.textContent = 'Warning: locked by another user';
+                }
+
+                // Set level name and type
+                elements.levelName.value = level.name;
+                state.levelType = level.level_type || 'platformer';
+                elements.levelType.value = state.levelType;
+
+                // Set grid dimensions
+                state.gridWidth = level.width || 32;
+                state.gridHeight = level.height || 18;
+                elements.gridWidth.value = state.gridWidth;
+                elements.gridHeight.value = state.gridHeight;
+
+                // Initialize fresh tiles array
+                state.tiles = [];
+                for (let y = 0; y < state.gridHeight; y++) {
+                    state.tiles[y] = [];
+                    for (let x = 0; x < state.gridWidth; x++) {
+                        state.tiles[y][x] = 'undefined';
+                    }
+                }
+
+                // Load grid data (tile states)
+                const gridData = await crucible.getGridData(level.id);
+                if (gridData && gridData.grid_data) {
+                    let tileData = gridData.grid_data;
+                    if (typeof tileData === 'string') {
+                        tileData = JSON.parse(tileData);
+                    }
+                    // grid_data is 2D array: 0=undefined, 1=open, 2=obstruction, 3=spawn, 4=exit, 5=return
+                    const stateMap = ['undefined', 'open', 'obstruction', 'spawn', 'exit', 'return'];
+                    for (let y = 0; y < state.gridHeight && y < tileData.length; y++) {
+                        for (let x = 0; x < state.gridWidth && x < (tileData[y]?.length || 0); x++) {
+                            const value = tileData[y][x];
+                            if (value >= 0 && value < stateMap.length) {
+                                state.tiles[y][x] = stateMap[value];
+                            }
+                        }
+                    }
+                }
+
+                // Load spawns
+                const spawns = await crucible.getSpawns(level.id);
+                state.spawnMetadata = {};
+                state.spawnCount = spawns.length;
+                spawns.forEach(spawn => {
+                    const key = `${spawn.grid_x},${spawn.grid_y}`;
+                    state.spawnMetadata[key] = {
+                        name: spawn.name,
+                        direction: spawn.direction || 'right',
+                        isPrimary: spawn.is_primary || false
+                    };
+                    if (state.tiles[spawn.grid_y]?.[spawn.grid_x] !== undefined) {
+                        state.tiles[spawn.grid_y][spawn.grid_x] = 'spawn';
+                    }
+                });
+
+                // Load exits
+                const exits = await crucible.getExits(level.id);
+                state.exitMetadata = {};
+                state.returnMetadata = {};
+                state.exitCount = 0;
+                state.returnCount = 0;
+                exits.forEach(exit => {
+                    const key = `${exit.grid_x},${exit.grid_y}`;
+                    if (exit.exit_type === 'return') {
+                        state.returnMetadata[key] = {
+                            name: exit.name,
+                            direction: exit.direction || 'left'
+                        };
+                        state.returnCount++;
+                        if (state.tiles[exit.grid_y]?.[exit.grid_x] !== undefined) {
+                            state.tiles[exit.grid_y][exit.grid_x] = 'return';
+                        }
+                    } else {
+                        state.exitMetadata[key] = {
+                            name: exit.name,
+                            direction: exit.direction || 'right',
+                            type: 'exit'
+                        };
+                        state.exitCount++;
+                        if (state.tiles[exit.grid_y]?.[exit.grid_x] !== undefined) {
+                            state.tiles[exit.grid_y][exit.grid_x] = 'exit';
+                        }
+                    }
+                });
+
+                // Load background layers (metadata only first, then images)
+                const backgrounds = await crucible.getBackgroundLayers(level.id);
+                state.backgrounds = backgrounds.map((bg, index) => ({
+                    id: Date.now() + index,
+                    name: bg.layer_name,
+                    imageSrc: bg.image_path,
+                    image: null,
+                    depth: bg.depth,
+                    scrollRate: parseFloat(bg.scroll_rate) || 0.5,
+                    offsetX: bg.offset_x || 0,
+                    offsetY: bg.offset_y || 0,
+                    scale: parseFloat(bg.scale) || 1,
+                    visible: bg.visible !== false
+                }));
+
+                // Load background images one at a time (safer for large data URLs)
+                const levelWidth = state.gridWidth * state.tileSize;
+                const levelHeight = state.gridHeight * state.tileSize;
+
+                for (const layer of state.backgrounds) {
+                    if (layer.imageSrc) {
+                        try {
+                            await new Promise((resolve, reject) => {
+                                const img = new Image();
+                                img.onload = () => {
+                                    layer.image = img;
+
+                                    // Check if current scale fills the level, if not recalculate
+                                    const scaledWidth = img.width * layer.scale;
+                                    const scaledHeight = img.height * layer.scale;
+                                    if (scaledWidth < levelWidth || scaledHeight < levelHeight) {
+                                        // Recalculate scale to fit
+                                        const scaleX = levelWidth / img.width;
+                                        const scaleY = levelHeight / img.height;
+                                        layer.scale = Math.max(scaleX, scaleY);
+                                    }
+
+                                    renderBackgroundLayers();
+                                    renderBackgroundPreview();
+                                    resolve();
+                                };
+                                img.onerror = () => {
+                                    console.warn('Failed to load background image:', layer.name);
+                                    resolve(); // Don't fail, just skip
+                                };
+                                img.src = layer.imageSrc;
+                            });
+                        } catch (e) {
+                            console.warn('Background load error:', e);
+                        }
+                    }
+                }
+
+                // Load visual tiles
+                state.visualTiles = [];
+                for (let y = 0; y < state.gridHeight; y++) {
+                    state.visualTiles[y] = [];
+                    for (let x = 0; x < state.gridWidth; x++) {
+                        state.visualTiles[y][x] = null;
+                    }
+                }
+
+                const tileData = await crucible.getTileData(level.id);
+                if (tileData?.tile_data && Array.isArray(tileData.tile_data)) {
+                    tileData.tile_data.forEach(tile => {
+                        if (tile.x >= 0 && tile.x < state.gridWidth && tile.y >= 0 && tile.y < state.gridHeight) {
+                            state.visualTiles[tile.y][tile.x] = {
+                                spriteSheet: tile.spriteSheet,
+                                spriteName: tile.spriteName,
+                                x: tile.sourceX,
+                                y: tile.sourceY,
+                                width: tile.width,
+                                height: tile.height
+                            };
+                        }
+                    });
+                }
+
+                // Update Crucible modal state
+                selectedCrucibleLevel = level;
+                crucible.setContext(selectedProject.id, level.id, level.slug);
+
+                // Render everything
+                renderGrid();
+                renderLevelCanvas();
+                renderBackgroundLayers();
+                renderBackgroundPreview();
+                renderTileCanvas();
+                updateStats();
+
+                // Show edit mode badge
+                if (elements.editModeBadge) {
+                    elements.editModeBadge.style.display = 'inline-block';
+                    elements.editModeBadge.title = `Editing: ${level.name}`;
+                }
+
+                const bgCount = state.backgrounds.length;
+                elements.loadLevelStatus.textContent = bgCount > 0
+                    ? `Loaded with ${bgCount} background(s)`
+                    : `Loaded (no backgrounds)`;
+                showToast(`Loaded: ${level.name}`);
+
+            } catch (err) {
+                console.error('Failed to load level:', err);
+                elements.loadLevelStatus.textContent = 'Error loading';
+                showToast('Failed to load: ' + (err.message || err));
+            }
+        }
+
+        // Legacy function for URL-based loading
+        async function loadFromCrucible(projectId, levelSlug) {
+            try {
+                const crucible = await getCrucible();
+                const level = await crucible.getLevelBySlug(projectId, levelSlug);
+                if (level) {
+                    elements.levelSelect.value = level.id;
+                    await loadLevelById(level.id);
+                }
+            } catch (err) {
+                console.error('Failed to load level by slug:', err);
+                showToast('Failed to load level');
+            }
+        }
+
+        // ==========================================
         // Initialize
         // ==========================================
         (async function() {
@@ -5357,11 +5735,28 @@
             initGenerationQueue();
             initCrossTabSync();
 
-            // Sync with persistent header project selection
-            if (window.gwPersistentHeader) {
-                const saved = window.gwPersistentHeader.getSelectedProject();
-                if (saved?.projectId && state.user) {
-                    await selectProject(saved.projectId);
+            // Parse URL parameters for loading existing level
+            const urlParams = new URLSearchParams(window.location.search);
+            const urlProjectId = urlParams.get('project');
+            const urlLevelSlug = urlParams.get('level');
+            const urlTab = urlParams.get('tab');
+
+            // If URL has project and level, load that level for editing
+            if (urlProjectId && urlLevelSlug) {
+                await selectProject(urlProjectId);
+                await loadFromCrucible(urlProjectId, urlLevelSlug);
+
+                // Switch to specified tab if provided
+                if (urlTab && ['grid', 'background', 'tiles'].includes(urlTab)) {
+                    switchTab(urlTab);
+                }
+            } else {
+                // Sync with persistent header project selection
+                if (window.gwPersistentHeader) {
+                    const saved = window.gwPersistentHeader.getSelectedProject();
+                    if (saved?.projectId && state.user) {
+                        await selectProject(saved.projectId);
+                    }
                 }
             }
 

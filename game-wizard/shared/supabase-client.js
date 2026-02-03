@@ -3045,6 +3045,27 @@ class CrucibleClient {
     }
 
     /**
+     * Force release a lock (for expired/stale locks)
+     * @param {string} levelId - Level UUID
+     * @returns {boolean} Success
+     */
+    async forceReleaseLevelLock(levelId) {
+        if (!this.client) throw new Error('Crucible not initialized');
+
+        const { error } = await this.client
+            .from('levels')
+            .update({
+                locked_by: null,
+                locked_at: null,
+                lock_session_id: null
+            })
+            .eq('id', levelId);
+
+        if (error) throw error;
+        return true;
+    }
+
+    /**
      * Refresh the lock timestamp (heartbeat)
      * @param {string} levelId - Level UUID
      * @returns {boolean} Success
