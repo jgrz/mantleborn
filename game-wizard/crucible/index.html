@@ -1189,6 +1189,102 @@
         .style-swatch-detailed {
             background: linear-gradient(135deg, #90c0f0 0%, #70a0e0 25%, #5080c0 50%, #3060a0 75%, #204080 100%);
         }
+
+        /* Play Game Button */
+        .btn-play-game {
+            background: linear-gradient(135deg, #30d158 0%, #28a745 100%);
+            border-color: #30d158;
+            color: white;
+            font-weight: 600;
+        }
+
+        .btn-play-game:hover:not(:disabled) {
+            background: linear-gradient(135deg, #40e168 0%, #38b755 100%);
+            border-color: #40e168;
+        }
+
+        .btn-play-game:disabled {
+            background: var(--stone-dark);
+            border-color: var(--stone-dark);
+            color: var(--stone-mid);
+        }
+
+        /* Game Overlay */
+        .game-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: var(--bg-deep);
+            z-index: 1000;
+            display: none;
+            flex-direction: column;
+        }
+
+        .game-overlay.active {
+            display: flex;
+        }
+
+        .game-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 12px 20px;
+            background: var(--bg-mid);
+            border-bottom: 1px solid var(--stone-dark);
+        }
+
+        .game-info {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+        }
+
+        .game-level-name {
+            font-family: 'Press Start 2P', cursive;
+            font-size: 10px;
+            color: var(--accent-gold);
+        }
+
+        .game-instructions {
+            font-size: 10px;
+            color: var(--stone-mid);
+        }
+
+        .game-canvas-wrapper {
+            flex: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+        }
+
+        .game-canvas {
+            image-rendering: pixelated;
+            border: 2px solid var(--stone-dark);
+            border-radius: 4px;
+        }
+
+        .game-loading {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            text-align: center;
+            color: var(--stone-light);
+        }
+
+        .game-loading-spinner {
+            font-size: 32px;
+            animation: spin 1s linear infinite;
+            margin-bottom: 12px;
+        }
+
+        @keyframes spin {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
     </style>
 </head>
 <body>
@@ -1212,7 +1308,10 @@
                 <div id="projectInfo">
                     <div style="font-size: 12px; color: var(--stone-mid);">No project selected</div>
                 </div>
-                <button class="btn" id="projectSettingsBtn" style="width: 100%; margin-top: 12px;" disabled>
+                <button class="btn btn-play-game" id="playGameBtn" style="width: 100%; margin-top: 12px;" disabled>
+                    &#9654; Play Game
+                </button>
+                <button class="btn" id="projectSettingsBtn" style="width: 100%; margin-top: 8px;" disabled>
                     &#9881; Project Settings
                 </button>
                 <button class="btn" id="exportProjectBtn" style="width: 100%; margin-top: 8px;" disabled>
@@ -1749,6 +1848,24 @@
     <!-- Toast -->
     <div class="toast" id="toast"></div>
 
+    <!-- Game Overlay -->
+    <div class="game-overlay" id="gameOverlay">
+        <div class="game-header">
+            <div class="game-info">
+                <span class="game-level-name" id="gameLevelName">Loading...</span>
+                <span class="game-instructions">Arrow keys / WASD to move | Space to jump | ESC to exit</span>
+            </div>
+            <button class="btn" id="exitGameBtn">&#10005; Exit Game</button>
+        </div>
+        <div class="game-canvas-wrapper">
+            <canvas class="game-canvas" id="gameCanvas"></canvas>
+            <div class="game-loading" id="gameLoading">
+                <div class="game-loading-spinner">&#9881;</div>
+                <div>Loading level...</div>
+            </div>
+        </div>
+    </div>
+
     <!-- Load Supabase Client -->
     <script src="../shared/supabase-client.js"></script>
     <script src="../shared/persistent-header.js"></script>
@@ -1822,7 +1939,396 @@
             settingsTransition: document.getElementById('settingsTransition'),
             settingsCharSize: document.getElementById('settingsCharSize'),
             settingsDirections: document.getElementById('settingsDirections'),
+            // Game elements
+            playGameBtn: document.getElementById('playGameBtn'),
+            gameOverlay: document.getElementById('gameOverlay'),
+            gameCanvas: document.getElementById('gameCanvas'),
+            gameLevelName: document.getElementById('gameLevelName'),
+            gameLoading: document.getElementById('gameLoading'),
+            exitGameBtn: document.getElementById('exitGameBtn'),
         };
+
+        // =============================================
+        // GAME RUNNER
+        // =============================================
+        const game = {
+            active: false,
+            ctx: null,
+            currentLevel: null,
+            player: { x: 0, y: 0, vx: 0, vy: 0, width: 14, height: 14, onGround: false },
+            keys: {},
+            lastTime: 0,
+            animationFrame: null,
+            tileSize: 16,
+            gridData: null,
+            backgrounds: [],
+            levelType: 'platformer',
+            connections: {},
+        };
+
+        const PLAYER_SPEED = 200;
+        const JUMP_FORCE = 500;
+        const GRAVITY = 1200;
+        const TOPDOWN_SPEED = 150;
+
+        async function startGame() {
+            if (!state.currentProject) {
+                showToast('Select a project first', 'error');
+                return;
+            }
+
+            game.active = true;
+            elements.gameOverlay.classList.add('active');
+            elements.gameLoading.style.display = 'block';
+            game.ctx = elements.gameCanvas.getContext('2d');
+            game.ctx.imageSmoothingEnabled = false;
+
+            try {
+                const crucible = await getCrucible();
+
+                // Get starting spawn or first level
+                const startingSpawn = await crucible.getStartingSpawn(state.currentProject.id);
+                let levelData;
+
+                if (startingSpawn?.level) {
+                    levelData = await crucible.getLevelForGame(startingSpawn.level.id);
+                    game.startSpawn = startingSpawn;
+                } else {
+                    levelData = await crucible.getFirstLevel(state.currentProject.id);
+                    game.startSpawn = null;
+                }
+
+                if (!levelData) {
+                    showToast('No levels found in project', 'error');
+                    stopGame();
+                    return;
+                }
+
+                await loadGameLevel(levelData, game.startSpawn);
+            } catch (err) {
+                console.error('Failed to start game:', err);
+                showToast('Failed to start game: ' + err.message, 'error');
+                stopGame();
+            }
+        }
+
+        async function loadGameLevel(levelData, spawnPoint = null) {
+            elements.gameLoading.style.display = 'block';
+            game.currentLevel = levelData;
+            game.tileSize = state.currentProject?.settings?.tileDefaults?.size || 16;
+            game.levelType = levelData.level_type || 'platformer';
+
+            elements.gameLevelName.textContent = levelData.name;
+
+            // Set canvas size
+            const canvasWidth = levelData.width * game.tileSize;
+            const canvasHeight = levelData.height * game.tileSize;
+            elements.gameCanvas.width = canvasWidth;
+            elements.gameCanvas.height = canvasHeight;
+
+            // Parse grid data
+            const gridInfo = levelData.level_grids?.[0];
+            game.gridData = gridInfo?.grid_data || [];
+            if (typeof game.gridData === 'string') {
+                game.gridData = JSON.parse(game.gridData);
+            }
+
+            // Load backgrounds
+            game.backgrounds = [];
+            const bgLayers = levelData.level_backgrounds || [];
+            for (const bg of bgLayers) {
+                if (bg.image_path) {
+                    try {
+                        const img = new Image();
+                        await new Promise((resolve, reject) => {
+                            img.onload = resolve;
+                            img.onerror = reject;
+                            img.src = bg.image_path;
+                        });
+                        game.backgrounds.push({
+                            image: img,
+                            depth: bg.depth,
+                            scrollRate: bg.scroll_rate || 1,
+                            offsetX: bg.offset_x || 0,
+                            offsetY: bg.offset_y || 0,
+                            scale: bg.scale || 1,
+                            visible: bg.visible !== false
+                        });
+                    } catch (e) {
+                        console.warn('Failed to load background:', bg.layer_name);
+                    }
+                }
+            }
+
+            // Build exit connections map
+            game.connections = {};
+            (levelData.level_exits || []).forEach(exit => {
+                if (exit.connection?.target_spawn) {
+                    game.connections[`${exit.grid_x},${exit.grid_y}`] = {
+                        exitId: exit.id,
+                        targetLevelId: exit.connection.target_spawn.level?.id,
+                        targetSpawn: exit.connection.target_spawn
+                    };
+                }
+            });
+
+            // Position player at spawn
+            resetGamePlayer(spawnPoint);
+
+            elements.gameLoading.style.display = 'none';
+
+            // Start game loop
+            game.lastTime = performance.now();
+            game.animationFrame = requestAnimationFrame(gameLoop);
+        }
+
+        function resetGamePlayer(spawnPoint = null) {
+            const tileSize = game.tileSize;
+
+            if (spawnPoint) {
+                game.player.x = spawnPoint.grid_x * tileSize + (tileSize - game.player.width) / 2;
+                game.player.y = spawnPoint.grid_y * tileSize + (tileSize - game.player.height);
+            } else {
+                // Find first spawn tile in grid
+                for (let y = 0; y < game.gridData.length; y++) {
+                    for (let x = 0; x < (game.gridData[y]?.length || 0); x++) {
+                        if (game.gridData[y][x] === 3) { // spawn
+                            game.player.x = x * tileSize + (tileSize - game.player.width) / 2;
+                            game.player.y = y * tileSize + (tileSize - game.player.height);
+                            game.player.vx = 0;
+                            game.player.vy = 0;
+                            return;
+                        }
+                    }
+                }
+                // Fallback to first open tile
+                for (let y = game.gridData.length - 1; y >= 0; y--) {
+                    for (let x = 0; x < (game.gridData[y]?.length || 0); x++) {
+                        if (game.gridData[y][x] === 1) { // open
+                            game.player.x = x * tileSize + (tileSize - game.player.width) / 2;
+                            game.player.y = y * tileSize + (tileSize - game.player.height);
+                            game.player.vx = 0;
+                            game.player.vy = 0;
+                            return;
+                        }
+                    }
+                }
+            }
+            game.player.vx = 0;
+            game.player.vy = 0;
+        }
+
+        function stopGame() {
+            game.active = false;
+            elements.gameOverlay.classList.remove('active');
+            if (game.animationFrame) {
+                cancelAnimationFrame(game.animationFrame);
+                game.animationFrame = null;
+            }
+            game.keys = {};
+        }
+
+        function gameLoop(currentTime) {
+            if (!game.active) return;
+
+            const dt = Math.min((currentTime - game.lastTime) / 1000, 0.05);
+            game.lastTime = currentTime;
+
+            updateGamePlayer(dt);
+            checkPortals();
+            renderGame();
+
+            game.animationFrame = requestAnimationFrame(gameLoop);
+        }
+
+        function updateGamePlayer(dt) {
+            const p = game.player;
+            const tileSize = game.tileSize;
+
+            if (game.levelType === 'platformer') {
+                p.vx = 0;
+                if (game.keys['ArrowLeft'] || game.keys['KeyA']) p.vx = -PLAYER_SPEED;
+                if (game.keys['ArrowRight'] || game.keys['KeyD']) p.vx = PLAYER_SPEED;
+
+                p.vy += GRAVITY * dt;
+
+                if ((game.keys['Space'] || game.keys['ArrowUp'] || game.keys['KeyW']) && p.onGround) {
+                    p.vy = -JUMP_FORCE;
+                    p.onGround = false;
+                }
+
+                // Horizontal movement
+                const newX = p.x + p.vx * dt;
+                if (!checkGameCollision(newX, p.y, p.width, p.height)) {
+                    p.x = newX;
+                }
+
+                // Vertical movement
+                const newY = p.y + p.vy * dt;
+                if (!checkGameCollision(p.x, newY, p.width, p.height)) {
+                    p.y = newY;
+                    p.onGround = false;
+                } else {
+                    if (p.vy > 0) p.onGround = true;
+                    p.vy = 0;
+                }
+
+                // Clamp to level bounds
+                const maxX = game.currentLevel.width * tileSize - p.width;
+                const maxY = game.currentLevel.height * tileSize - p.height;
+                p.x = Math.max(0, Math.min(maxX, p.x));
+                p.y = Math.max(0, Math.min(maxY, p.y));
+            } else {
+                // Top-down
+                p.vx = 0;
+                p.vy = 0;
+                if (game.keys['ArrowLeft'] || game.keys['KeyA']) p.vx = -TOPDOWN_SPEED;
+                if (game.keys['ArrowRight'] || game.keys['KeyD']) p.vx = TOPDOWN_SPEED;
+                if (game.keys['ArrowUp'] || game.keys['KeyW']) p.vy = -TOPDOWN_SPEED;
+                if (game.keys['ArrowDown'] || game.keys['KeyS']) p.vy = TOPDOWN_SPEED;
+
+                if (p.vx !== 0 && p.vy !== 0) {
+                    p.vx *= 0.707;
+                    p.vy *= 0.707;
+                }
+
+                const newX = p.x + p.vx * dt;
+                const newY = p.y + p.vy * dt;
+                if (!checkGameCollision(newX, newY, p.width, p.height)) {
+                    p.x = newX;
+                    p.y = newY;
+                }
+
+                const maxX = game.currentLevel.width * tileSize - p.width;
+                const maxY = game.currentLevel.height * tileSize - p.height;
+                p.x = Math.max(0, Math.min(maxX, p.x));
+                p.y = Math.max(0, Math.min(maxY, p.y));
+            }
+        }
+
+        function checkGameCollision(x, y, width, height) {
+            const tileSize = game.tileSize;
+            const gridHeight = game.gridData.length;
+            const gridWidth = game.gridData[0]?.length || 0;
+
+            const left = Math.floor(x / tileSize);
+            const right = Math.floor((x + width - 1) / tileSize);
+            const top = Math.floor(y / tileSize);
+            const bottom = Math.floor((y + height - 1) / tileSize);
+
+            for (let ty = top; ty <= bottom; ty++) {
+                for (let tx = left; tx <= right; tx++) {
+                    if (tx < 0 || tx >= gridWidth || ty < 0 || ty >= gridHeight) continue;
+                    if (game.gridData[ty]?.[tx] === 2) return true; // obstruction
+                }
+            }
+            return false;
+        }
+
+        async function checkPortals() {
+            const p = game.player;
+            const tileSize = game.tileSize;
+            const centerX = Math.floor((p.x + p.width / 2) / tileSize);
+            const centerY = Math.floor((p.y + p.height / 2) / tileSize);
+            const key = `${centerX},${centerY}`;
+
+            const tileValue = game.gridData[centerY]?.[centerX];
+            // Exit = 4, Return = 5
+            if ((tileValue === 4 || tileValue === 5) && game.connections[key]) {
+                const conn = game.connections[key];
+                if (conn.targetLevelId && conn.targetSpawn) {
+                    // Transition to new level
+                    cancelAnimationFrame(game.animationFrame);
+                    try {
+                        const crucible = await getCrucible();
+                        const newLevel = await crucible.getLevelForGame(conn.targetLevelId);
+                        await loadGameLevel(newLevel, conn.targetSpawn);
+                    } catch (err) {
+                        console.error('Failed to load level:', err);
+                        showToast('Failed to transition: ' + err.message, 'error');
+                        game.animationFrame = requestAnimationFrame(gameLoop);
+                    }
+                }
+            }
+        }
+
+        function renderGame() {
+            const ctx = game.ctx;
+            const tileSize = game.tileSize;
+
+            ctx.fillStyle = '#0d0d14';
+            ctx.fillRect(0, 0, elements.gameCanvas.width, elements.gameCanvas.height);
+
+            // Draw backgrounds
+            const sortedBgs = [...game.backgrounds].filter(b => b.visible).sort((a, b) => a.depth - b.depth);
+            sortedBgs.forEach(layer => {
+                ctx.save();
+                const parallaxX = layer.offsetX - (game.player.x * (1 - layer.scrollRate) * 0.1);
+                const parallaxY = layer.offsetY - (game.player.y * (1 - layer.scrollRate) * 0.1);
+                ctx.translate(parallaxX, parallaxY);
+                ctx.drawImage(layer.image, 0, 0, layer.image.width * layer.scale, layer.image.height * layer.scale);
+                ctx.restore();
+            });
+
+            // Draw tiles based on grid data
+            const colors = {
+                1: '#2a5a3040', // open - faint
+                2: '#6a2a2a80', // obstruction
+                3: '#2a4a6a80', // spawn
+                4: '#6a2a6a80', // exit
+                5: '#2a6a6a80', // return
+            };
+
+            for (let y = 0; y < game.gridData.length; y++) {
+                for (let x = 0; x < (game.gridData[y]?.length || 0); x++) {
+                    const val = game.gridData[y][x];
+                    if (val > 0 && colors[val]) {
+                        ctx.fillStyle = colors[val];
+                        ctx.fillRect(x * tileSize, y * tileSize, tileSize, tileSize);
+                    }
+                }
+            }
+
+            // Draw player
+            ctx.fillStyle = '#e07020';
+            ctx.fillRect(Math.round(game.player.x), Math.round(game.player.y), game.player.width, game.player.height);
+
+            // Player eyes
+            ctx.fillStyle = '#fff';
+            const eyeY = Math.round(game.player.y) + 4;
+            ctx.fillRect(Math.round(game.player.x) + 3, eyeY, 2, 2);
+            ctx.fillRect(Math.round(game.player.x) + game.player.width - 5, eyeY, 2, 2);
+        }
+
+        // Game key handlers
+        function handleGameKeyDown(e) {
+            if (!game.active) return;
+
+            if (e.code === 'Space' || e.code.startsWith('Arrow')) {
+                e.preventDefault();
+            }
+
+            game.keys[e.code] = true;
+
+            if (e.code === 'Escape') {
+                stopGame();
+            }
+        }
+
+        function handleGameKeyUp(e) {
+            if (!game.active) return;
+            if (e.code === 'Space' || e.code.startsWith('Arrow')) {
+                e.preventDefault();
+            }
+            game.keys[e.code] = false;
+        }
+
+        window.addEventListener('keydown', handleGameKeyDown);
+        window.addEventListener('keyup', handleGameKeyUp);
+
+        // Game button handlers
+        elements.playGameBtn?.addEventListener('click', startGame);
+        elements.exitGameBtn?.addEventListener('click', stopGame);
 
         // =============================================
         // UTILITIES
@@ -1889,6 +2395,7 @@
                 elements.newLevelBtn.disabled = true;
                 elements.exportProjectBtn.disabled = true;
                 elements.projectSettingsBtn.disabled = true;
+                elements.playGameBtn.disabled = true;
                 elements.inviteBtn.disabled = true;
                 elements.membersList.style.display = 'none';
                 showEmptyState();
@@ -1911,6 +2418,7 @@
                 elements.newLevelBtn.disabled = false;
                 elements.exportProjectBtn.disabled = false;
                 elements.projectSettingsBtn.disabled = false;
+                elements.playGameBtn.disabled = false;
 
                 // Enable invite button if user is the owner
                 const user = await crucible.getUser();
