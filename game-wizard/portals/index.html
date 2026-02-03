@@ -749,7 +749,7 @@
                 renderPathways();
             } catch (err) {
                 console.error('Failed to load project:', err);
-                showToast('Failed to load project');
+                showToast('Failed to load: ' + (err.message || err));
             }
         }
 
