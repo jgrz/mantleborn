@@ -443,8 +443,8 @@ class CrucibleClient {
                     level_grids (*),
                     level_backgrounds (*),
                     level_tiles (*),
-                    level_spawns (*),
-                    level_exits (*)
+                    level_spawns!level_id (*),
+                    level_exits!level_id (*)
                 )
             `)
             .eq('id', project.starting_spawn_id)
@@ -1041,8 +1041,8 @@ class CrucibleClient {
                 level_grids (*),
                 level_backgrounds (*),
                 level_tiles (*),
-                level_spawns (*),
-                level_exits (*)
+                level_spawns!level_id (*),
+                level_exits!level_id (*)
             `)
             .eq('id', levelId)
             .single();
@@ -1108,8 +1108,8 @@ class CrucibleClient {
                 level_grids (*),
                 level_backgrounds (*),
                 level_tiles (*),
-                level_spawns (*),
-                level_exits (*)
+                level_spawns!level_id (*),
+                level_exits!level_id (*)
             `)
             .eq('id', levelId)
             .single();
