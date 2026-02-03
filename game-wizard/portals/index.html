@@ -1040,8 +1040,9 @@
             elements.levelsContainer.innerHTML = state.levels.map(level => {
                 const pos = state.levelPositions[level.id] || { x: 100, y: 100 };
                 const grid = level.gridData;
-                const width = grid ? grid.width * GRID_SCALE : 120;
-                const height = grid ? grid.height * GRID_SCALE : 80;
+                // Use level dimensions, not grid data dimensions
+                const width = (level.width || 32) * GRID_SCALE;
+                const height = (level.height || 18) * GRID_SCALE;
 
                 const unconfiguredExits = level.exits.filter(e => !e.configured).length;
                 const isComplete = unconfiguredExits === 0 && level.exits.length > 0;
@@ -1140,42 +1141,34 @@
         function drawGridPreview(canvas, level) {
             const ctx = canvas.getContext('2d');
             const grid = level.gridData;
+            const levelWidth = level.width || 32;
+            const levelHeight = level.height || 18;
 
             // Clear
             ctx.fillStyle = '#0a0a14';
             ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-            if (!grid) {
-                // Draw placeholder grid
-                ctx.strokeStyle = '#1a1a2e';
-                ctx.lineWidth = 1;
-                for (let x = 0; x < canvas.width; x += GRID_SCALE) {
-                    ctx.beginPath();
-                    ctx.moveTo(x, 0);
-                    ctx.lineTo(x, canvas.height);
-                    ctx.stroke();
-                }
-                for (let y = 0; y < canvas.height; y += GRID_SCALE) {
-                    ctx.beginPath();
-                    ctx.moveTo(0, y);
-                    ctx.lineTo(canvas.width, y);
-                    ctx.stroke();
-                }
-                return;
-            }
-
-            // Draw collision data as simple blocks
-            if (grid.collision_data) {
+            // Draw grid data as simple blocks (using 2D array format)
+            if (grid?.grid_data) {
                 try {
-                    const collision = typeof grid.collision_data === 'string'
-                        ? JSON.parse(grid.collision_data)
-                        : grid.collision_data;
+                    let gridData = grid.grid_data;
+                    if (typeof gridData === 'string') {
+                        gridData = JSON.parse(gridData);
+                    }
 
-                    for (let y = 0; y < grid.height; y++) {
-                        for (let x = 0; x < grid.width; x++) {
-                            const idx = y * grid.width + x;
-                            if (collision[idx]) {
-                                ctx.fillStyle = '#2a2a4a';
+                    // grid_data is 2D array: 0=undefined, 1=open, 2=obstruction, 3=spawn, 4=exit, 5=return
+                    const colors = {
+                        2: '#3a2a2a', // obstruction
+                        3: '#2a3a4a', // spawn
+                        4: '#3a2a3a', // exit
+                        5: '#2a3a3a', // return
+                    };
+
+                    for (let y = 0; y < gridData.length && y < levelHeight; y++) {
+                        for (let x = 0; x < (gridData[y]?.length || 0) && x < levelWidth; x++) {
+                            const val = gridData[y][x];
+                            if (val > 1 && colors[val]) {
+                                ctx.fillStyle = colors[val];
                                 ctx.fillRect(x * GRID_SCALE, y * GRID_SCALE, GRID_SCALE, GRID_SCALE);
                             }
                         }
@@ -1188,16 +1181,16 @@
             // Draw subtle grid lines
             ctx.strokeStyle = '#1a1a2e';
             ctx.lineWidth = 0.5;
-            for (let x = 0; x <= grid.width; x++) {
+            for (let x = 0; x <= levelWidth; x++) {
                 ctx.beginPath();
                 ctx.moveTo(x * GRID_SCALE, 0);
-                ctx.lineTo(x * GRID_SCALE, grid.height * GRID_SCALE);
+                ctx.lineTo(x * GRID_SCALE, levelHeight * GRID_SCALE);
                 ctx.stroke();
             }
-            for (let y = 0; y <= grid.height; y++) {
+            for (let y = 0; y <= levelHeight; y++) {
                 ctx.beginPath();
                 ctx.moveTo(0, y * GRID_SCALE);
-                ctx.lineTo(grid.width * GRID_SCALE, y * GRID_SCALE);
+                ctx.lineTo(levelWidth * GRID_SCALE, y * GRID_SCALE);
                 ctx.stroke();
             }
         }
@@ -1651,9 +1644,8 @@
             state.levels.forEach(level => {
                 const pos = state.levelPositions[level.id];
                 if (pos) {
-                    const grid = level.gridData;
-                    const width = grid ? grid.width * GRID_SCALE + 20 : 140;
-                    const height = grid ? grid.height * GRID_SCALE + 60 : 120;
+                    const width = (level.width || 32) * GRID_SCALE + 20;
+                    const height = (level.height || 18) * GRID_SCALE + 60;
 
                     minX = Math.min(minX, pos.x);
                     minY = Math.min(minY, pos.y);
