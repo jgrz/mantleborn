@@ -809,6 +809,26 @@
             border-color: var(--accent-gold);
         }
 
+        .settings-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 8px 16px;
+        }
+
+        .settings-row.compact {
+            margin-bottom: 4px;
+        }
+
+        .settings-row.compact .settings-row-label {
+            font-size: 11px;
+            min-width: 80px;
+        }
+
+        .settings-row.compact .settings-number {
+            width: 70px;
+            padding: 6px 8px;
+        }
+
         .preset-preview {
             background: var(--bg-surface);
             border: 1px solid var(--stone-dark);
@@ -1685,6 +1705,7 @@
                 <button class="settings-tab active" data-settings-tab="general">General</button>
                 <button class="settings-tab" data-settings-tab="ai">AI Generation</button>
                 <button class="settings-tab" data-settings-tab="assets">Asset Defaults</button>
+                <button class="settings-tab" data-settings-tab="impact">Impact Engine</button>
             </div>
 
             <!-- General Settings -->
@@ -1838,6 +1859,108 @@
                 </div>
             </div>
 
+            <!-- Impact Engine Settings -->
+            <div class="settings-panel" id="settingsImpact">
+                <div class="settings-section">
+                    <div class="settings-section-title">Default Physics Preset</div>
+                    <p style="font-size: 11px; color: var(--stone-mid); margin-bottom: 16px;">
+                        New levels will use this preset by default. Each level can override its physics preset.
+                    </p>
+                    <div class="settings-row">
+                        <div>
+                            <div class="settings-row-label">Default Preset</div>
+                            <div class="settings-row-hint">Physics mode for new levels</div>
+                        </div>
+                        <select class="settings-select" id="settingsDefaultPreset">
+                            <option value="platformer">Platformer</option>
+                            <option value="swimming">Swimming</option>
+                            <option value="space">Space / Zero-G</option>
+                            <option value="topDown">Top-Down</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="settings-section">
+                    <div class="settings-section-title">Platformer Preset</div>
+                    <div class="settings-grid">
+                        <div class="settings-row compact">
+                            <div class="settings-row-label">Gravity</div>
+                            <input type="number" class="settings-number" id="impactPlatformerGravity" value="1200" min="0" max="3000" step="50">
+                        </div>
+                        <div class="settings-row compact">
+                            <div class="settings-row-label">Jump Force</div>
+                            <input type="number" class="settings-number" id="impactPlatformerJump" value="500" min="0" max="1500" step="25">
+                        </div>
+                        <div class="settings-row compact">
+                            <div class="settings-row-label">Player Speed</div>
+                            <input type="number" class="settings-number" id="impactPlatformerSpeed" value="200" min="50" max="500" step="10">
+                        </div>
+                        <div class="settings-row compact">
+                            <div class="settings-row-label">Air Control</div>
+                            <input type="number" class="settings-number" id="impactPlatformerAir" value="0.8" min="0" max="1" step="0.1">
+                        </div>
+                    </div>
+                </div>
+
+                <div class="settings-section">
+                    <div class="settings-section-title">Swimming Preset</div>
+                    <div class="settings-grid">
+                        <div class="settings-row compact">
+                            <div class="settings-row-label">Gravity</div>
+                            <input type="number" class="settings-number" id="impactSwimmingGravity" value="200" min="0" max="1000" step="25">
+                        </div>
+                        <div class="settings-row compact">
+                            <div class="settings-row-label">Swim Force</div>
+                            <input type="number" class="settings-number" id="impactSwimmingJump" value="300" min="0" max="800" step="25">
+                        </div>
+                        <div class="settings-row compact">
+                            <div class="settings-row-label">Player Speed</div>
+                            <input type="number" class="settings-number" id="impactSwimmingSpeed" value="120" min="50" max="300" step="10">
+                        </div>
+                        <div class="settings-row compact">
+                            <div class="settings-row-label">Drag</div>
+                            <input type="number" class="settings-number" id="impactSwimmingDrag" value="0.85" min="0" max="1" step="0.05">
+                        </div>
+                    </div>
+                </div>
+
+                <div class="settings-section">
+                    <div class="settings-section-title">Space Preset</div>
+                    <div class="settings-grid">
+                        <div class="settings-row compact">
+                            <div class="settings-row-label">Gravity</div>
+                            <input type="number" class="settings-number" id="impactSpaceGravity" value="0" min="0" max="500" step="10">
+                        </div>
+                        <div class="settings-row compact">
+                            <div class="settings-row-label">Thrust</div>
+                            <input type="number" class="settings-number" id="impactSpaceThrust" value="400" min="100" max="1000" step="25">
+                        </div>
+                        <div class="settings-row compact">
+                            <div class="settings-row-label">Player Speed</div>
+                            <input type="number" class="settings-number" id="impactSpaceSpeed" value="150" min="50" max="400" step="10">
+                        </div>
+                        <div class="settings-row compact">
+                            <div class="settings-row-label">Angular Drag</div>
+                            <input type="number" class="settings-number" id="impactSpaceDrag" value="0.95" min="0" max="1" step="0.01">
+                        </div>
+                    </div>
+                </div>
+
+                <div class="settings-section">
+                    <div class="settings-section-title">Top-Down Preset</div>
+                    <div class="settings-grid">
+                        <div class="settings-row compact">
+                            <div class="settings-row-label">Player Speed</div>
+                            <input type="number" class="settings-number" id="impactTopDownSpeed" value="150" min="50" max="400" step="10">
+                        </div>
+                        <div class="settings-row compact">
+                            <div class="settings-row-label">Friction</div>
+                            <input type="number" class="settings-number" id="impactTopDownFriction" value="0.85" min="0" max="1" step="0.05">
+                        </div>
+                    </div>
+                </div>
+            </div>
+
             <div class="modal-actions">
                 <button class="btn" id="cancelSettingsBtn">Cancel</button>
                 <button class="btn btn-primary" id="saveSettingsBtn">Save Settings</button>
@@ -1939,6 +2062,22 @@
             settingsTransition: document.getElementById('settingsTransition'),
             settingsCharSize: document.getElementById('settingsCharSize'),
             settingsDirections: document.getElementById('settingsDirections'),
+            // Impact Engine settings
+            settingsDefaultPreset: document.getElementById('settingsDefaultPreset'),
+            impactPlatformerGravity: document.getElementById('impactPlatformerGravity'),
+            impactPlatformerJump: document.getElementById('impactPlatformerJump'),
+            impactPlatformerSpeed: document.getElementById('impactPlatformerSpeed'),
+            impactPlatformerAir: document.getElementById('impactPlatformerAir'),
+            impactSwimmingGravity: document.getElementById('impactSwimmingGravity'),
+            impactSwimmingJump: document.getElementById('impactSwimmingJump'),
+            impactSwimmingSpeed: document.getElementById('impactSwimmingSpeed'),
+            impactSwimmingDrag: document.getElementById('impactSwimmingDrag'),
+            impactSpaceGravity: document.getElementById('impactSpaceGravity'),
+            impactSpaceThrust: document.getElementById('impactSpaceThrust'),
+            impactSpaceSpeed: document.getElementById('impactSpaceSpeed'),
+            impactSpaceDrag: document.getElementById('impactSpaceDrag'),
+            impactTopDownSpeed: document.getElementById('impactTopDownSpeed'),
+            impactTopDownFriction: document.getElementById('impactTopDownFriction'),
             // Game elements
             playGameBtn: document.getElementById('playGameBtn'),
             gameOverlay: document.getElementById('gameOverlay'),
@@ -1966,12 +2105,18 @@
             connections: {},
             portalCooldown: 0, // Prevent immediate portal re-trigger after spawn
             transitioning: false, // Prevent concurrent portal transitions
+            // Physics settings (loaded from Impact Engine)
+            physics: {
+                gravity: 1200,
+                jumpForce: 500,
+                playerSpeed: 200,
+                airControl: 0.8,
+                friction: 0.9,
+                drag: 0.85,
+                thrust: 400,
+                terminalVelocity: 800
+            }
         };
-
-        const PLAYER_SPEED = 200;
-        const JUMP_FORCE = 500;
-        const GRAVITY = 1200;
-        const TOPDOWN_SPEED = 150;
 
         async function startGame() {
             if (!state.currentProject) {
@@ -2018,7 +2163,30 @@
             elements.gameLoading.style.display = 'block';
             game.currentLevel = levelData;
             game.tileSize = state.currentProject?.settings?.tileDefaults?.size || 16;
-            game.levelType = levelData.level_type || 'platformer';
+            game.levelType = levelData.level_type || levelData.physics_preset || 'platformer';
+
+            // Load physics from Impact Engine config
+            try {
+                const crucible = await getCrucible();
+                const physics = await crucible.getLevelPhysics(state.currentProject.id, levelData.id);
+                game.physics = {
+                    gravity: physics.gravity ?? 1200,
+                    jumpForce: physics.jumpForce ?? 500,
+                    playerSpeed: physics.playerSpeed ?? 200,
+                    airControl: physics.airControl ?? 0.8,
+                    friction: physics.friction ?? 0.9,
+                    drag: physics.drag ?? 0.85,
+                    thrust: physics.thrust ?? 400,
+                    terminalVelocity: physics.terminalVelocity ?? 800
+                };
+                // Use preset name as level type for physics mode
+                if (physics.presetName) {
+                    game.levelType = physics.presetName;
+                }
+                console.log('🔧 Physics loaded:', game.physics, 'preset:', game.levelType);
+            } catch (err) {
+                console.warn('Failed to load physics config, using defaults:', err);
+            }
 
             elements.gameLevelName.textContent = levelData.name;
 
@@ -2165,16 +2333,20 @@
         function updateGamePlayer(dt) {
             const p = game.player;
             const tileSize = game.tileSize;
+            const phys = game.physics;
 
             if (game.levelType === 'platformer') {
+                // Platformer physics - gravity, jumping, ground collision
                 p.vx = 0;
-                if (game.keys['ArrowLeft'] || game.keys['KeyA']) p.vx = -PLAYER_SPEED;
-                if (game.keys['ArrowRight'] || game.keys['KeyD']) p.vx = PLAYER_SPEED;
+                if (game.keys['ArrowLeft'] || game.keys['KeyA']) p.vx = -phys.playerSpeed;
+                if (game.keys['ArrowRight'] || game.keys['KeyD']) p.vx = phys.playerSpeed;
 
-                p.vy += GRAVITY * dt;
+                p.vy += phys.gravity * dt;
+                // Terminal velocity
+                if (p.vy > phys.terminalVelocity) p.vy = phys.terminalVelocity;
 
                 if ((game.keys['Space'] || game.keys['ArrowUp'] || game.keys['KeyW']) && p.onGround) {
-                    p.vy = -JUMP_FORCE;
+                    p.vy = -phys.jumpForce;
                     p.onGround = false;
                 }
 
@@ -2199,18 +2371,96 @@
                 const maxY = game.currentLevel.height * tileSize - p.height;
                 p.x = Math.max(0, Math.min(maxX, p.x));
                 p.y = Math.max(0, Math.min(maxY, p.y));
+
+            } else if (game.levelType === 'swimming') {
+                // Swimming physics - reduced gravity, can swim in all directions, drag
+                if (game.keys['ArrowLeft'] || game.keys['KeyA']) p.vx -= phys.playerSpeed * dt * 3;
+                if (game.keys['ArrowRight'] || game.keys['KeyD']) p.vx += phys.playerSpeed * dt * 3;
+                if (game.keys['ArrowUp'] || game.keys['KeyW'] || game.keys['Space']) p.vy -= phys.jumpForce * dt * 2;
+                if (game.keys['ArrowDown'] || game.keys['KeyS']) p.vy += phys.playerSpeed * dt * 3;
+
+                // Apply gravity (reduced in water)
+                p.vy += phys.gravity * dt;
+
+                // Apply drag
+                p.vx *= phys.drag;
+                p.vy *= phys.drag;
+
+                // Terminal velocity
+                const maxVel = phys.terminalVelocity;
+                p.vx = Math.max(-maxVel, Math.min(maxVel, p.vx));
+                p.vy = Math.max(-maxVel, Math.min(maxVel, p.vy));
+
+                // Movement with collision
+                const newX = p.x + p.vx * dt;
+                const newY = p.y + p.vy * dt;
+                if (!checkGameCollision(newX, p.y, p.width, p.height)) {
+                    p.x = newX;
+                } else {
+                    p.vx = 0;
+                }
+                if (!checkGameCollision(p.x, newY, p.width, p.height)) {
+                    p.y = newY;
+                } else {
+                    p.vy = 0;
+                }
+
+                // Clamp to level bounds
+                const maxX = game.currentLevel.width * tileSize - p.width;
+                const maxY = game.currentLevel.height * tileSize - p.height;
+                p.x = Math.max(0, Math.min(maxX, p.x));
+                p.y = Math.max(0, Math.min(maxY, p.y));
+
+            } else if (game.levelType === 'space') {
+                // Space physics - no gravity, thrust-based, momentum
+                if (game.keys['ArrowLeft'] || game.keys['KeyA']) p.vx -= phys.thrust * dt;
+                if (game.keys['ArrowRight'] || game.keys['KeyD']) p.vx += phys.thrust * dt;
+                if (game.keys['ArrowUp'] || game.keys['KeyW'] || game.keys['Space']) p.vy -= phys.thrust * dt;
+                if (game.keys['ArrowDown'] || game.keys['KeyS']) p.vy += phys.thrust * dt;
+
+                // Very slight drag in space (angular drag)
+                p.vx *= phys.angularDrag || 0.99;
+                p.vy *= phys.angularDrag || 0.99;
+
+                // Terminal velocity
+                const maxVel = phys.terminalVelocity;
+                p.vx = Math.max(-maxVel, Math.min(maxVel, p.vx));
+                p.vy = Math.max(-maxVel, Math.min(maxVel, p.vy));
+
+                // Movement with collision
+                const newX = p.x + p.vx * dt;
+                const newY = p.y + p.vy * dt;
+                if (!checkGameCollision(newX, p.y, p.width, p.height)) {
+                    p.x = newX;
+                } else {
+                    p.vx *= -0.5; // Bounce off walls
+                }
+                if (!checkGameCollision(p.x, newY, p.width, p.height)) {
+                    p.y = newY;
+                } else {
+                    p.vy *= -0.5; // Bounce off walls
+                }
+
+                // Clamp to level bounds
+                const maxX = game.currentLevel.width * tileSize - p.width;
+                const maxY = game.currentLevel.height * tileSize - p.height;
+                p.x = Math.max(0, Math.min(maxX, p.x));
+                p.y = Math.max(0, Math.min(maxY, p.y));
+
             } else {
-                // Top-down
+                // Top-down physics - no gravity, free 8-directional movement
                 p.vx = 0;
                 p.vy = 0;
-                if (game.keys['ArrowLeft'] || game.keys['KeyA']) p.vx = -TOPDOWN_SPEED;
-                if (game.keys['ArrowRight'] || game.keys['KeyD']) p.vx = TOPDOWN_SPEED;
-                if (game.keys['ArrowUp'] || game.keys['KeyW']) p.vy = -TOPDOWN_SPEED;
-                if (game.keys['ArrowDown'] || game.keys['KeyS']) p.vy = TOPDOWN_SPEED;
+                if (game.keys['ArrowLeft'] || game.keys['KeyA']) p.vx = -phys.playerSpeed;
+                if (game.keys['ArrowRight'] || game.keys['KeyD']) p.vx = phys.playerSpeed;
+                if (game.keys['ArrowUp'] || game.keys['KeyW']) p.vy = -phys.playerSpeed;
+                if (game.keys['ArrowDown'] || game.keys['KeyS']) p.vy = phys.playerSpeed;
 
+                // Diagonal damping
                 if (p.vx !== 0 && p.vy !== 0) {
-                    p.vx *= 0.707;
-                    p.vy *= 0.707;
+                    const damping = phys.diagonalDamping || 0.707;
+                    p.vx *= damping;
+                    p.vy *= damping;
                 }
 
                 const newX = p.x + p.vx * dt;
@@ -2334,7 +2584,7 @@
             ctx.fillText(`pos: ${Math.round(game.player.x)}, ${Math.round(game.player.y)}`, 4, 12);
             ctx.fillText(`vel: ${Math.round(game.player.vx)}, ${Math.round(game.player.vy)}`, 4, 24);
             ctx.fillText(`onGround: ${game.player.onGround}`, 4, 36);
-            ctx.fillText(`levelType: ${game.levelType}`, 4, 48);
+            ctx.fillText(`physics: ${game.levelType} (g:${game.physics.gravity})`, 4, 48);
         }
 
         // Game key handlers
@@ -3185,7 +3435,48 @@
             elements.settingsCharSize.value = chars.size || 32;
             elements.settingsDirections.value = chars.directions || '4';
 
+            // Impact Engine - load asynchronously
+            loadImpactEngineSettings();
+
             updateStylePreview();
+        }
+
+        async function loadImpactEngineSettings() {
+            try {
+                const crucible = await getCrucible();
+                const config = await crucible.getImpactEngineConfig(state.currentProject.id);
+
+                // Default preset
+                elements.settingsDefaultPreset.value = config.defaultPreset || 'platformer';
+
+                // Platformer preset
+                const platformer = config.presets?.platformer || {};
+                elements.impactPlatformerGravity.value = platformer.gravity ?? 1200;
+                elements.impactPlatformerJump.value = platformer.jumpForce ?? 500;
+                elements.impactPlatformerSpeed.value = platformer.playerSpeed ?? 200;
+                elements.impactPlatformerAir.value = platformer.airControl ?? 0.8;
+
+                // Swimming preset
+                const swimming = config.presets?.swimming || {};
+                elements.impactSwimmingGravity.value = swimming.gravity ?? 200;
+                elements.impactSwimmingJump.value = swimming.jumpForce ?? 300;
+                elements.impactSwimmingSpeed.value = swimming.playerSpeed ?? 120;
+                elements.impactSwimmingDrag.value = swimming.drag ?? 0.85;
+
+                // Space preset
+                const space = config.presets?.space || {};
+                elements.impactSpaceGravity.value = space.gravity ?? 0;
+                elements.impactSpaceThrust.value = space.thrust ?? 400;
+                elements.impactSpaceSpeed.value = space.playerSpeed ?? 150;
+                elements.impactSpaceDrag.value = space.angularDrag ?? 0.95;
+
+                // Top-down preset
+                const topDown = config.presets?.topDown || {};
+                elements.impactTopDownSpeed.value = topDown.playerSpeed ?? 150;
+                elements.impactTopDownFriction.value = topDown.friction ?? 0.85;
+            } catch (err) {
+                console.error('Failed to load Impact Engine config:', err);
+            }
         }
 
         function updateStylePreview() {
@@ -3256,6 +3547,43 @@
                     description: elements.settingsProjectDesc.value.trim(),
                     settings
                 });
+
+                // Save Impact Engine config
+                const impactConfig = {
+                    defaultPreset: elements.settingsDefaultPreset.value,
+                    presets: {
+                        platformer: {
+                            gravity: parseFloat(elements.impactPlatformerGravity.value),
+                            jumpForce: parseFloat(elements.impactPlatformerJump.value),
+                            playerSpeed: parseFloat(elements.impactPlatformerSpeed.value),
+                            airControl: parseFloat(elements.impactPlatformerAir.value),
+                            friction: 0.9,
+                            terminalVelocity: 800
+                        },
+                        swimming: {
+                            gravity: parseFloat(elements.impactSwimmingGravity.value),
+                            jumpForce: parseFloat(elements.impactSwimmingJump.value),
+                            playerSpeed: parseFloat(elements.impactSwimmingSpeed.value),
+                            drag: parseFloat(elements.impactSwimmingDrag.value),
+                            buoyancy: 0.3,
+                            terminalVelocity: 300
+                        },
+                        space: {
+                            gravity: parseFloat(elements.impactSpaceGravity.value),
+                            thrust: parseFloat(elements.impactSpaceThrust.value),
+                            playerSpeed: parseFloat(elements.impactSpaceSpeed.value),
+                            angularDrag: parseFloat(elements.impactSpaceDrag.value),
+                            terminalVelocity: 500
+                        },
+                        topDown: {
+                            gravity: 0,
+                            playerSpeed: parseFloat(elements.impactTopDownSpeed.value),
+                            friction: parseFloat(elements.impactTopDownFriction.value),
+                            diagonalDamping: 0.707
+                        }
+                    }
+                };
+                await crucible.updateImpactEngineConfig(state.currentProject.id, impactConfig);
 
                 // Refresh project data
                 state.currentProject = await crucible.getProject(state.currentProject.id);

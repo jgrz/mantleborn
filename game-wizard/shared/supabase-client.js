@@ -454,6 +454,149 @@ class CrucibleClient {
         return spawn;
     }
 
+    // =============================================
+    // IMPACT ENGINE CONFIG
+    // =============================================
+
+    /**
+     * Get Impact Engine configuration for a project
+     */
+    async getImpactEngineConfig(projectId) {
+        if (!this.client) throw new Error('Crucible not initialized');
+
+        const { data, error } = await this.client
+            .from('projects')
+            .select('impact_engine_config')
+            .eq('id', projectId)
+            .single();
+
+        if (error) throw error;
+
+        // Return config with defaults if not set
+        return data?.impact_engine_config || this.getDefaultImpactEngineConfig();
+    }
+
+    /**
+     * Update Impact Engine configuration for a project
+     */
+    async updateImpactEngineConfig(projectId, config) {
+        if (!this.client) throw new Error('Crucible not initialized');
+
+        const { data, error } = await this.client
+            .from('projects')
+            .update({ impact_engine_config: config })
+            .eq('id', projectId)
+            .select()
+            .single();
+
+        if (error) throw error;
+        return data;
+    }
+
+    /**
+     * Get default Impact Engine configuration
+     */
+    getDefaultImpactEngineConfig() {
+        return {
+            presets: {
+                platformer: {
+                    gravity: 1200,
+                    jumpForce: 500,
+                    playerSpeed: 200,
+                    airControl: 0.8,
+                    friction: 0.9,
+                    terminalVelocity: 800
+                },
+                swimming: {
+                    gravity: 200,
+                    jumpForce: 300,
+                    playerSpeed: 120,
+                    drag: 0.85,
+                    buoyancy: 0.3,
+                    terminalVelocity: 300
+                },
+                space: {
+                    gravity: 0,
+                    thrust: 400,
+                    playerSpeed: 150,
+                    angularDrag: 0.95,
+                    terminalVelocity: 500
+                },
+                topDown: {
+                    gravity: 0,
+                    playerSpeed: 150,
+                    friction: 0.85,
+                    diagonalDamping: 0.707
+                }
+            },
+            defaultPreset: 'platformer'
+        };
+    }
+
+    /**
+     * Get physics settings for a specific level (preset + overrides)
+     */
+    async getLevelPhysics(projectId, levelId) {
+        if (!this.client) throw new Error('Crucible not initialized');
+
+        // Get project's Impact Engine config
+        const config = await this.getImpactEngineConfig(projectId);
+
+        // Get level's preset and overrides
+        const { data: level, error } = await this.client
+            .from('levels')
+            .select('physics_preset, physics_overrides')
+            .eq('id', levelId)
+            .single();
+
+        if (error) throw error;
+
+        const presetName = level?.physics_preset || config.defaultPreset || 'platformer';
+        const preset = config.presets[presetName] || config.presets.platformer;
+        const overrides = level?.physics_overrides || {};
+
+        // Merge preset with level-specific overrides
+        return {
+            presetName,
+            ...preset,
+            ...overrides
+        };
+    }
+
+    /**
+     * Update a level's physics preset
+     */
+    async updateLevelPhysicsPreset(levelId, preset) {
+        if (!this.client) throw new Error('Crucible not initialized');
+
+        const { data, error } = await this.client
+            .from('levels')
+            .update({ physics_preset: preset })
+            .eq('id', levelId)
+            .select()
+            .single();
+
+        if (error) throw error;
+        return data;
+    }
+
+    /**
+     * Update a level's physics overrides
+     */
+    async updateLevelPhysicsOverrides(levelId, overrides) {
+        if (!this.client) throw new Error('Crucible not initialized');
+
+        const { data, error } = await this.client
+            .from('levels')
+            .update({ physics_overrides: overrides })
+            .eq('id', levelId)
+            .select()
+            .single();
+
+        if (error) throw error;
+        return data;
+    }
+
     async hasProjects() {
         if (!this.client) return false;
 
