@@ -1964,6 +1964,7 @@
             backgrounds: [],
             levelType: 'platformer',
             connections: {},
+            portalCooldown: 0, // Prevent immediate portal re-trigger after spawn
         };
 
         const PLAYER_SPEED = 200;
@@ -2132,6 +2133,9 @@
             }
             game.player.vx = 0;
             game.player.vy = 0;
+            game.player.onGround = false;
+            // Set portal cooldown to prevent immediate re-trigger (1 second)
+            game.portalCooldown = performance.now() + 1000;
         }
 
         function stopGame() {
@@ -2243,6 +2247,9 @@
         }
 
         async function checkPortals() {
+            // Skip portal check during cooldown (prevents spawn-on-portal loops)
+            if (performance.now() < game.portalCooldown) return;
+
             const p = game.player;
             const tileSize = game.tileSize;
             const centerX = Math.floor((p.x + p.width / 2) / tileSize);
