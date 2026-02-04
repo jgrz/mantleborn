@@ -2026,8 +2026,10 @@
             elements.gameCanvas.width = canvasWidth;
             elements.gameCanvas.height = canvasHeight;
 
-            // Parse grid data
-            const gridInfo = levelData.level_grids?.[0];
+            // Parse grid data - handle both array and single object from Supabase
+            const gridInfo = Array.isArray(levelData.level_grids)
+                ? levelData.level_grids[0]
+                : levelData.level_grids;
             game.gridData = gridInfo?.grid_data || [];
             if (typeof game.gridData === 'string') {
                 game.gridData = JSON.parse(game.gridData);
